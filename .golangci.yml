@@ -1,0 +1,44 @@
+run:
+  timeout: 5m
+  tests: true
+
+linters:
+  enable:
+    - errcheck
+    - govet
+    - staticcheck
+    - unused
+    - gosec
+    - revive
+    - contextcheck
+    - goconst
+    - prealloc
+    - misspell
+    - bodyclose
+    - gocritic
+
+linters-settings:
+  govet:
+    enable-all: true
+    disable:
+      - fieldalignment # Avoid micro-optimization over readability
+  gosec:
+    excludes:
+      - G104 # errcheck handles unhandled errors
+  revive:
+    rules:
+      - name: exported
+        disabled: false
+      - name: var-naming
+        disabled: false
+      - name: error-naming
+        disabled: false
+      - name: error-strings
+        disabled: false
+      - name: package-comments
+        disabled: true
+
+issues:
+  exclude-use-default: false
+  max-issues-per-linter: 0
+  max-same-issues: 0

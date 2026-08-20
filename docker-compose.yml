@@ -1,0 +1,52 @@
+services:
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.3-alpine
+    container_name: fincher-clickhouse
+    ports:
+      - "8123:8123" # HTTP interface
+      - "9000:9000" # Native TCP client interface
+    environment:
+      - CLICKHOUSE_DB=fincher
+      - CLICKHOUSE_USER=default
+      - CLICKHOUSE_PASSWORD=
+      - CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT=1
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+      - ./data/clickhouse/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:8123/ping || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+
+  mcp-clickhouse:
+    image: ghcr.io/clickhouse/mcp-clickhouse:latest
+    container_name: fincher-mcp-clickhouse
+    ports:
+      - "8000:8000" # MCP HTTP transport interface
+    environment:
+      - CLICKHOUSE_HOST=clickhouse
+      - CLICKHOUSE_PORT=8123
+      - CLICKHOUSE_USER=default
+      - CLICKHOUSE_PASSWORD=
+      - CLICKHOUSE_DATABASE=fincher
+      - CLICKHOUSE_SECURE=false
+      - CLICKHOUSE_MCP_SERVER_TRANSPORT=http
+      - CLICKHOUSE_MCP_BIND_HOST=0.0.0.0
+      - CLICKHOUSE_MCP_BIND_PORT=8000
+      - CLICKHOUSE_MCP_AUTH_DISABLED=true
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')\" || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+    restart: unless-stopped
+
+volumes:
+  clickhouse_data:

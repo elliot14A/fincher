@@ -1,0 +1,12 @@
+{
+  "fincher-invariants-gate": {
+    "enabled": true,
+    "PreInvocation": [
+      {
+        "type": "command",
+        "command": "./.agents/scripts/pre_invocation.sh",
+        "timeout": 5
+      }
+    ]
+  }
+}

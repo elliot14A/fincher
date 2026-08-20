@@ -1,0 +1,21 @@
+# Environment secrets
+.env
+*.env.local
+.git
+
+# Binaries & build artifacts
+bin/
+dist/
+fincher
+seed
+
+# SQLite databases & runtime locks
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# OS & Editor temporary files
+.DS_Store
+*.tmp
+*.swp
