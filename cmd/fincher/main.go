@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -13,83 +12,72 @@ import (
 	"github.com/alecthomas/kong"
 
 	"github.com/elliot14A/fincher/internal/api"
-	"github.com/elliot14A/fincher/pkg/domain/config"
-	"github.com/elliot14A/fincher/pkg/turso"
+	"github.com/elliot14A/fincher/internal/config"
+	"github.com/elliot14A/fincher/internal/turso"
+	"github.com/elliot14A/fincher/pkg/logger"
 )
 
 var CLI struct {
-	config.Config
+	Config config.Config `kong:"embed"`
 }
 
 func main() {
-	kong.Parse(&CLI,
+	kctx := kong.Parse(&CLI,
 		kong.Name("fincher"),
-		kong.Description("Fincher: Autonomous Delivery-Integrity Engine for LUME"),
+		kong.Description("Fincher — Autonomous Post-Production Incident Orchestrator"),
 		kong.UsageOnError(),
 	)
 
 	cfg := &CLI.Config
 	if err := cfg.Validate(); err != nil {
-		slog.Error("configuration validation failed", "error", err)
-		os.Exit(1)
+		kctx.FatalIfErrorf(fmt.Errorf("configuration validation failed: %w", err))
 	}
 
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
-		Level: slog.LevelInfo,
-	}))
-	slog.SetDefault(logger)
+	logger.Init(cfg.Environment, os.Stdout)
+	logger.Info("starting fincher service", "environment", cfg.Environment, "port", cfg.Port)
 
-	slog.Info("starting fincher server",
-		"port", cfg.Port,
-		"env", cfg.Environment,
-		"turso_url", cfg.TursoURL,
-		"mcp_url", cfg.MCPURL,
-	)
-
-	// Initialize database connection and run schema migrations
-	client, err := turso.Open(cfg.TursoURL, cfg.TursoToken)
+	// Initialize Turso database connection
+	dbClient, err := turso.Open(cfg.TursoURL, cfg.TursoToken)
 	if err != nil {
-		slog.Error("failed to connect to database", "error", err)
+		logger.Error("failed to open database connection", "error", err)
 		os.Exit(1)
 	}
-	defer client.Close()
+	defer dbClient.Close()
 
+	// Run auto migrations on startup
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	if err := turso.AutoMigrate(ctx, client); err != nil {
-		slog.Error("failed to run database automigration", "error", err)
+	if err := turso.AutoMigrate(ctx, dbClient); err != nil {
+		logger.Error("failed to execute database schema migrations", "error", err)
 		os.Exit(1)
 	}
-	slog.Info("database automigration completed successfully")
 
-	// Initialize HTTP server
-	server := api.NewServer(client)
-	addr := fmt.Sprintf(":%d", cfg.Port)
+	// Initialize API server
+	srv := api.NewServer(dbClient)
 
-	// Graceful shutdown channel
+	// Graceful shutdown handling
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 
+	addr := fmt.Sprintf(":%d", cfg.Port)
 	go func() {
-		if err := server.Router().Start(addr); err != nil && err != http.ErrServerClosed {
-			slog.Error("http server failed", "error", err)
+		logger.Info("api server listening", "address", addr)
+		if err := srv.Router().Start(addr); err != nil && err != http.ErrServerClosed {
+			logger.Error("server stopped unexpectedly", "error", err)
 			os.Exit(1)
 		}
 	}()
 
-	slog.Info("fincher ready to serve traffic", "addr", addr)
-
 	<-stop
-	slog.Info("shutting down fincher gracefully...")
+	logger.Info("shutting down gracefully...")
 
-	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer shutdownCancel()
 
-	if err := server.Router().Shutdown(shutdownCtx); err != nil {
-		slog.Error("failed to shutdown server gracefully", "error", err)
-		os.Exit(1)
+	if err := srv.Router().Shutdown(shutdownCtx); err != nil {
+		logger.Error("graceful shutdown failed", "error", err)
+	} else {
+		logger.Info("fincher service stopped")
 	}
-
-	slog.Info("server shutdown complete")
 }

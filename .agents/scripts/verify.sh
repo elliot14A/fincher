@@ -36,19 +36,19 @@ fi
 
 echo "[4/5] Checking Go Compilation & Tests..."
 if [ -f "go.mod" ]; then
-  go build ./internal/... ./pkg/...
+  go build ./cmd/... ./internal/... ./pkg/...
   echo "  -> Compilation OK"
-  go vet ./internal/... ./pkg/...
+  go vet ./cmd/... ./internal/... ./pkg/...
   echo "  -> Go vet OK"
-  go test -v -race ./internal/... ./pkg/...
+  go test -v -race ./cmd/... ./internal/... ./pkg/...
   echo "  -> Unit tests OK"
 fi
 
 echo "[5/5] Checking Environment Variable Naming Invariant (FINCHER_*)..."
-if [ -d "pkg/domain/config" ]; then
-  INVALID_ENVS=$(grep -rn "env='" pkg/domain/config/ | grep -v "env='FINCHER_" || true)
+if [ -d "internal/config" ]; then
+  INVALID_ENVS=$(grep -rn "env='" internal/config/ | grep -v "env='FINCHER_" || true)
   if [ -n "$INVALID_ENVS" ]; then
-    echo "  -> ERROR: Non-compliant environment variable tags found in pkg/domain/config:"
+    echo "  -> ERROR: Non-compliant environment variable tags found in internal/config:"
     echo "$INVALID_ENVS"
     exit 1
   fi

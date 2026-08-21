@@ -4,24 +4,24 @@ import (
 	"testing"
 	"time"
 
-	"github.com/elliot14A/fincher/pkg/domain/config"
+	"github.com/elliot14A/fincher/internal/config"
 )
 
 func TestConfig_Validation(t *testing.T) {
 	validCfg := config.Config{
-		Port:                           8080,
-		Environment:                    "development",
-		StepTimeout:                    30 * time.Second,
-		TursoURL:                       "fincher.db",
-		TursoToken:                     "test-token",
-		MCPURL:                         "http://127.0.0.1:8000/mcp",
-		GeminiAPIKey:                   "test-key",
-		FlashModel:                     "gemini-2.5-flash",
-		ProModel:                       "gemini-2.5-pro",
-		MaxSyncDriftMs:                 120.0,
-		VendorDefectThreshold:          0.30,
-		ImminentLaunchThresholdHours:   72.0,
-		DailyModelInvocationCap:        200,
+		Port:                         8080,
+		Environment:                  "development",
+		StepTimeout:                  30 * time.Second,
+		TursoURL:                     "fincher.db",
+		TursoToken:                   "test-token",
+		MCPURL:                       "http://127.0.0.1:8000/mcp",
+		GeminiAPIKey:                 "test-key",
+		FlashModel:                   "gemini-2.5-flash",
+		ProModel:                     "gemini-2.5-pro",
+		MaxSyncDriftMs:               120.0,
+		VendorDefectThreshold:        0.30,
+		ImminentLaunchThresholdHours: 72.0,
+		DailyModelInvocationCap:      200,
 	}
 
 	if err := validCfg.Validate(); err != nil {
