@@ -73,9 +73,9 @@ func TestPackages_HTTP_Lifecycle(t *testing.T) {
 		Status:                   models.PackageStatusPending,
 	}
 
-	// 1. POST /packages
+	// 1. POST /api/packages
 	body, _ := json.Marshal(pkg)
-	req := httptest.NewRequest(http.MethodPost, "/packages", bytes.NewReader(body))
+	req := httptest.NewRequest(http.MethodPost, "/api/packages", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	rec := httptest.NewRecorder()
 	e.ServeHTTP(rec, req)
@@ -84,8 +84,8 @@ func TestPackages_HTTP_Lifecycle(t *testing.T) {
 		t.Fatalf("expected status 201, got %d. body: %s", rec.Code, rec.Body.String())
 	}
 
-	// 2. GET /packages/:id - assert response fields
-	req = httptest.NewRequest(http.MethodGet, "/packages/pkg-eclipse-es-audio", nil)
+	// 2. GET /api/packages/:id - assert response fields
+	req = httptest.NewRequest(http.MethodGet, "/api/packages/pkg-eclipse-es-audio", nil)
 	rec = httptest.NewRecorder()
 	e.ServeHTTP(rec, req)
 
@@ -100,8 +100,8 @@ func TestPackages_HTTP_Lifecycle(t *testing.T) {
 		t.Errorf("unexpected fetched package fields: %+v", fetched)
 	}
 
-	// 3. GET /packages?title_id=title-eclipse&component=AUDIO - assert list length
-	req = httptest.NewRequest(http.MethodGet, "/packages?title_id=title-eclipse&component=AUDIO", nil)
+	// 3. GET /api/packages?title_id=title-eclipse&component=AUDIO - assert list length
+	req = httptest.NewRequest(http.MethodGet, "/api/packages?title_id=title-eclipse&component=AUDIO", nil)
 	rec = httptest.NewRecorder()
 	e.ServeHTTP(rec, req)
 
@@ -114,11 +114,11 @@ func TestPackages_HTTP_Lifecycle(t *testing.T) {
 		t.Errorf("expected 1 package in list, got %d", len(list))
 	}
 
-	// 4. PATCH /packages/:id - verify partial update preserves other fields
+	// 4. PATCH /api/packages/:id - verify partial update preserves other fields
 	newStatus := models.PackageStatusValid
 	patchReq := models.UpdatePackageInput{Status: &newStatus}
 	body, _ = json.Marshal(patchReq)
-	req = httptest.NewRequest(http.MethodPatch, "/packages/pkg-eclipse-es-audio", bytes.NewReader(body))
+	req = httptest.NewRequest(http.MethodPatch, "/api/packages/pkg-eclipse-es-audio", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	rec = httptest.NewRecorder()
 	e.ServeHTTP(rec, req)
@@ -137,8 +137,8 @@ func TestPackages_HTTP_Lifecycle(t *testing.T) {
 		t.Errorf("expected PATCH to preserve untouched fields (Component, Language, VendorID): %+v", patched)
 	}
 
-	// 5. DELETE /packages/:id
-	req = httptest.NewRequest(http.MethodDelete, "/packages/pkg-eclipse-es-audio", nil)
+	// 5. DELETE /api/packages/:id
+	req = httptest.NewRequest(http.MethodDelete, "/api/packages/pkg-eclipse-es-audio", nil)
 	rec = httptest.NewRecorder()
 	e.ServeHTTP(rec, req)
 

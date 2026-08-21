@@ -13,6 +13,7 @@ import (
 	"github.com/elliot14A/fincher/internal/api/titles"
 	"github.com/elliot14A/fincher/internal/api/vendors"
 	"github.com/elliot14A/fincher/internal/turso/ent"
+	"github.com/elliot14A/fincher/openapi"
 	"github.com/elliot14A/fincher/pkg/logger"
 )
 
@@ -72,7 +73,7 @@ func (s *Server) Router() *echo.Echo {
 	return s.echo
 }
 
-// registerRoutes wires all API endpoints via their respective entity route modules.
+// registerRoutes wires all API endpoints under /api via their respective entity route modules.
 func (s *Server) registerRoutes() {
 	s.echo.GET("/health", func(c echo.Context) error {
 		return c.JSON(200, map[string]string{
@@ -81,12 +82,25 @@ func (s *Server) registerRoutes() {
 		})
 	})
 
-	titles.RegisterRoutes(s.echo.Group("/titles"), s.client)
-	masters.RegisterRoutes(s.echo.Group("/masters"), s.client)
-	vendors.RegisterRoutes(s.echo.Group("/vendors"), s.client)
-	packages.RegisterRoutes(s.echo.Group("/packages"), s.client)
-	deliveries.RegisterRoutes(s.echo.Group("/deliveries"), s.client)
-	dependencies.RegisterRoutes(s.echo.Group("/dependencies"), s.client)
+	// Serve the code-first generated OpenAPI/Swagger specification
+	s.echo.GET("/openapi.json", func(c echo.Context) error {
+		return c.Blob(200, "application/json", openapi.SpecJSON)
+	})
 
-	logger.Debug("registered all api routes", "routes_count", len(s.echo.Routes()))
+	apiGroup := s.echo.Group("/api")
+	apiGroup.GET("/health", func(c echo.Context) error {
+		return c.JSON(200, map[string]string{
+			"status": "ok",
+			"time":   time.Now().UTC().Format(time.RFC3339),
+		})
+	})
+
+	titles.RegisterRoutes(apiGroup.Group("/titles"), s.client)
+	masters.RegisterRoutes(apiGroup.Group("/masters"), s.client)
+	vendors.RegisterRoutes(apiGroup.Group("/vendors"), s.client)
+	packages.RegisterRoutes(apiGroup.Group("/packages"), s.client)
+	deliveries.RegisterRoutes(apiGroup.Group("/deliveries"), s.client)
+	dependencies.RegisterRoutes(apiGroup.Group("/dependencies"), s.client)
+
+	logger.Debug("registered all api routes under /api", "routes_count", len(s.echo.Routes()))
 }

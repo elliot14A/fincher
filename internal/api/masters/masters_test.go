@@ -55,9 +55,9 @@ func TestMasters_HTTP_Lifecycle(t *testing.T) {
 		SupersedesVersion: "V12",
 	}
 
-	// 1. POST /masters
+	// 1. POST /api/masters
 	body, _ := json.Marshal(master)
-	req := httptest.NewRequest(http.MethodPost, "/masters", bytes.NewReader(body))
+	req := httptest.NewRequest(http.MethodPost, "/api/masters", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	rec := httptest.NewRecorder()
 	e.ServeHTTP(rec, req)
@@ -66,8 +66,8 @@ func TestMasters_HTTP_Lifecycle(t *testing.T) {
 		t.Fatalf("expected status 201, got %d. body: %s", rec.Code, rec.Body.String())
 	}
 
-	// 2. GET /masters/:id
-	req = httptest.NewRequest(http.MethodGet, "/masters/master-eclipse-v13", nil)
+	// 2. GET /api/masters/:id
+	req = httptest.NewRequest(http.MethodGet, "/api/masters/master-eclipse-v13", nil)
 	rec = httptest.NewRecorder()
 	e.ServeHTTP(rec, req)
 
@@ -75,8 +75,8 @@ func TestMasters_HTTP_Lifecycle(t *testing.T) {
 		t.Fatalf("expected status 200, got %d", rec.Code)
 	}
 
-	// 3. GET /masters?title_id=title-eclipse
-	req = httptest.NewRequest(http.MethodGet, "/masters?title_id=title-eclipse", nil)
+	// 3. GET /api/masters?title_id=title-eclipse
+	req = httptest.NewRequest(http.MethodGet, "/api/masters?title_id=title-eclipse", nil)
 	rec = httptest.NewRecorder()
 	e.ServeHTTP(rec, req)
 
@@ -84,8 +84,8 @@ func TestMasters_HTTP_Lifecycle(t *testing.T) {
 		t.Fatalf("expected status 200, got %d", rec.Code)
 	}
 
-	// 4. DELETE /masters/:id
-	req = httptest.NewRequest(http.MethodDelete, "/masters/master-eclipse-v13", nil)
+	// 4. DELETE /api/masters/:id
+	req = httptest.NewRequest(http.MethodDelete, "/api/masters/master-eclipse-v13", nil)
 	rec = httptest.NewRecorder()
 	e.ServeHTTP(rec, req)
 

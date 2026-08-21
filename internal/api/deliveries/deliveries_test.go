@@ -61,9 +61,9 @@ func TestDeliveries_HTTP_Lifecycle(t *testing.T) {
 		TargetDate: time.Now().Add(24 * time.Hour),
 	}
 
-	// 1. POST /deliveries
+	// 1. POST /api/deliveries
 	body, _ := json.Marshal(del)
-	req := httptest.NewRequest(http.MethodPost, "/deliveries", bytes.NewReader(body))
+	req := httptest.NewRequest(http.MethodPost, "/api/deliveries", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	rec := httptest.NewRecorder()
 	e.ServeHTTP(rec, req)
@@ -72,8 +72,8 @@ func TestDeliveries_HTTP_Lifecycle(t *testing.T) {
 		t.Fatalf("expected status 201, got %d. body: %s", rec.Code, rec.Body.String())
 	}
 
-	// 2. GET /deliveries/:id
-	req = httptest.NewRequest(http.MethodGet, "/deliveries/del-eclipse-es", nil)
+	// 2. GET /api/deliveries/:id
+	req = httptest.NewRequest(http.MethodGet, "/api/deliveries/del-eclipse-es", nil)
 	rec = httptest.NewRecorder()
 	e.ServeHTTP(rec, req)
 
@@ -81,8 +81,8 @@ func TestDeliveries_HTTP_Lifecycle(t *testing.T) {
 		t.Fatalf("expected status 200, got %d", rec.Code)
 	}
 
-	// 3. GET /deliveries?title_id=title-eclipse&country=ES
-	req = httptest.NewRequest(http.MethodGet, "/deliveries?title_id=title-eclipse&country=ES", nil)
+	// 3. GET /api/deliveries?title_id=title-eclipse&country=ES
+	req = httptest.NewRequest(http.MethodGet, "/api/deliveries?title_id=title-eclipse&country=ES", nil)
 	rec = httptest.NewRecorder()
 	e.ServeHTTP(rec, req)
 
@@ -95,11 +95,11 @@ func TestDeliveries_HTTP_Lifecycle(t *testing.T) {
 		t.Errorf("expected 1 delivery, got %d", len(listRes))
 	}
 
-	// 4. PATCH /deliveries/:id
+	// 4. PATCH /api/deliveries/:id
 	newStatus := models.DeliveryStatusReadyToShip
 	patchReq := models.UpdateDeliveryInput{Status: &newStatus}
 	body, _ = json.Marshal(patchReq)
-	req = httptest.NewRequest(http.MethodPatch, "/deliveries/del-eclipse-es", bytes.NewReader(body))
+	req = httptest.NewRequest(http.MethodPatch, "/api/deliveries/del-eclipse-es", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	rec = httptest.NewRecorder()
 	e.ServeHTTP(rec, req)
@@ -108,8 +108,8 @@ func TestDeliveries_HTTP_Lifecycle(t *testing.T) {
 		t.Fatalf("expected status 200 on patch, got %d", rec.Code)
 	}
 
-	// 5. DELETE /deliveries/:id
-	req = httptest.NewRequest(http.MethodDelete, "/deliveries/del-eclipse-es", nil)
+	// 5. DELETE /api/deliveries/:id
+	req = httptest.NewRequest(http.MethodDelete, "/api/deliveries/del-eclipse-es", nil)
 	rec = httptest.NewRecorder()
 	e.ServeHTTP(rec, req)
 

@@ -54,9 +54,9 @@ func TestTitles_HTTP_Lifecycle(t *testing.T) {
 		OverallStatus:        models.StatusAtRisk,
 	}
 
-	// 1. POST /titles
+	// 1. POST /api/titles
 	body, _ := json.Marshal(title)
-	req := httptest.NewRequest(http.MethodPost, "/titles", bytes.NewReader(body))
+	req := httptest.NewRequest(http.MethodPost, "/api/titles", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	rec := httptest.NewRecorder()
 	e.ServeHTTP(rec, req)
@@ -73,8 +73,8 @@ func TestTitles_HTTP_Lifecycle(t *testing.T) {
 		t.Errorf("unexpected created title data: %+v", created)
 	}
 
-	// 2. GET /titles/:id - assert response fields
-	req = httptest.NewRequest(http.MethodGet, "/titles/title-eclipse", nil)
+	// 2. GET /api/titles/:id - assert response fields
+	req = httptest.NewRequest(http.MethodGet, "/api/titles/title-eclipse", nil)
 	rec = httptest.NewRecorder()
 	e.ServeHTTP(rec, req)
 
@@ -89,8 +89,8 @@ func TestTitles_HTTP_Lifecycle(t *testing.T) {
 		t.Errorf("unexpected fetched title fields: %+v", fetched)
 	}
 
-	// 3. GET /titles (list)
-	req = httptest.NewRequest(http.MethodGet, "/titles", nil)
+	// 3. GET /api/titles (list)
+	req = httptest.NewRequest(http.MethodGet, "/api/titles", nil)
 	rec = httptest.NewRecorder()
 	e.ServeHTTP(rec, req)
 
@@ -104,11 +104,11 @@ func TestTitles_HTTP_Lifecycle(t *testing.T) {
 		t.Errorf("expected 1 title in list, got %d", len(list))
 	}
 
-	// 4. PATCH /titles/:id - verify partial update preserves other fields
+	// 4. PATCH /api/titles/:id - verify partial update preserves other fields
 	newStatus := models.StatusHold
 	patchReq := models.UpdateTitleInput{OverallStatus: &newStatus}
 	body, _ = json.Marshal(patchReq)
-	req = httptest.NewRequest(http.MethodPatch, "/titles/title-eclipse", bytes.NewReader(body))
+	req = httptest.NewRequest(http.MethodPatch, "/api/titles/title-eclipse", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	rec = httptest.NewRecorder()
 	e.ServeHTTP(rec, req)
@@ -127,8 +127,8 @@ func TestTitles_HTTP_Lifecycle(t *testing.T) {
 		t.Errorf("expected PATCH to preserve untouched fields (Name, Territories, MasterVersion): %+v", patched)
 	}
 
-	// 5. DELETE /titles/:id
-	req = httptest.NewRequest(http.MethodDelete, "/titles/title-eclipse", nil)
+	// 5. DELETE /api/titles/:id
+	req = httptest.NewRequest(http.MethodDelete, "/api/titles/title-eclipse", nil)
 	rec = httptest.NewRecorder()
 	e.ServeHTTP(rec, req)
 
@@ -136,8 +136,8 @@ func TestTitles_HTTP_Lifecycle(t *testing.T) {
 		t.Fatalf("expected status 204 on delete, got %d", rec.Code)
 	}
 
-	// 6. GET /titles/:id -> should return 404
-	req = httptest.NewRequest(http.MethodGet, "/titles/title-eclipse", nil)
+	// 6. GET /api/titles/:id -> should return 404
+	req = httptest.NewRequest(http.MethodGet, "/api/titles/title-eclipse", nil)
 	rec = httptest.NewRecorder()
 	e.ServeHTTP(rec, req)
 

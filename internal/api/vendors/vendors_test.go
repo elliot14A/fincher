@@ -46,9 +46,9 @@ func TestVendors_HTTP_Lifecycle(t *testing.T) {
 		Specialty: "AUDIO_DUBBING",
 	}
 
-	// 1. POST /vendors
+	// 1. POST /api/vendors
 	body, _ := json.Marshal(vendor)
-	req := httptest.NewRequest(http.MethodPost, "/vendors", bytes.NewReader(body))
+	req := httptest.NewRequest(http.MethodPost, "/api/vendors", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	rec := httptest.NewRecorder()
 	e.ServeHTTP(rec, req)
@@ -57,8 +57,8 @@ func TestVendors_HTTP_Lifecycle(t *testing.T) {
 		t.Fatalf("expected status 201, got %d. body: %s", rec.Code, rec.Body.String())
 	}
 
-	// 2. GET /vendors/:id
-	req = httptest.NewRequest(http.MethodGet, "/vendors/vendor_a", nil)
+	// 2. GET /api/vendors/:id
+	req = httptest.NewRequest(http.MethodGet, "/api/vendors/vendor_a", nil)
 	rec = httptest.NewRecorder()
 	e.ServeHTTP(rec, req)
 
@@ -66,8 +66,8 @@ func TestVendors_HTTP_Lifecycle(t *testing.T) {
 		t.Fatalf("expected status 200, got %d", rec.Code)
 	}
 
-	// 3. GET /vendors?specialty=AUDIO_DUBBING
-	req = httptest.NewRequest(http.MethodGet, "/vendors?specialty=AUDIO_DUBBING", nil)
+	// 3. GET /api/vendors?specialty=AUDIO_DUBBING
+	req = httptest.NewRequest(http.MethodGet, "/api/vendors?specialty=AUDIO_DUBBING", nil)
 	rec = httptest.NewRecorder()
 	e.ServeHTTP(rec, req)
 
@@ -75,11 +75,11 @@ func TestVendors_HTTP_Lifecycle(t *testing.T) {
 		t.Fatalf("expected status 200, got %d", rec.Code)
 	}
 
-	// 4. PATCH /vendors/:id
+	// 4. PATCH /api/vendors/:id
 	newName := "Vendor A International"
 	patchReq := models.UpdateVendorInput{Name: &newName}
 	body, _ = json.Marshal(patchReq)
-	req = httptest.NewRequest(http.MethodPatch, "/vendors/vendor_a", bytes.NewReader(body))
+	req = httptest.NewRequest(http.MethodPatch, "/api/vendors/vendor_a", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	rec = httptest.NewRecorder()
 	e.ServeHTTP(rec, req)
@@ -88,8 +88,8 @@ func TestVendors_HTTP_Lifecycle(t *testing.T) {
 		t.Fatalf("expected status 200 on patch, got %d", rec.Code)
 	}
 
-	// 5. DELETE /vendors/:id
-	req = httptest.NewRequest(http.MethodDelete, "/vendors/vendor_a", nil)
+	// 5. DELETE /api/vendors/:id
+	req = httptest.NewRequest(http.MethodDelete, "/api/vendors/vendor_a", nil)
 	rec = httptest.NewRecorder()
 	e.ServeHTTP(rec, req)
 

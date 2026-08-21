@@ -87,9 +87,9 @@ func TestDependencies_HTTP_Lifecycle(t *testing.T) {
 		DependencyType: models.DependencyMasterDerivation,
 	}
 
-	// 1. POST /dependencies
+	// 1. POST /api/dependencies
 	body, _ := json.Marshal(dep)
-	req := httptest.NewRequest(http.MethodPost, "/dependencies", bytes.NewReader(body))
+	req := httptest.NewRequest(http.MethodPost, "/api/dependencies", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	rec := httptest.NewRecorder()
 	e.ServeHTTP(rec, req)
@@ -98,8 +98,8 @@ func TestDependencies_HTTP_Lifecycle(t *testing.T) {
 		t.Fatalf("expected status 201, got %d. body: %s", rec.Code, rec.Body.String())
 	}
 
-	// 2. GET /dependencies?parent_id=pkg-video-ov
-	req = httptest.NewRequest(http.MethodGet, "/dependencies?parent_id=pkg-video-ov", nil)
+	// 2. GET /api/dependencies?parent_id=pkg-video-ov
+	req = httptest.NewRequest(http.MethodGet, "/api/dependencies?parent_id=pkg-video-ov", nil)
 	rec = httptest.NewRecorder()
 	e.ServeHTTP(rec, req)
 
@@ -107,8 +107,8 @@ func TestDependencies_HTTP_Lifecycle(t *testing.T) {
 		t.Fatalf("expected status 200, got %d", rec.Code)
 	}
 
-	// 3. GET /dependencies/graph/title-eclipse
-	req = httptest.NewRequest(http.MethodGet, "/dependencies/graph/title-eclipse", nil)
+	// 3. GET /api/dependencies/graph/title-eclipse
+	req = httptest.NewRequest(http.MethodGet, "/api/dependencies/graph/title-eclipse", nil)
 	rec = httptest.NewRecorder()
 	e.ServeHTTP(rec, req)
 
@@ -122,8 +122,8 @@ func TestDependencies_HTTP_Lifecycle(t *testing.T) {
 		t.Errorf("unexpected lineage graph response: %+v", graphRes)
 	}
 
-	// 4. DELETE /dependencies/:id
-	req = httptest.NewRequest(http.MethodDelete, "/dependencies/dep-video-audio", nil)
+	// 4. DELETE /api/dependencies/:id
+	req = httptest.NewRequest(http.MethodDelete, "/api/dependencies/dep-video-audio", nil)
 	rec = httptest.NewRecorder()
 	e.ServeHTTP(rec, req)
 
