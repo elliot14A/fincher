@@ -1,7 +1,7 @@
 ---
 name: gsd-plan
 description: >-
-  Creates and verifies an implementation plan for the active phase in .planning/phases/XX/PLAN.md.
+  Creates and verifies an implementation plan for the active phase in .agents/planning/phases/XX/PLAN.md.
   Decomposes tasks into small, verifiable chunks and verifies them against project invariants.
 ---
 
@@ -14,9 +14,9 @@ Use this skill to research, structure, and decompose implementation tasks for th
 ## Workflow Steps
 
 1. **Read Inputs**:
-   - `.planning/PROJECT.md`
-   - `.planning/REQUIREMENTS.md`
-   - `.planning/phases/XX/CONTEXT.md`
+   - `.agents/planning/PROJECT.md`
+   - `.agents/planning/REQUIREMENTS.md`
+   - `.agents/planning/phases/XX/CONTEXT.md`
 
 2. **Decompose Tasks**:
    Break the phase down into discrete, atomic tasks:
@@ -29,7 +29,7 @@ Use this skill to research, structure, and decompose implementation tasks for th
    - Ensure tasks fit within a clean execution context without cognitive bloat.
 
 4. **Write `PLAN.md`**:
-   Save to `.planning/phases/XX/PLAN.md`.
+   Save to `.agents/planning/phases/XX/PLAN.md`.
 
 5. **Update `STATE.md`**:
-   Update active checklist and status in `.planning/STATE.md`.
+   Update active checklist and status in `.agents/planning/STATE.md`.

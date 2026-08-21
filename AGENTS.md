@@ -37,9 +37,9 @@ This document defines the architectural rules, engineering standards, multi-agen
 
 ---
 
-## 2. GSD Core Spec-Driven Development (`.planning/`)
+## 2. GSD Core Spec-Driven Development (`.agents/planning/`)
 
-All engineering milestones, state transitions, and requirements are managed through the **GSD Core** spec-driven framework in `.planning/`:
+All engineering milestones, state transitions, and requirements are managed through the **GSD Core** spec-driven framework in `.agents/planning/`:
 
 1. **`PROJECT.md`**: Foundational domain context, architectural boundaries, and core operating principles.
 2. **`REQUIREMENTS.md`**: Deterministic requirement IDs (`REQ-INGEST-01`, `REQ-MCP-01`, `REQ-POLICY-01`, etc.) with verifiable acceptance criteria.
@@ -126,7 +126,7 @@ fincher/
 │   ├── rules/                    # Rules (boundaries, code-quality, concurrency, environment, gsd-rules)
 │   └── workflows/                # Workflow guides (engine-loop, checklist, gsd-phase-loop)
 │
-├── .planning/                    # GSD Core durable spec & state management
+├── .agents/planning/                    # GSD Core durable spec & state management
 │   ├── PROJECT.md                # Project architecture, constraints, value
 │   ├── REQUIREMENTS.md           # Requirement specifications (REQ-*)
 │   ├── ROADMAP.md                # Phase roadmap & milestone deliverables
@@ -146,8 +146,8 @@ fincher/
 
 The `.agents/skills/` directory equips the AI assistant with GSD Core loop skills and specialized inspectors:
 
-* **`gsd-discuss`**: Captures decisions, user intent, and boundaries into `.planning/phases/XX/CONTEXT.md`.
-* **`gsd-plan`**: Decomposes phase tasks into atomic, verifiable work units in `.planning/phases/XX/PLAN.md`.
+* **`gsd-discuss`**: Captures decisions, user intent, and boundaries into `.agents/planning/phases/XX/CONTEXT.md`.
+* **`gsd-plan`**: Decomposes phase tasks into atomic, verifiable work units in `.agents/planning/phases/XX/PLAN.md`.
 * **`gsd-execute`**: Surgically implements tasks with fresh context and logs execution in `SUMMARY.md`.
 * **`gsd-verify`**: Executes comprehensive automated verification and diagnostics in `VERIFICATION.md`.
 * **`gsd-ship`**: Archives the phase, updates `ROADMAP.md` and advances `STATE.md`.

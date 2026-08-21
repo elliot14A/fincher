@@ -2,7 +2,7 @@
 name: gsd-verify
 description: >-
   Executes comprehensive automated verification, code review, diagnostics, invariant checks,
-  and integration tests for Fincher, compiling the evidence into .planning/phases/XX/VERIFICATION.md.
+  and integration tests for Fincher, compiling the evidence into .agents/planning/phases/XX/VERIFICATION.md.
 ---
 
 # GSD Verify Skill
@@ -51,7 +51,7 @@ go test -v ./pkg/mcp/... -race
 * **Closed-Loop Progression**: Verify executed actions emit downstream events.
 
 ### 6. Write Verification Report
-Compile the results into `.planning/phases/XX/VERIFICATION.md` with:
+Compile the results into `.agents/planning/phases/XX/VERIFICATION.md` with:
 * Summary Verdict (`PASS` / `FAIL`)
 * Package Test Results Table
 * Invariant Verification Output

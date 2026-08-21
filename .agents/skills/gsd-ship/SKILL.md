@@ -14,7 +14,7 @@ Use this skill once all phase tasks and verification reports pass cleanly.
 ## Workflow Steps
 
 1. **Verify Completion**:
-   Ensure `.planning/phases/XX/VERIFICATION.md` exists and reports `PASS` on all criteria.
+   Ensure `.agents/planning/phases/XX/VERIFICATION.md` exists and reports `PASS` on all criteria.
 
 2. **Update `ROADMAP.md`**:
    Change phase status from `IN_PROGRESS` to `COMPLETED`.

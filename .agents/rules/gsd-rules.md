@@ -3,7 +3,7 @@
 These rules govern the Git. Ship. Done (GSD) workflow:
 
 1. **Durable Markdown State**:
-   - The `.planning/` directory is the single source of truth for project state.
+   - The `.agents/planning/` directory is the single source of truth for project state.
    - Every phase maintains `CONTEXT.md`, `PLAN.md`, `SUMMARY.md`, and `VERIFICATION.md`.
    - `STATE.md` must be updated on every stage transition to ensure session continuity across AI turns.
 
@@ -18,4 +18,4 @@ These rules govern the Git. Ship. Done (GSD) workflow:
    - Decompose tasks so that each execution step is small, self-contained, and verified in clean context.
 
 4. **Requirement Traceability**:
-   - Every implemented feature or component must map directly to a requirement ID in `.planning/REQUIREMENTS.md` (e.g. `REQ-MCP-01`, `REQ-POLICY-01`).
+   - Every implemented feature or component must map directly to a requirement ID in `.agents/planning/REQUIREMENTS.md` (e.g. `REQ-MCP-01`, `REQ-POLICY-01`).

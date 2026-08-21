@@ -5,8 +5,8 @@ set -euo pipefail
 cat > /dev/null
 
 ACTIVE_PHASE="01-foundation"
-if [ -f ".planning/STATE.md" ]; then
-  ACTIVE_PHASE=$(grep -E '^\* \*\*Active Phase\*\*' .planning/STATE.md | head -n1 | sed -E 's/.*`([^`]+)`.*/\1/' || echo "01-foundation")
+if [ -f ".agents/planning/STATE.md" ]; then
+  ACTIVE_PHASE=$(grep -E '^\* \*\*Active Phase\*\*' .agents/planning/STATE.md | head -n1 | sed -E 's/.*`([^`]+)`.*/\1/' || echo "01-foundation")
 fi
 
 cat << EOF

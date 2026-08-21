@@ -6,13 +6,13 @@ echo "Fincher & GSD Core Invariant Verification Suite"
 echo "========================================================"
 
 echo "[1/5] Checking GSD Core Planning Artifacts..."
-for req_file in .planning/PROJECT.md .planning/REQUIREMENTS.md .planning/ROADMAP.md .planning/STATE.md; do
+for req_file in .agents/planning/PROJECT.md .agents/planning/REQUIREMENTS.md .agents/planning/ROADMAP.md .agents/planning/STATE.md; do
   if [ ! -f "$req_file" ]; then
     echo "  -> ERROR: Missing required planning artifact: $req_file"
     exit 1
   fi
 done
-echo "  -> GSD Core .planning/ artifacts present & valid"
+echo "  -> GSD Core .agents/planning/ artifacts present & valid"
 
 echo "[2/5] Checking Seed Data Placeholder..."
 if [ -f "data/seed/media_events.json" ]; then
