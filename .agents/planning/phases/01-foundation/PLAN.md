@@ -9,7 +9,7 @@
   - `pkg/domain/models/delivery.go` (Deliveries, Territory mapping)
   - `pkg/domain/models/events.go` (ClickHouse event schemas)
   - `pkg/domain/models/workflow.go` (DAG GraphSpec, Node Types, Run, NodeExecution, Decision, Action, Notification)
-  - `pkg/domain/config/config.go` (Kong Config with `FINCHER_{SERVICE}_*`)
+  - `internal/config/config.go` (Kong Config with `FINCHER_{SERVICE}_*`)
 * **Details**: Update models to match the 17-node DAG palette and drop old CEL remnants.
 * **Verification**: `go test -v ./pkg/domain/...` passes 100%.
 
@@ -46,7 +46,7 @@
 ### Task 3: ClickHouse MCP HTTP Client & Turso Client
 * **Files**:
   - `pkg/mcp/client.go`, `pkg/mcp/client_test.go`
-  - `pkg/turso/client.go`, `pkg/turso/client_test.go`
+  - `internal/turso/client.go`, `internal/turso/client_test.go`
 * **Details**: MCP client for `mcp-clickhouse` (`run_query`, `list_tables`). Turso client with migration runner and transactional execution.
 * **Verification**: Live MCP connection test against local Docker container + Turso SQLite migration run.
 

@@ -1,11 +1,11 @@
 # Fincher — Live Operational State & Milestone Pointer
 
 ## Current Status Pointer
-* **Active Milestone**: Feature 02: Masters, Packages & Vendors
-* **Active Phase**: `02-masters-packages-vendors`
+* **Active Milestone**: Feature 03: Deliveries & Lineage / Dependencies
+* **Active Phase**: `03-deliveries-lineage`
 * **Phase Status**: COMPLETED
-* **Next Milestone**: Feature 03: Deliveries & Lineage / Dependencies
-* **Timestamp**: 2026-08-21T21:44:00+05:30
+* **Next Milestone**: Feature 04: ClickHouse History & MCP Client
+* **Timestamp**: 2026-08-21T22:28:00+05:30
 
 ---
 
@@ -26,12 +26,12 @@
   - [x] Echo REST handlers with modular `routes.go` per entity.
   - [x] Verification: Unit tests for CRUD, FK constraints, staleness detection, and HTTP lifecycles passing with `-race`.
 
-- [ ] **Feature 03: Deliveries & Lineage / Dependencies**
-  - [ ] Ent schemas: `Delivery` (`country`, `status`, `target_date`), `Dependency` (`parent_id`, `child_id`).
-  - [ ] Domain models and validation in `pkg/domain/models/`.
-  - [ ] Pure functional actions in `pkg/turso/deliveries/` and `pkg/turso/dependencies/`.
-  - [ ] Echo REST endpoints: `GET /deliveries`, `GET /dependencies/graph`.
-  - [ ] Verification: Lineage graph cycle detection tests.
+- [x] **Feature 03: Deliveries & Lineage / Dependencies**
+  - [x] Ent schemas: `Delivery` (`country`, `status`, `target_date`), `Dependency` (`parent_id`, `child_id`).
+  - [x] Domain models and validation in `pkg/domain/models/`.
+  - [x] Pure functional actions in `internal/turso/deliveries/` and `internal/turso/dependencies/`.
+  - [x] Echo REST endpoints: `GET /deliveries`, `GET /dependencies/graph/:title_id`.
+  - [x] Verification: Lineage graph cycle detection tests and full HTTP lifecycle tests.
 
 - [ ] **Feature 04: ClickHouse History & MCP Client**
   - [ ] ClickHouse schema: `qc_events`, `delivery_events`, `asset_events`, `dependency_events`.

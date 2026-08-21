@@ -10,7 +10,7 @@
 ### Turso / libSQL Application State (`REQ-TURSO`)
 * **REQ-TURSO-01**: Turso stores the delivery domain: `titles`, `masters`, `packages`, `vendors`, `deliveries`, `dependencies`.
 * **REQ-TURSO-02**: Turso stores the workflow execution domain: `workflow_definitions`, `workflow_runs`, `node_executions`, `node_inputs`, `node_outputs`, `query_log`, `decisions`, `executed_actions`, `notifications`, `budget_counters`.
-* **REQ-TURSO-03**: Database schema is managed via type-safe Ent ORM schemas in `pkg/ent/schema/` with automated migrations.
+* **REQ-TURSO-03**: Database schema is managed via type-safe Ent ORM schemas in `internal/turso/ent/schema/` with automated migrations.
 
 ### Workflow DAG & Node Palette (`REQ-DAG`)
 * **REQ-DAG-01**: Workflows are directed acyclic graphs (DAG) composed from a fixed palette of 17 node types.
@@ -27,6 +27,8 @@
 * **REQ-API-04**: Master & Package & Vendor CRUD: `POST /masters`, `GET /masters`, `POST /packages`, `GET /packages`, `PATCH /packages/{id}`, `POST /vendors`, `GET /vendors`.
 * **REQ-API-05**: Read-first Docent query: `POST /query`, `GET /query/{session}/stream`.
 * **REQ-API-06**: Palette & Budget: `GET /node-palette`, `GET /budget`.
+* **REQ-API-07**: Deliveries CRUD: `GET /deliveries`, `GET /deliveries/{id}`, `POST /deliveries`, `PATCH /deliveries/{id}`, `DELETE /deliveries/{id}`.
+* **REQ-API-08**: Dependency graph & lineage: `POST /dependencies`, `GET /dependencies`, `GET /dependencies/graph/{title_id}`, `DELETE /dependencies/{id}`.
 
 ### Causal Seeder & LUME World (`REQ-SEED`)
 * **REQ-SEED-01**: Idempotent seeder creates 5–7 LUME launch titles (*Eclipse*, *Atlas*, *Orbit*, *Meridian*, *Vantage*) with dynamic premiere dates relative to `now()`.

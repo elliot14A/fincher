@@ -9,7 +9,7 @@ Before completing any task or tagging a milestone, run through this checklist:
 - [ ] `go vet ./...` reports 0 issues.
 - [ ] `golangci-lint run` passes cleanly.
 - [ ] `go test -v ./internal/policy/... -race` verifies all policy evaluation gates.
-- [ ] `go test -v ./internal/store/... -race` validates SQLite migrations and concurrent WAL operations.
+- [ ] `go test -v ./internal/turso/... -race` validates SQLite migrations and concurrent WAL operations.
 
 ---
 

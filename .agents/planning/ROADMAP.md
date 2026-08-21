@@ -44,7 +44,7 @@ Build one complete feature slice end-to-end at a time:
 * **Deliverables**:
   - `pkg/domain/models/title.go`: Title model, status enums (`ON_TRACK`, `AT_RISK`, `HOLD`, `PROCESSING`, `SHIPPED`), validation, `HoursUntilPremiere`.
   - `migrations/turso/001_titles.sql`: `titles` table.
-  - `pkg/turso/titles.go`: Create, Get, List (with status filter), Update, Delete.
+  - `internal/turso/titles.go`: Create, Get, List (with status filter), Update, Delete.
   - `internal/api/titles.go`: `GET /titles`, `GET /titles/{id}`, `POST /titles`, `PATCH /titles/{id}`, `DELETE /titles/{id}`.
   - `internal/api/server.go`: Base Echo HTTP server setup with JSON middleware.
 * **Verification**: `go test -v ./... -race` verifying title CRUD and HTTP endpoints.
@@ -56,7 +56,7 @@ Build one complete feature slice end-to-end at a time:
 * **Deliverables**:
   - `pkg/domain/models/master.go`, `package.go`, `vendor.go`.
   - `migrations/turso/002_masters.sql`, `003_packages.sql`, `004_vendors.sql`.
-  - `pkg/turso/masters.go`, `packages.go`, `vendors.go`.
+  - `internal/turso/masters.go`, `packages.go`, `vendors.go`.
   - `internal/api/packages.go`, `internal/api/vendors.go`.
 * **Verification**: Unit tests and HTTP tests for package staleness against masters and vendor lookups.
 
@@ -67,7 +67,7 @@ Build one complete feature slice end-to-end at a time:
 * **Deliverables**:
   - `pkg/domain/models/delivery.go`, `dependency.go`.
   - `migrations/turso/005_deliveries.sql`, `006_dependencies.sql`.
-  - `pkg/turso/deliveries.go`, `dependencies.go`.
+  - `internal/turso/deliveries.go`, `dependencies.go`.
   - `internal/api/deliveries.go`.
 * **Verification**: Territory delivery hold/release status mutations and dependency queries.
 
@@ -78,7 +78,7 @@ Build one complete feature slice end-to-end at a time:
 * **Deliverables**:
   - `migrations/clickhouse/001_qc_events.sql` through `009_mv_recent_master_changes.sql`.
   - `pkg/mcp/client.go`: MCP JSON-RPC 2.0 HTTP transport client (`run_query`, `list_tables`).
-  - `pkg/turso/query_log.go`: Query logging and provenance tracking.
+  - `internal/turso/query_log.go`: Query logging and provenance tracking.
 * **Verification**: Live MCP connection test against `mcp-clickhouse` executing analytical queries against views.
 
 ---
@@ -88,7 +88,7 @@ Build one complete feature slice end-to-end at a time:
 * **Deliverables**:
   - `pkg/domain/models/workflow_def.go`: DAG node & edge spec validation.
   - `migrations/turso/007_workflow_definitions.sql`.
-  - `pkg/turso/workflow_defs.go`.
+  - `internal/turso/workflow_defs.go`.
   - `internal/api/workflows.go`: `GET /workflows`, `GET /workflows/{id}`, `POST /workflows`, `PATCH /workflows/{id}`, `GET /node-palette`.
 * **Verification**: Validates DAG topology (acyclic, valid triggers, valid node palette).
 
@@ -110,7 +110,7 @@ Build one complete feature slice end-to-end at a time:
 * **Deliverables**:
   - `internal/engine/nodes/`: Implement all 17 nodes.
   - `migrations/turso/012_decisions.sql`, `013_executed_actions.sql`, `014_notifications.sql`.
-  - `pkg/turso/decisions.go`, `notifications.go`.
+  - `internal/turso/decisions.go`, `notifications.go`.
 * **Verification**: Full hero run (*Eclipse* V13 + Vendor A audio drift $\rightarrow$ HOLD decision + drafted notice).
 
 ---
@@ -130,7 +130,7 @@ Build one complete feature slice end-to-end at a time:
 * **Scope**: Budget counter caps, scale-to-zero verification, and LUME demo causal seeder.
 * **Deliverables**:
   - `migrations/turso/015_budget_counters.sql`.
-  - `pkg/turso/budget.go`: Enforces daily model limit & kill switch.
+  - `internal/turso/budget.go`: Enforces daily model limit & kill switch.
   - `cmd/seed/main.go` & `data/seed/lume.go`: Seeds 250k+ ClickHouse QC rows, 5–7 titles, pre-resolved hero run.
   - `cmd/fincher/main.go`: Production unified server binary.
 * **Verification**: Full unattended demo cold start and compliance verification.

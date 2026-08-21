@@ -21,7 +21,7 @@
 | [2/5] Seed data (`data/seed/media_events.json`) | ❌ FAIL — file doesn't exist (Task 5 not started) |
 | [3/5] ClickHouse + MCP containers reachable | ⚠️ SKIPPED (script exits at step 2) |
 | [4/5] Go build/vet/test | ⚠️ SKIPPED |
-| [5/5] `FINCHER_*` env-var naming | ⚠️ SKIPPED — script only scans `internal/config/`, but the real config package is `pkg/domain/config/` (path mismatch, would always short-circuit as "no dir" even once implemented) |
+| [5/5] `FINCHER_*` env-var naming | ⚠️ SKIPPED — script only scans `internal/config/`, but the real config package is `internal/config/` (path mismatch, would always short-circuit as "no dir" even once implemented) |
 
 Script halts on first failure by design (`set -e`), so steps 3–5 never ran.
 
@@ -55,7 +55,7 @@ No engine/agent/action code exists yet (Milestone 2+), so the read-only-agent an
    ```
    This declares an unused named volume literally called `volumes`. The clickhouse service actually bind-mounts `./volumes/clickhouse:/var/lib/clickhouse` (a host path, matching the new `.gitignore` entry `volumes/`), so the named-volume stanza is copy-paste cruft and should be deleted.
 
-3. **`verify.sh` checks the wrong config path.** Step 5 greps `internal/config/` for `env:"FINCHER_...` tags, but the actual config lives in `pkg/domain/config/config.go` using Kong tags (`kong:"...env='FINCHER_...'"`) — different path *and* different tag key (`env:` vs `kong:"...env='...'"`). As written this check will silently no-op forever ("Config directory will enforce ... upon scaffolding") instead of ever validating the real file.
+3. **`verify.sh` checks the wrong config path.** Step 5 greps `internal/config/` for `env:"FINCHER_...` tags, but the actual config lives in `internal/config/config.go` using Kong tags (`kong:"...env='FINCHER_...'"`) — different path *and* different tag key (`env:` vs `kong:"...env='...'"`). As written this check will silently no-op forever ("Config directory will enforce ... upon scaffolding") instead of ever validating the real file.
 
 4. **`verify.sh` checks for a seed artifact that doesn't match the roadmap.** It requires `data/seed/media_events.json`, but `ROADMAP.md` / `STATE.md` Task 5 specifies `cmd/seed/main.go` + `data/seed/lume.go` generating ClickHouse rows and Turso records — not a static JSON file. One of the two specs is stale.
 
