@@ -6,10 +6,10 @@ import (
 	"github.com/labstack/echo/v4"
 
 	apierrors "github.com/elliot14A/fincher/internal/api/errors"
+	"github.com/elliot14A/fincher/internal/turso/ent"
+	tursotitles "github.com/elliot14A/fincher/internal/turso/titles"
 	domainerrors "github.com/elliot14A/fincher/pkg/domain/errors"
 	"github.com/elliot14A/fincher/pkg/domain/models"
-	"github.com/elliot14A/fincher/pkg/ent"
-	tursotitles "github.com/elliot14A/fincher/pkg/turso/titles"
 )
 
 // List handles GET /titles.

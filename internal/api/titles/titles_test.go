@@ -10,9 +10,9 @@ import (
 	"time"
 
 	"github.com/elliot14A/fincher/internal/api"
+	"github.com/elliot14A/fincher/internal/turso"
+	"github.com/elliot14A/fincher/internal/turso/ent"
 	"github.com/elliot14A/fincher/pkg/domain/models"
-	"github.com/elliot14A/fincher/pkg/ent"
-	"github.com/elliot14A/fincher/pkg/turso"
 )
 
 func setupTestServer(t *testing.T) (*api.Server, *ent.Client) {

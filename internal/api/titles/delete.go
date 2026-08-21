@@ -6,8 +6,8 @@ import (
 	"github.com/labstack/echo/v4"
 
 	apierrors "github.com/elliot14A/fincher/internal/api/errors"
-	"github.com/elliot14A/fincher/pkg/ent"
-	tursotitles "github.com/elliot14A/fincher/pkg/turso/titles"
+	"github.com/elliot14A/fincher/internal/turso/ent"
+	tursotitles "github.com/elliot14A/fincher/internal/turso/titles"
 )
 
 // Delete handles DELETE /titles/:id.

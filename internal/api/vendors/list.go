@@ -6,9 +6,9 @@ import (
 	"github.com/labstack/echo/v4"
 
 	apierrors "github.com/elliot14A/fincher/internal/api/errors"
+	"github.com/elliot14A/fincher/internal/turso/ent"
+	tursovendors "github.com/elliot14A/fincher/internal/turso/vendors"
 	domainerrors "github.com/elliot14A/fincher/pkg/domain/errors"
-	"github.com/elliot14A/fincher/pkg/ent"
-	tursovendors "github.com/elliot14A/fincher/pkg/turso/vendors"
 )
 
 // List handles GET /vendors.

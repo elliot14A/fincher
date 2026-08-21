@@ -6,9 +6,9 @@ import (
 	"github.com/labstack/echo/v4"
 
 	apierrors "github.com/elliot14A/fincher/internal/api/errors"
+	"github.com/elliot14A/fincher/internal/turso/ent"
+	tursomasters "github.com/elliot14A/fincher/internal/turso/masters"
 	"github.com/elliot14A/fincher/pkg/domain/models"
-	"github.com/elliot14A/fincher/pkg/ent"
-	tursomasters "github.com/elliot14A/fincher/pkg/turso/masters"
 )
 
 // Create handles POST /masters.

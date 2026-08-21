@@ -3,7 +3,7 @@ package packages
 import (
 	"github.com/labstack/echo/v4"
 
-	"github.com/elliot14A/fincher/pkg/ent"
+	"github.com/elliot14A/fincher/internal/turso/ent"
 )
 
 // RegisterRoutes registers all package endpoints on the given router group.
