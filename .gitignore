@@ -1,13 +1,12 @@
 # Environment secrets
 .env
 *.env.local
-.git
 
 # Binaries & build artifacts
 bin/
 dist/
-fincher
-seed
+/fincher
+/seed
 
 # SQLite databases & runtime locks
 *.db
