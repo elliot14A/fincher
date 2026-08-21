@@ -69,7 +69,7 @@ func TestTitles_HTTP_Lifecycle(t *testing.T) {
 		t.Fatalf("expected status 200, got %d", rec.Code)
 	}
 
-	var getRes ent.Title
+	var getRes models.Title
 	_ = json.Unmarshal(rec.Body.Bytes(), &getRes)
 	if getRes.Name != "Eclipse" || getRes.Territories != 40 {
 		t.Errorf("unexpected fetched title: %+v", getRes)
@@ -83,13 +83,13 @@ func TestTitles_HTTP_Lifecycle(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("expected status 200, got %d", rec.Code)
 	}
-	var listRes []ent.Title
+	var listRes []models.Title
 	_ = json.Unmarshal(rec.Body.Bytes(), &listRes)
 	if len(listRes) != 1 {
 		t.Errorf("expected 1 title in list, got %d", len(listRes))
 	}
 
-	// 4. PATCH /titles/:id (Partial Update - only overall_status)
+	// 4. PATCH /titles/:id (Partial Update)
 	patchStatus := models.StatusHold
 	patchReq := models.UpdateTitleInput{
 		OverallStatus: &patchStatus,
@@ -104,9 +104,9 @@ func TestTitles_HTTP_Lifecycle(t *testing.T) {
 		t.Fatalf("expected status 200 on partial update, got %d. body: %s", rec.Code, rec.Body.String())
 	}
 
-	var patchRes ent.Title
+	var patchRes models.Title
 	_ = json.Unmarshal(rec.Body.Bytes(), &patchRes)
-	if patchRes.OverallStatus != "HOLD" || patchRes.Name != "Eclipse" || patchRes.Territories != 40 {
+	if patchRes.OverallStatus != models.StatusHold || patchRes.Name != "Eclipse" || patchRes.Territories != 40 {
 		t.Errorf("partial update did not retain original fields: %+v", patchRes)
 	}
 

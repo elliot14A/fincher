@@ -9,6 +9,7 @@ import (
 	"github.com/elliot14A/fincher/pkg/domain/models"
 	"github.com/elliot14A/fincher/pkg/ent"
 	"github.com/elliot14A/fincher/pkg/turso"
+	"github.com/elliot14A/fincher/pkg/turso/masters"
 	"github.com/elliot14A/fincher/pkg/turso/titles"
 )
 
@@ -104,7 +105,7 @@ func TestTitles_EntCRUD(t *testing.T) {
 	}
 
 	updatedGet := titles.Get(ctx, client, "title-eclipse").Unwrap()
-	if updatedGet.Territories != 55 || updatedGet.OverallStatus != "HOLD" || updatedGet.Name != "Eclipse" {
+	if updatedGet.Territories != 55 || updatedGet.OverallStatus != models.StatusHold || updatedGet.Name != "Eclipse" {
 		t.Errorf("partial update not persisted correctly: %+v", updatedGet)
 	}
 
@@ -122,5 +123,41 @@ func TestTitles_EntCRUD(t *testing.T) {
 	var domErr *domainerrors.DomainError
 	if domErr = afterDelRes.Error().(*domainerrors.DomainError); domErr.Code != domainerrors.CodeNotFound {
 		t.Errorf("expected CodeNotFound, got %s", domErr.Code)
+	}
+}
+
+func TestTitles_FK_DeleteBlockedByDependents(t *testing.T) {
+	client := setupTestEnt(t)
+	defer client.Close()
+
+	ctx := context.Background()
+
+	// 1. Create Title
+	_ = titles.Create(ctx, client, &models.Title{
+		ID:                   "title-active",
+		Name:                 "Active Title",
+		Type:                 models.TitleTypeFeature,
+		PremiereDate:         time.Now().Add(24 * time.Hour),
+		Territories:          10,
+		CurrentMasterVersion: "V01",
+		OverallStatus:        models.StatusOnTrack,
+	})
+
+	// 2. Create Master referencing title-active
+	_ = masters.Create(ctx, client, &models.Master{
+		ID:      "master-active-v01",
+		TitleID: "title-active",
+		Version: "V01",
+	})
+
+	// 3. Deleting title-active must fail with CodeConflict (409)
+	delRes := titles.Delete(ctx, client, "title-active")
+	if delRes.IsOk() {
+		t.Fatalf("expected title delete to be blocked by dependent master")
+	}
+
+	domErr, ok := delRes.Error().(*domainerrors.DomainError)
+	if !ok || domErr.Code != domainerrors.CodeConflict {
+		t.Errorf("expected CodeConflict (409) for delete blocked by dependents, got: %v", delRes.Error())
 	}
 }

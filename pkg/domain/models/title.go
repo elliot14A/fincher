@@ -1,14 +1,8 @@
 package models
 
-import (
-	"time"
+import "time"
 
-	"github.com/go-playground/validator/v10"
-)
-
-var validate = validator.New()
-
-// TitleStatus represents the release readiness of a title on the LUME launch calendar.
+// TitleStatus represents the release readiness of a title.
 type TitleStatus string
 
 const (
@@ -19,7 +13,7 @@ const (
 	StatusShipped    TitleStatus = "SHIPPED"
 )
 
-// TitleType denotes the category of media release (Feature Film, Series, Special).
+// TitleType denotes the category of media release.
 type TitleType string
 
 const (
@@ -28,7 +22,7 @@ const (
 	TitleTypeSpecial TitleType = "SPECIAL"
 )
 
-// Title represents a media release entity on the LUME launch calendar.
+// Title represents a media release entity.
 type Title struct {
 	ID                   string      `json:"id" validate:"required"`
 	Name                 string      `json:"name" validate:"required"`
@@ -41,7 +35,7 @@ type Title struct {
 	UpdatedAt            time.Time   `json:"updated_at"`
 }
 
-// Validate verifies mandatory title constraints
+// Validate verifies title attributes.
 func (t *Title) Validate() error {
 	return validate.Struct(t)
 }

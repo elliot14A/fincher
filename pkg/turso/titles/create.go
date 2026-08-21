@@ -11,9 +11,9 @@ import (
 )
 
 // Create inserts a new title.
-func Create(ctx context.Context, client *ent.Client, t *models.Title) domainerrors.Result[*ent.Title] {
+func Create(ctx context.Context, client *ent.Client, t *models.Title) domainerrors.Result[*models.Title] {
 	if err := t.Validate(); err != nil {
-		return domainerrors.Err[*ent.Title](turso.NewError("titles.Create", domainerrors.CodeInvalidInput, "invalid title data", err))
+		return domainerrors.Err[*models.Title](turso.NewError("titles.Create", domainerrors.CodeInvalidInput, "invalid title data", err))
 	}
 
 	created, err := client.Title.Create().
@@ -27,8 +27,8 @@ func Create(ctx context.Context, client *ent.Client, t *models.Title) domainerro
 		Save(ctx)
 
 	if err != nil {
-		return domainerrors.Err[*ent.Title](turso.MapEntError("titles.Create", "title", t.ID, err))
+		return domainerrors.Err[*models.Title](turso.MapEntError("titles.Create", "title", t.ID, err))
 	}
 
-	return domainerrors.Ok(created)
+	return domainerrors.Ok(toDomain(created))
 }

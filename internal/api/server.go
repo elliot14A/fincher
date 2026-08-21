@@ -7,7 +7,10 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 
+	"github.com/elliot14A/fincher/internal/api/masters"
+	"github.com/elliot14A/fincher/internal/api/packages"
 	"github.com/elliot14A/fincher/internal/api/titles"
+	"github.com/elliot14A/fincher/internal/api/vendors"
 	"github.com/elliot14A/fincher/pkg/ent"
 )
 
@@ -24,7 +27,7 @@ func NewServer(client *ent.Client) *Server {
 	e.Use(middleware.Recover())
 	e.Use(middleware.CORS())
 
-	// Simple structured HTTP request logging
+	// Structured HTTP request logging
 	e.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
 		LogStatus:   true,
 		LogURI:      true,
@@ -67,7 +70,7 @@ func (s *Server) Router() *echo.Echo {
 	return s.echo
 }
 
-// registerRoutes wires all API endpoints.
+// registerRoutes wires all API endpoints via their respective entity route modules.
 func (s *Server) registerRoutes() {
 	s.echo.GET("/health", func(c echo.Context) error {
 		return c.JSON(200, map[string]string{
@@ -76,11 +79,8 @@ func (s *Server) registerRoutes() {
 		})
 	})
 
-	// Title REST routes
-	t := s.echo.Group("/titles")
-	t.POST("", titles.Create(s.client))
-	t.GET("", titles.List(s.client))
-	t.GET("/:id", titles.Get(s.client))
-	t.PATCH("/:id", titles.Update(s.client))
-	t.DELETE("/:id", titles.Delete(s.client))
+	titles.RegisterRoutes(s.echo.Group("/titles"), s.client)
+	masters.RegisterRoutes(s.echo.Group("/masters"), s.client)
+	vendors.RegisterRoutes(s.echo.Group("/vendors"), s.client)
+	packages.RegisterRoutes(s.echo.Group("/packages"), s.client)
 }

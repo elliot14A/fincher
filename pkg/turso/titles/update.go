@@ -11,9 +11,9 @@ import (
 )
 
 // Update modifies an existing title using partial input.
-func Update(ctx context.Context, client *ent.Client, id string, input *models.UpdateTitleInput) domainerrors.Result[*ent.Title] {
+func Update(ctx context.Context, client *ent.Client, id string, input *models.UpdateTitleInput) domainerrors.Result[*models.Title] {
 	if err := input.Validate(); err != nil {
-		return domainerrors.Err[*ent.Title](turso.NewError("titles.Update", domainerrors.CodeInvalidInput, "invalid title update input", err))
+		return domainerrors.Err[*models.Title](turso.NewError("titles.Update", domainerrors.CodeInvalidInput, "invalid title update input", err))
 	}
 
 	builder := client.Title.UpdateOneID(id)
@@ -39,8 +39,8 @@ func Update(ctx context.Context, client *ent.Client, id string, input *models.Up
 
 	updated, err := builder.Save(ctx)
 	if err != nil {
-		return domainerrors.Err[*ent.Title](turso.MapEntError("titles.Update", "title", id, err))
+		return domainerrors.Err[*models.Title](turso.MapEntError("titles.Update", "title", id, err))
 	}
 
-	return domainerrors.Ok(updated)
+	return domainerrors.Ok(toDomain(updated))
 }

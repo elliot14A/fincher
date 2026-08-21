@@ -2,46 +2,77 @@ package turso
 
 import (
 	"fmt"
+	"log/slog"
+	"strings"
 
 	domainerrors "github.com/elliot14A/fincher/pkg/domain/errors"
 	"github.com/elliot14A/fincher/pkg/ent"
 )
 
-// NewError creates a domain error.
-func NewError(op string, code domainerrors.ErrorCode, msg string, err error) *domainerrors.DomainError {
-	return &domainerrors.DomainError{
-		Code:    code,
-		Op:      "turso." + op,
-		Message: msg,
-		Err:     err,
-	}
+// NewError constructs a new domain error and logs it.
+func NewError(op string, code domainerrors.ErrorCode, message string, cause error) *domainerrors.DomainError {
+	domErr := domainerrors.NewWithOp(op, code, message, cause)
+	slog.Error("turso store error", "op", op, "code", code, "message", message, "cause", cause)
+	return domErr
 }
 
-// MapEntError maps database errors to domain errors.
-func MapEntError(op string, entityName string, id string, err error) error {
+// MapEntError converts Ent/database errors into domain errors and logs them.
+func MapEntError(op, entity, id string, err error) *domainerrors.DomainError {
 	if err == nil {
 		return nil
 	}
+
+	var domErr *domainerrors.DomainError
+
 	if ent.IsNotFound(err) {
-		return &domainerrors.DomainError{
-			Code:    domainerrors.CodeNotFound,
-			Op:      "turso." + op,
-			Message: fmt.Sprintf("%s with id '%s' not found", entityName, id),
-			Err:     err,
-		}
+		domErr = domainerrors.NewWithOp(
+			op,
+			domainerrors.CodeNotFound,
+			fmt.Sprintf("%s with id '%s' not found", entity, id),
+			err,
+		)
+		slog.Warn("record not found", "op", op, "entity", entity, "id", id)
+		return domErr
 	}
+
 	if ent.IsConstraintError(err) {
-		return &domainerrors.DomainError{
-			Code:    domainerrors.CodeAlreadyExists,
-			Op:      "turso." + op,
-			Message: fmt.Sprintf("%s constraint violation on id '%s'", entityName, id),
-			Err:     err,
+		errStr := strings.ToLower(err.Error())
+		isDelete := strings.Contains(strings.ToLower(op), "delete")
+
+		if strings.Contains(errStr, "foreign key") {
+			if isDelete {
+				domErr = domainerrors.NewWithOp(
+					op,
+					domainerrors.CodeConflict,
+					fmt.Sprintf("%s '%s' cannot be deleted because dependent records reference it", entity, id),
+					err,
+				)
+			} else {
+				domErr = domainerrors.NewWithOp(
+					op,
+					domainerrors.CodeInvalidInput,
+					fmt.Sprintf("%s foreign key reference invalid on id '%s'", entity, id),
+					err,
+				)
+			}
+		} else {
+			domErr = domainerrors.NewWithOp(
+				op,
+				domainerrors.CodeAlreadyExists,
+				fmt.Sprintf("%s constraint violation on id '%s'", entity, id),
+				err,
+			)
 		}
+		slog.Warn("constraint error", "op", op, "entity", entity, "id", id, "code", domErr.Code, "cause", err)
+		return domErr
 	}
-	return &domainerrors.DomainError{
-		Code:    domainerrors.CodeInternal,
-		Op:      "turso." + op,
-		Message: fmt.Sprintf("database error on %s", entityName),
-		Err:     err,
-	}
+
+	domErr = domainerrors.NewWithOp(
+		op,
+		domainerrors.CodeInternal,
+		fmt.Sprintf("database failure for %s '%s'", entity, id),
+		err,
+	)
+	slog.Error("database failure", "op", op, "entity", entity, "id", id, "cause", err)
+	return domErr
 }

@@ -19,12 +19,31 @@ const (
 	CodeUnauthorized    ErrorCode = "UNAUTHORIZED"
 )
 
-// DomainError represents a structured, contextual error in the system.
+// DomainError represents a structured, contextual error.
 type DomainError struct {
 	Code    ErrorCode `json:"code"`
 	Message string    `json:"message"`
 	Op      string    `json:"op,omitempty"`
 	Err     error     `json:"-"`
+}
+
+// New creates a DomainError.
+func New(code ErrorCode, message string, err error) *DomainError {
+	return &DomainError{
+		Code:    code,
+		Message: message,
+		Err:     err,
+	}
+}
+
+// NewWithOp creates a DomainError with an operation name.
+func NewWithOp(op string, code ErrorCode, message string, err error) *DomainError {
+	return &DomainError{
+		Code:    code,
+		Message: message,
+		Op:      op,
+		Err:     err,
+	}
 }
 
 func (e *DomainError) Error() string {
@@ -44,7 +63,7 @@ func (e *DomainError) Unwrap() error {
 	return e.Err
 }
 
-// Option represents an optional value (similar to Rust Option<T>).
+// Option represents an optional value.
 type Option[T any] struct {
 	val    T
 	isSome bool
@@ -78,7 +97,7 @@ func (o Option[T]) Unwrap() T {
 	return o.val
 }
 
-// UnwrapOr returns the contained value or a provided default.
+// UnwrapOr returns the contained value or a fallback.
 func (o Option[T]) UnwrapOr(fallback T) T {
 	if !o.isSome {
 		return fallback
@@ -86,12 +105,12 @@ func (o Option[T]) UnwrapOr(fallback T) T {
 	return o.val
 }
 
-// Value returns the value and a boolean ok flag.
+// Value returns the value and an exists flag.
 func (o Option[T]) Value() (T, bool) {
 	return o.val, o.isSome
 }
 
-// Result represents either success (Ok) or failure (Err) (similar to Rust Result<T, E>).
+// Result represents either success (Ok) or failure (Err).
 type Result[T any] struct {
 	val T
 	err error
@@ -125,7 +144,7 @@ func (r Result[T]) Unwrap() T {
 	return r.val
 }
 
-// UnwrapOr returns the value or a fallback if error.
+// UnwrapOr returns the value or a fallback.
 func (r Result[T]) UnwrapOr(fallback T) T {
 	if r.err != nil {
 		return fallback

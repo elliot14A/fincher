@@ -11,7 +11,7 @@ import (
 )
 
 // List fetches all titles, optionally filtered by overall status.
-func List(ctx context.Context, client *ent.Client, statusFilter domainerrors.Option[models.TitleStatus]) domainerrors.Result[[]*ent.Title] {
+func List(ctx context.Context, client *ent.Client, statusFilter domainerrors.Option[models.TitleStatus]) domainerrors.Result[[]*models.Title] {
 	query := client.Title.Query().Order(ent.Asc(enttitle.FieldPremiereDate))
 
 	if statusFilter.IsSome() {
@@ -20,8 +20,8 @@ func List(ctx context.Context, client *ent.Client, statusFilter domainerrors.Opt
 
 	titlesList, err := query.All(ctx)
 	if err != nil {
-		return domainerrors.Err[[]*ent.Title](turso.NewError("titles.List", domainerrors.CodeInternal, "failed to query titles", err))
+		return domainerrors.Err[[]*models.Title](turso.NewError("titles.List", domainerrors.CodeInternal, "failed to query titles", err))
 	}
 
-	return domainerrors.Ok(titlesList)
+	return domainerrors.Ok(toDomainList(titlesList))
 }
