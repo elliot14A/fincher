@@ -1,0 +1,1701 @@
+{
+    "produces": [
+        "application/json"
+    ],
+    "swagger": "2.0",
+    "info": {
+        "description": "Autonomous delivery-integrity workflow engine for LUME streaming operations.",
+        "title": "Fincher Media Delivery Operations API",
+        "contact": {},
+        "version": "1.0.0"
+    },
+    "basePath": "/api",
+    "paths": {
+        "/deliveries": {
+            "get": {
+                "description": "Fetches territory deliveries, optionally filtered by title, country, or status.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "deliveries"
+                ],
+                "summary": "List all territory deliveries",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Title ID filter",
+                        "name": "title_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Country code filter (e.g. US, ES, JP)",
+                        "name": "country",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Status filter (PENDING, READY_TO_SHIP, HOLD, SHIPPED)",
+                        "name": "status",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.Delivery"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.DomainError"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Schedules a territory release target with status and target premiere date.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "deliveries"
+                ],
+                "summary": "Create a territory delivery target",
+                "parameters": [
+                    {
+                        "description": "Delivery target payload",
+                        "name": "delivery",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.Delivery"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/models.Delivery"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.DomainError"
+                        }
+                    }
+                }
+            }
+        },
+        "/deliveries/{id}": {
+            "get": {
+                "description": "Fetches territory release status, carrier details, and target shipping date.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "deliveries"
+                ],
+                "summary": "Get delivery target by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Delivery ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Delivery"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.DomainError"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Removes a territory delivery entry.",
+                "tags": [
+                    "deliveries"
+                ],
+                "summary": "Delete a territory delivery target",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Delivery ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.DomainError"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "description": "Updates territory release shipping state (e.g. HOLD, READY_TO_SHIP) or metadata.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "deliveries"
+                ],
+                "summary": "Partial update of a delivery target",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Delivery ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Partial delivery update payload",
+                        "name": "update",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.UpdateDeliveryInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Delivery"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.DomainError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.DomainError"
+                        }
+                    }
+                }
+            }
+        },
+        "/dependencies": {
+            "get": {
+                "description": "Fetches dependency edges, optionally filtered by parent or child package ID.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "dependencies"
+                ],
+                "summary": "List all dependency edges",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Parent package ID",
+                        "name": "parent_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Child package ID",
+                        "name": "child_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.Dependency"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.DomainError"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Registers a lineage edge between two packages with cycle prevention and same-title checks.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "dependencies"
+                ],
+                "summary": "Create an immutable dependency edge",
+                "parameters": [
+                    {
+                        "description": "Dependency payload",
+                        "name": "dependency",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.Dependency"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/models.Dependency"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.DomainError"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/errors.DomainError"
+                        }
+                    }
+                }
+            }
+        },
+        "/dependencies/graph/{title_id}": {
+            "get": {
+                "description": "Traverses packages and dependency edges to build a recursive hierarchical tree from root video masters.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "dependencies"
+                ],
+                "summary": "Fetch lineage DAG tree for a title",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Title ID",
+                        "name": "title_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.LineageGraph"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.DomainError"
+                        }
+                    }
+                }
+            }
+        },
+        "/dependencies/{id}": {
+            "delete": {
+                "description": "Removes a lineage edge between parent and child media packages.",
+                "tags": [
+                    "dependencies"
+                ],
+                "summary": "Delete a dependency edge",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Dependency ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.DomainError"
+                        }
+                    }
+                }
+            }
+        },
+        "/masters": {
+            "get": {
+                "description": "Fetches master cut versions, optionally filtered by title_id.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "masters"
+                ],
+                "summary": "List all master cuts",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Title ID filter",
+                        "name": "title_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.Master"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.DomainError"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Publishes a new master cut and updates Title.current_master_version.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "masters"
+                ],
+                "summary": "Create an immutable master cut",
+                "parameters": [
+                    {
+                        "description": "Master payload",
+                        "name": "master",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.Master"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/models.Master"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.DomainError"
+                        }
+                    }
+                }
+            }
+        },
+        "/masters/{id}": {
+            "get": {
+                "description": "Fetches master cut version and supersedes metadata.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "masters"
+                ],
+                "summary": "Get master cut by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Master ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Master"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.DomainError"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Removes an unused master cut entry.",
+                "tags": [
+                    "masters"
+                ],
+                "summary": "Delete a master cut",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Master ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.DomainError"
+                        }
+                    }
+                }
+            }
+        },
+        "/packages": {
+            "get": {
+                "description": "Fetches media packages with optional filtering by title, vendor, component, or status.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "packages"
+                ],
+                "summary": "List all media packages",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Title ID filter",
+                        "name": "title_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Vendor ID filter",
+                        "name": "vendor_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Component filter (VIDEO, AUDIO, SUBTITLE, METADATA)",
+                        "name": "component",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Status filter (PENDING, VALID, INVALIDATED, RE_QC_PENDING)",
+                        "name": "status",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.Package"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.DomainError"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Registers a video, audio dub, or subtitle package derived from a master cut.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "packages"
+                ],
+                "summary": "Create a media package",
+                "parameters": [
+                    {
+                        "description": "Package payload",
+                        "name": "package",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.Package"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/models.Package"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.DomainError"
+                        }
+                    }
+                }
+            }
+        },
+        "/packages/{id}": {
+            "get": {
+                "description": "Fetches package component, language, vendor, and derived master version.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "packages"
+                ],
+                "summary": "Get media package by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Package ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Package"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.DomainError"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Removes a media package if no child dependencies exist.",
+                "tags": [
+                    "packages"
+                ],
+                "summary": "Delete a media package",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Package ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.DomainError"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/errors.DomainError"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "description": "Updates package status (e.g. RE_QC_PENDING, INVALIDATED), master version cut, or metadata.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "packages"
+                ],
+                "summary": "Partial update of a media package",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Package ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Partial package update payload",
+                        "name": "update",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.UpdatePackageInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Package"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.DomainError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.DomainError"
+                        }
+                    }
+                }
+            }
+        },
+        "/titles": {
+            "get": {
+                "description": "Fetches all releases in the launch calendar, optionally filtered by status.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "titles"
+                ],
+                "summary": "List all media titles",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Status filter (ON_TRACK, AT_RISK, HOLD, PROCESSING, SHIPPED)",
+                        "name": "status",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.Title"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.DomainError"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Inserts a new release title into the launch calendar.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "titles"
+                ],
+                "summary": "Create a media title",
+                "parameters": [
+                    {
+                        "description": "Title payload",
+                        "name": "title",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.Title"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/models.Title"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.DomainError"
+                        }
+                    }
+                }
+            }
+        },
+        "/titles/{id}": {
+            "get": {
+                "description": "Fetches detailed launch metadata for a specific title.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "titles"
+                ],
+                "summary": "Get media title by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Title ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Title"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.DomainError"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Removes a title if it has no dependent packages or masters.",
+                "tags": [
+                    "titles"
+                ],
+                "summary": "Delete a media title",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Title ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.DomainError"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/errors.DomainError"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "description": "Updates specific fields (overall_status, master version, metadata) on a title.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "titles"
+                ],
+                "summary": "Partial update of a media title",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Title ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Partial title updates",
+                        "name": "update",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.UpdateTitleInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Title"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.DomainError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.DomainError"
+                        }
+                    }
+                }
+            }
+        },
+        "/vendors": {
+            "get": {
+                "description": "Fetches registered vendors, optionally filtered by specialty.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "vendors"
+                ],
+                "summary": "List all vendors",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Specialty filter (e.g. AUDIO_DUBBING, SUBTITLES)",
+                        "name": "specialty",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.Vendor"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.DomainError"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Registers a localization, dubbing, or subtitling facility.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "vendors"
+                ],
+                "summary": "Create a post-production vendor",
+                "parameters": [
+                    {
+                        "description": "Vendor payload",
+                        "name": "vendor",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.Vendor"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/models.Vendor"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.DomainError"
+                        }
+                    }
+                }
+            }
+        },
+        "/vendors/{id}": {
+            "get": {
+                "description": "Fetches post facility metadata, specialty, and contact tags.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "vendors"
+                ],
+                "summary": "Get vendor by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Vendor ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Vendor"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.DomainError"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Removes a vendor if no dependent media packages exist.",
+                "tags": [
+                    "vendors"
+                ],
+                "summary": "Delete a vendor",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Vendor ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.DomainError"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/errors.DomainError"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "description": "Updates vendor name, specialty, or metadata tags.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "vendors"
+                ],
+                "summary": "Partial update of a vendor",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Vendor ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Partial vendor update payload",
+                        "name": "update",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.UpdateVendorInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Vendor"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.DomainError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.DomainError"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "errors.DomainError": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "$ref": "#/definitions/errors.ErrorCode"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "op": {
+                    "type": "string"
+                }
+            }
+        },
+        "errors.ErrorCode": {
+            "type": "string",
+            "enum": [
+                "NOT_FOUND",
+                "ALREADY_EXISTS",
+                "INVALID_INPUT",
+                "CONFLICT",
+                "INTERNAL",
+                "BUDGET_EXCEEDED",
+                "GATE_TERMINATED",
+                "UNAUTHENTICATED",
+                "UNAUTHORIZED"
+            ],
+            "x-enum-varnames": [
+                "CodeNotFound",
+                "CodeAlreadyExists",
+                "CodeInvalidInput",
+                "CodeConflict",
+                "CodeInternal",
+                "CodeBudgetExceeded",
+                "CodeGateTerminated",
+                "CodeUnauthenticated",
+                "CodeUnauthorized"
+            ]
+        },
+        "models.ComponentType": {
+            "type": "string",
+            "enum": [
+                "VIDEO",
+                "AUDIO",
+                "SUBTITLE",
+                "METADATA"
+            ],
+            "x-enum-varnames": [
+                "ComponentVideo",
+                "ComponentAudio",
+                "ComponentSubtitle",
+                "ComponentMetadata"
+            ]
+        },
+        "models.Delivery": {
+            "type": "object",
+            "required": [
+                "country",
+                "id",
+                "status",
+                "target_date",
+                "title_id"
+            ],
+            "properties": {
+                "country": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "metadata": {
+                    "type": "object",
+                    "additionalProperties": {}
+                },
+                "status": {
+                    "enum": [
+                        "PENDING",
+                        "READY_TO_SHIP",
+                        "HOLD",
+                        "SHIPPED"
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.DeliveryStatus"
+                        }
+                    ]
+                },
+                "target_date": {
+                    "type": "string"
+                },
+                "title_id": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.DeliveryStatus": {
+            "type": "string",
+            "enum": [
+                "PENDING",
+                "READY_TO_SHIP",
+                "HOLD",
+                "SHIPPED"
+            ],
+            "x-enum-varnames": [
+                "DeliveryStatusPending",
+                "DeliveryStatusReadyToShip",
+                "DeliveryStatusHold",
+                "DeliveryStatusShipped"
+            ]
+        },
+        "models.Dependency": {
+            "type": "object",
+            "required": [
+                "child_id",
+                "dependency_type",
+                "id",
+                "parent_id"
+            ],
+            "properties": {
+                "child_id": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "dependency_type": {
+                    "enum": [
+                        "AUDIO_SYNC",
+                        "SUBTITLE_ALIGNMENT",
+                        "MASTER_DERIVATION"
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.DependencyType"
+                        }
+                    ]
+                },
+                "id": {
+                    "type": "string"
+                },
+                "parent_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.DependencyType": {
+            "type": "string",
+            "enum": [
+                "AUDIO_SYNC",
+                "SUBTITLE_ALIGNMENT",
+                "MASTER_DERIVATION"
+            ],
+            "x-enum-varnames": [
+                "DependencyAudioSync",
+                "DependencySubtitleAlignment",
+                "DependencyMasterDerivation"
+            ]
+        },
+        "models.LineageGraph": {
+            "type": "object",
+            "properties": {
+                "roots": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.LineageNode"
+                    }
+                },
+                "title_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.LineageNode": {
+            "type": "object",
+            "properties": {
+                "children": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.LineageNode"
+                    }
+                },
+                "component": {
+                    "$ref": "#/definitions/models.ComponentType"
+                },
+                "dependency_type": {
+                    "$ref": "#/definitions/models.DependencyType"
+                },
+                "language": {
+                    "type": "string"
+                },
+                "package_id": {
+                    "type": "string"
+                },
+                "status": {
+                    "$ref": "#/definitions/models.PackageStatus"
+                },
+                "title_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.Master": {
+            "type": "object",
+            "required": [
+                "id",
+                "title_id",
+                "version"
+            ],
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "supersedes_version": {
+                    "type": "string"
+                },
+                "title_id": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.Package": {
+            "type": "object",
+            "required": [
+                "component",
+                "derived_from_master_version",
+                "id",
+                "language",
+                "status",
+                "title_id",
+                "vendor_id",
+                "version"
+            ],
+            "properties": {
+                "component": {
+                    "enum": [
+                        "VIDEO",
+                        "AUDIO",
+                        "SUBTITLE",
+                        "METADATA"
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.ComponentType"
+                        }
+                    ]
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "derived_from_master_version": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "language": {
+                    "type": "string"
+                },
+                "metadata": {
+                    "type": "object",
+                    "additionalProperties": {}
+                },
+                "redelivery_count": {
+                    "type": "integer",
+                    "minimum": 0
+                },
+                "status": {
+                    "enum": [
+                        "PENDING",
+                        "VALID",
+                        "INVALIDATED",
+                        "RE_QC_PENDING"
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.PackageStatus"
+                        }
+                    ]
+                },
+                "title_id": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "vendor_id": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.PackageStatus": {
+            "type": "string",
+            "enum": [
+                "PENDING",
+                "VALID",
+                "INVALIDATED",
+                "RE_QC_PENDING"
+            ],
+            "x-enum-varnames": [
+                "PackageStatusPending",
+                "PackageStatusValid",
+                "PackageStatusInvalidated",
+                "PackageStatusReQCPending"
+            ]
+        },
+        "models.Title": {
+            "type": "object",
+            "required": [
+                "current_master_version",
+                "id",
+                "name",
+                "overall_status",
+                "premiere_date",
+                "territories",
+                "type"
+            ],
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "current_master_version": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "metadata": {
+                    "type": "object",
+                    "additionalProperties": {}
+                },
+                "name": {
+                    "type": "string"
+                },
+                "overall_status": {
+                    "enum": [
+                        "ON_TRACK",
+                        "AT_RISK",
+                        "HOLD",
+                        "PROCESSING",
+                        "SHIPPED"
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.TitleStatus"
+                        }
+                    ]
+                },
+                "premiere_date": {
+                    "type": "string"
+                },
+                "territories": {
+                    "type": "integer",
+                    "minimum": 1
+                },
+                "type": {
+                    "enum": [
+                        "FEATURE",
+                        "SERIES",
+                        "SPECIAL"
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.TitleType"
+                        }
+                    ]
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.TitleStatus": {
+            "type": "string",
+            "enum": [
+                "ON_TRACK",
+                "AT_RISK",
+                "HOLD",
+                "PROCESSING",
+                "SHIPPED"
+            ],
+            "x-enum-varnames": [
+                "StatusOnTrack",
+                "StatusAtRisk",
+                "StatusHold",
+                "StatusProcessing",
+                "StatusShipped"
+            ]
+        },
+        "models.TitleType": {
+            "type": "string",
+            "enum": [
+                "FEATURE",
+                "SERIES",
+                "SPECIAL"
+            ],
+            "x-enum-varnames": [
+                "TitleTypeFeature",
+                "TitleTypeSeries",
+                "TitleTypeSpecial"
+            ]
+        },
+        "models.UpdateDeliveryInput": {
+            "type": "object",
+            "properties": {
+                "country": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "metadata": {
+                    "type": "object",
+                    "additionalProperties": {}
+                },
+                "status": {
+                    "enum": [
+                        "PENDING",
+                        "READY_TO_SHIP",
+                        "HOLD",
+                        "SHIPPED"
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.DeliveryStatus"
+                        }
+                    ]
+                },
+                "target_date": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.UpdatePackageInput": {
+            "type": "object",
+            "properties": {
+                "component": {
+                    "enum": [
+                        "VIDEO",
+                        "AUDIO",
+                        "SUBTITLE",
+                        "METADATA"
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.ComponentType"
+                        }
+                    ]
+                },
+                "derived_from_master_version": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "language": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "metadata": {
+                    "type": "object",
+                    "additionalProperties": {}
+                },
+                "redelivery_count": {
+                    "type": "integer",
+                    "minimum": 0
+                },
+                "status": {
+                    "enum": [
+                        "PENDING",
+                        "VALID",
+                        "INVALIDATED",
+                        "RE_QC_PENDING"
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.PackageStatus"
+                        }
+                    ]
+                },
+                "vendor_id": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "version": {
+                    "type": "string",
+                    "minLength": 1
+                }
+            }
+        },
+        "models.UpdateTitleInput": {
+            "type": "object",
+            "properties": {
+                "current_master_version": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "metadata": {
+                    "type": "object",
+                    "additionalProperties": {}
+                },
+                "name": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "overall_status": {
+                    "enum": [
+                        "ON_TRACK",
+                        "AT_RISK",
+                        "HOLD",
+                        "PROCESSING",
+                        "SHIPPED"
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.TitleStatus"
+                        }
+                    ]
+                },
+                "premiere_date": {
+                    "type": "string"
+                },
+                "territories": {
+                    "type": "integer",
+                    "minimum": 1
+                },
+                "type": {
+                    "enum": [
+                        "FEATURE",
+                        "SERIES",
+                        "SPECIAL"
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.TitleType"
+                        }
+                    ]
+                }
+            }
+        },
+        "models.UpdateVendorInput": {
+            "type": "object",
+            "properties": {
+                "metadata": {
+                    "type": "object",
+                    "additionalProperties": {}
+                },
+                "name": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "specialty": {
+                    "type": "string",
+                    "minLength": 1
+                }
+            }
+        },
+        "models.Vendor": {
+            "type": "object",
+            "required": [
+                "id",
+                "name",
+                "specialty"
+            ],
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "metadata": {
+                    "type": "object",
+                    "additionalProperties": {}
+                },
+                "name": {
+                    "type": "string"
+                },
+                "specialty": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+}
