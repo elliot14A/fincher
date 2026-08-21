@@ -1,6 +1,9 @@
 package api
 
 import (
+	"log/slog"
+	"time"
+
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 
@@ -21,6 +24,35 @@ func NewServer(client *ent.Client) *Server {
 	e.Use(middleware.Recover())
 	e.Use(middleware.CORS())
 
+	// Simple structured HTTP request logging
+	e.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
+		LogStatus:   true,
+		LogURI:      true,
+		LogMethod:   true,
+		LogLatency:  true,
+		LogError:    true,
+		HandleError: true,
+		LogValuesFunc: func(c echo.Context, v middleware.RequestLoggerValues) error {
+			if v.Error != nil {
+				slog.Error("http request error",
+					"method", v.Method,
+					"uri", v.URI,
+					"status", v.Status,
+					"latency_ms", v.Latency.Milliseconds(),
+					"error", v.Error,
+				)
+			} else {
+				slog.Info("http request",
+					"method", v.Method,
+					"uri", v.URI,
+					"status", v.Status,
+					"latency_ms", v.Latency.Milliseconds(),
+				)
+			}
+			return nil
+		},
+	}))
+
 	s := &Server{
 		echo:   e,
 		client: client,
@@ -37,9 +69,11 @@ func (s *Server) Router() *echo.Echo {
 
 // registerRoutes wires all API endpoints.
 func (s *Server) registerRoutes() {
-	// Health check
 	s.echo.GET("/health", func(c echo.Context) error {
-		return c.JSON(200, map[string]string{"status": "ok"})
+		return c.JSON(200, map[string]string{
+			"status": "ok",
+			"time":   time.Now().UTC().Format(time.RFC3339),
+		})
 	})
 
 	// Title REST routes

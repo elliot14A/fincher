@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -56,6 +57,8 @@ func Open(dbURL, authToken string) (*ent.Client, error) {
 		return nil, fmt.Errorf("pinging database: %w", err)
 	}
 
+	slog.Info("connected to database", "driver", driverName, "url", dbURL)
+
 	drv := entsql.OpenDB(dialect.SQLite, db)
 	client := ent.NewClient(ent.Driver(drv))
 
@@ -64,8 +67,10 @@ func Open(dbURL, authToken string) (*ent.Client, error) {
 
 // AutoMigrate executes schema migrations.
 func AutoMigrate(ctx context.Context, client *ent.Client) error {
+	start := time.Now()
 	if err := client.Schema.Create(ctx); err != nil {
 		return fmt.Errorf("running automigration: %w", err)
 	}
+	slog.Info("schema migration completed", "duration_ms", time.Since(start).Milliseconds())
 	return nil
 }
