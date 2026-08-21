@@ -299,12 +299,12 @@ func (_q *VendorQuery) WithPackages(opts ...func(*MediaPackageQuery)) *VendorQue
 // Example:
 //
 //	var v []struct {
-//		Name string `json:"name,omitempty"`
+//		Metadata map[string]interface {} `json:"metadata,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.Vendor.Query().
-//		GroupBy(vendor.FieldName).
+//		GroupBy(vendor.FieldMetadata).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (_q *VendorQuery) GroupBy(field string, fields ...string) *VendorGroupBy {
@@ -322,11 +322,11 @@ func (_q *VendorQuery) GroupBy(field string, fields ...string) *VendorGroupBy {
 // Example:
 //
 //	var v []struct {
-//		Name string `json:"name,omitempty"`
+//		Metadata map[string]interface {} `json:"metadata,omitempty"`
 //	}
 //
 //	client.Vendor.Query().
-//		Select(vendor.FieldName).
+//		Select(vendor.FieldMetadata).
 //		Scan(ctx, &v)
 func (_q *VendorQuery) Select(fields ...string) *VendorSelect {
 	_q.ctx.Fields = append(_q.ctx.Fields, fields...)

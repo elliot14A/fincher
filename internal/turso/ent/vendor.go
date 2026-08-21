@@ -3,6 +3,7 @@
 package ent
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -17,14 +18,16 @@ type Vendor struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID string `json:"id,omitempty"`
-	// Name holds the value of the "name" field.
-	Name string `json:"name,omitempty"`
-	// Specialty holds the value of the "specialty" field.
-	Specialty string `json:"specialty,omitempty"`
+	// Metadata holds the value of the "metadata" field.
+	Metadata map[string]interface{} `json:"metadata,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// UpdatedAt holds the value of the "updated_at" field.
 	UpdatedAt time.Time `json:"updated_at,omitempty"`
+	// Name holds the value of the "name" field.
+	Name string `json:"name,omitempty"`
+	// Specialty holds the value of the "specialty" field.
+	Specialty string `json:"specialty,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the VendorQuery when eager-loading is set.
 	Edges        VendorEdges `json:"edges"`
@@ -54,6 +57,8 @@ func (*Vendor) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case vendor.FieldMetadata:
+			values[i] = new([]byte)
 		case vendor.FieldID, vendor.FieldName, vendor.FieldSpecialty:
 			values[i] = new(sql.NullString)
 		case vendor.FieldCreatedAt, vendor.FieldUpdatedAt:
@@ -79,17 +84,13 @@ func (_m *Vendor) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.ID = value.String
 			}
-		case vendor.FieldName:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field name", values[i])
-			} else if value.Valid {
-				_m.Name = value.String
-			}
-		case vendor.FieldSpecialty:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field specialty", values[i])
-			} else if value.Valid {
-				_m.Specialty = value.String
+		case vendor.FieldMetadata:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field metadata", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &_m.Metadata); err != nil {
+					return fmt.Errorf("unmarshal field metadata: %w", err)
+				}
 			}
 		case vendor.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -102,6 +103,18 @@ func (_m *Vendor) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
 			} else if value.Valid {
 				_m.UpdatedAt = value.Time
+			}
+		case vendor.FieldName:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field name", values[i])
+			} else if value.Valid {
+				_m.Name = value.String
+			}
+		case vendor.FieldSpecialty:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field specialty", values[i])
+			} else if value.Valid {
+				_m.Specialty = value.String
 			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
@@ -144,17 +157,20 @@ func (_m *Vendor) String() string {
 	var builder strings.Builder
 	builder.WriteString("Vendor(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
-	builder.WriteString("name=")
-	builder.WriteString(_m.Name)
-	builder.WriteString(", ")
-	builder.WriteString("specialty=")
-	builder.WriteString(_m.Specialty)
+	builder.WriteString("metadata=")
+	builder.WriteString(fmt.Sprintf("%v", _m.Metadata))
 	builder.WriteString(", ")
 	builder.WriteString("created_at=")
 	builder.WriteString(_m.CreatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("updated_at=")
 	builder.WriteString(_m.UpdatedAt.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("name=")
+	builder.WriteString(_m.Name)
+	builder.WriteString(", ")
+	builder.WriteString("specialty=")
+	builder.WriteString(_m.Specialty)
 	builder.WriteByte(')')
 	return builder.String()
 }

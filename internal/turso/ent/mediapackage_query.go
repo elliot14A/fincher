@@ -406,12 +406,12 @@ func (_q *MediaPackageQuery) WithParentDependencies(opts ...func(*DependencyQuer
 // Example:
 //
 //	var v []struct {
-//		TitleID string `json:"title_id,omitempty"`
+//		Metadata map[string]interface {} `json:"metadata,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.MediaPackage.Query().
-//		GroupBy(mediapackage.FieldTitleID).
+//		GroupBy(mediapackage.FieldMetadata).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (_q *MediaPackageQuery) GroupBy(field string, fields ...string) *MediaPackageGroupBy {
@@ -429,11 +429,11 @@ func (_q *MediaPackageQuery) GroupBy(field string, fields ...string) *MediaPacka
 // Example:
 //
 //	var v []struct {
-//		TitleID string `json:"title_id,omitempty"`
+//		Metadata map[string]interface {} `json:"metadata,omitempty"`
 //	}
 //
 //	client.MediaPackage.Query().
-//		Select(mediapackage.FieldTitleID).
+//		Select(mediapackage.FieldMetadata).
 //		Scan(ctx, &v)
 func (_q *MediaPackageQuery) Select(fields ...string) *MediaPackageSelect {
 	_q.ctx.Fields = append(_q.ctx.Fields, fields...)

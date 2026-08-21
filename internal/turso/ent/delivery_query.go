@@ -298,12 +298,12 @@ func (_q *DeliveryQuery) WithTitle(opts ...func(*TitleQuery)) *DeliveryQuery {
 // Example:
 //
 //	var v []struct {
-//		TitleID string `json:"title_id,omitempty"`
+//		Metadata map[string]interface {} `json:"metadata,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.Delivery.Query().
-//		GroupBy(delivery.FieldTitleID).
+//		GroupBy(delivery.FieldMetadata).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (_q *DeliveryQuery) GroupBy(field string, fields ...string) *DeliveryGroupBy {
@@ -321,11 +321,11 @@ func (_q *DeliveryQuery) GroupBy(field string, fields ...string) *DeliveryGroupB
 // Example:
 //
 //	var v []struct {
-//		TitleID string `json:"title_id,omitempty"`
+//		Metadata map[string]interface {} `json:"metadata,omitempty"`
 //	}
 //
 //	client.Delivery.Query().
-//		Select(delivery.FieldTitleID).
+//		Select(delivery.FieldMetadata).
 //		Scan(ctx, &v)
 func (_q *DeliveryQuery) Select(fields ...string) *DeliverySelect {
 	_q.ctx.Fields = append(_q.ctx.Fields, fields...)

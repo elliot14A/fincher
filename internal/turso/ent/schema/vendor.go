@@ -1,8 +1,6 @@
 package schema
 
 import (
-	"time"
-
 	"entgo.io/ent"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
@@ -13,23 +11,20 @@ type Vendor struct {
 	ent.Schema
 }
 
+// Mixin of the Vendor.
+func (Vendor) Mixin() []ent.Mixin {
+	return []ent.Mixin{
+		BaseMixin{},
+	}
+}
+
 // Fields of the Vendor.
 func (Vendor) Fields() []ent.Field {
 	return []ent.Field{
-		field.String("id").
-			Unique().
-			Immutable().
-			NotEmpty(),
 		field.String("name").
 			NotEmpty(),
 		field.String("specialty").
-			NotEmpty(), // e.g. "AUDIO_DUBBING", "SUBTITLES", "VIDEO_MASTERING"
-		field.Time("created_at").
-			Default(time.Now).
-			Immutable(),
-		field.Time("updated_at").
-			Default(time.Now).
-			UpdateDefault(time.Now),
+			NotEmpty(),
 	}
 }
 

@@ -3,6 +3,7 @@
 package ent
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -18,6 +19,12 @@ type Delivery struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID string `json:"id,omitempty"`
+	// Metadata holds the value of the "metadata" field.
+	Metadata map[string]interface{} `json:"metadata,omitempty"`
+	// CreatedAt holds the value of the "created_at" field.
+	CreatedAt time.Time `json:"created_at,omitempty"`
+	// UpdatedAt holds the value of the "updated_at" field.
+	UpdatedAt time.Time `json:"updated_at,omitempty"`
 	// TitleID holds the value of the "title_id" field.
 	TitleID string `json:"title_id,omitempty"`
 	// Country holds the value of the "country" field.
@@ -26,10 +33,6 @@ type Delivery struct {
 	Status delivery.Status `json:"status,omitempty"`
 	// TargetDate holds the value of the "target_date" field.
 	TargetDate time.Time `json:"target_date,omitempty"`
-	// CreatedAt holds the value of the "created_at" field.
-	CreatedAt time.Time `json:"created_at,omitempty"`
-	// UpdatedAt holds the value of the "updated_at" field.
-	UpdatedAt time.Time `json:"updated_at,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the DeliveryQuery when eager-loading is set.
 	Edges        DeliveryEdges `json:"edges"`
@@ -61,9 +64,11 @@ func (*Delivery) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case delivery.FieldMetadata:
+			values[i] = new([]byte)
 		case delivery.FieldID, delivery.FieldTitleID, delivery.FieldCountry, delivery.FieldStatus:
 			values[i] = new(sql.NullString)
-		case delivery.FieldTargetDate, delivery.FieldCreatedAt, delivery.FieldUpdatedAt:
+		case delivery.FieldCreatedAt, delivery.FieldUpdatedAt, delivery.FieldTargetDate:
 			values[i] = new(sql.NullTime)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -85,6 +90,26 @@ func (_m *Delivery) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value.Valid {
 				_m.ID = value.String
+			}
+		case delivery.FieldMetadata:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field metadata", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &_m.Metadata); err != nil {
+					return fmt.Errorf("unmarshal field metadata: %w", err)
+				}
+			}
+		case delivery.FieldCreatedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field created_at", values[i])
+			} else if value.Valid {
+				_m.CreatedAt = value.Time
+			}
+		case delivery.FieldUpdatedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
+			} else if value.Valid {
+				_m.UpdatedAt = value.Time
 			}
 		case delivery.FieldTitleID:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -109,18 +134,6 @@ func (_m *Delivery) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field target_date", values[i])
 			} else if value.Valid {
 				_m.TargetDate = value.Time
-			}
-		case delivery.FieldCreatedAt:
-			if value, ok := values[i].(*sql.NullTime); !ok {
-				return fmt.Errorf("unexpected type %T for field created_at", values[i])
-			} else if value.Valid {
-				_m.CreatedAt = value.Time
-			}
-		case delivery.FieldUpdatedAt:
-			if value, ok := values[i].(*sql.NullTime); !ok {
-				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
-			} else if value.Valid {
-				_m.UpdatedAt = value.Time
 			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
@@ -163,6 +176,15 @@ func (_m *Delivery) String() string {
 	var builder strings.Builder
 	builder.WriteString("Delivery(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
+	builder.WriteString("metadata=")
+	builder.WriteString(fmt.Sprintf("%v", _m.Metadata))
+	builder.WriteString(", ")
+	builder.WriteString("created_at=")
+	builder.WriteString(_m.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("updated_at=")
+	builder.WriteString(_m.UpdatedAt.Format(time.ANSIC))
+	builder.WriteString(", ")
 	builder.WriteString("title_id=")
 	builder.WriteString(_m.TitleID)
 	builder.WriteString(", ")
@@ -174,12 +196,6 @@ func (_m *Delivery) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("target_date=")
 	builder.WriteString(_m.TargetDate.Format(time.ANSIC))
-	builder.WriteString(", ")
-	builder.WriteString("created_at=")
-	builder.WriteString(_m.CreatedAt.Format(time.ANSIC))
-	builder.WriteString(", ")
-	builder.WriteString("updated_at=")
-	builder.WriteString(_m.UpdatedAt.Format(time.ANSIC))
 	builder.WriteByte(')')
 	return builder.String()
 }

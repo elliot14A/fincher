@@ -15,6 +15,12 @@ const (
 	Label = "media_package"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
+	// FieldMetadata holds the string denoting the metadata field in the database.
+	FieldMetadata = "metadata"
+	// FieldCreatedAt holds the string denoting the created_at field in the database.
+	FieldCreatedAt = "created_at"
+	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
+	FieldUpdatedAt = "updated_at"
 	// FieldTitleID holds the string denoting the title_id field in the database.
 	FieldTitleID = "title_id"
 	// FieldComponent holds the string denoting the component field in the database.
@@ -31,10 +37,6 @@ const (
 	FieldRedeliveryCount = "redelivery_count"
 	// FieldStatus holds the string denoting the status field in the database.
 	FieldStatus = "status"
-	// FieldCreatedAt holds the string denoting the created_at field in the database.
-	FieldCreatedAt = "created_at"
-	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
-	FieldUpdatedAt = "updated_at"
 	// EdgeTitle holds the string denoting the title edge name in mutations.
 	EdgeTitle = "title"
 	// EdgeVendor holds the string denoting the vendor edge name in mutations.
@@ -78,6 +80,9 @@ const (
 // Columns holds all SQL columns for mediapackage fields.
 var Columns = []string{
 	FieldID,
+	FieldMetadata,
+	FieldCreatedAt,
+	FieldUpdatedAt,
 	FieldTitleID,
 	FieldComponent,
 	FieldLanguage,
@@ -86,8 +91,6 @@ var Columns = []string{
 	FieldDerivedFromMasterVersion,
 	FieldRedeliveryCount,
 	FieldStatus,
-	FieldCreatedAt,
-	FieldUpdatedAt,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -101,6 +104,12 @@ func ValidColumn(column string) bool {
 }
 
 var (
+	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
+	DefaultCreatedAt func() time.Time
+	// DefaultUpdatedAt holds the default value on creation for the "updated_at" field.
+	DefaultUpdatedAt func() time.Time
+	// UpdateDefaultUpdatedAt holds the default value on update for the "updated_at" field.
+	UpdateDefaultUpdatedAt func() time.Time
 	// TitleIDValidator is a validator for the "title_id" field. It is called by the builders before save.
 	TitleIDValidator func(string) error
 	// LanguageValidator is a validator for the "language" field. It is called by the builders before save.
@@ -115,12 +124,6 @@ var (
 	DefaultRedeliveryCount int
 	// RedeliveryCountValidator is a validator for the "redelivery_count" field. It is called by the builders before save.
 	RedeliveryCountValidator func(int) error
-	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
-	DefaultCreatedAt func() time.Time
-	// DefaultUpdatedAt holds the default value on creation for the "updated_at" field.
-	DefaultUpdatedAt func() time.Time
-	// UpdateDefaultUpdatedAt holds the default value on update for the "updated_at" field.
-	UpdateDefaultUpdatedAt func() time.Time
 	// IDValidator is a validator for the "id" field. It is called by the builders before save.
 	IDValidator func(string) error
 )
@@ -186,6 +189,16 @@ func ByID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldID, opts...).ToFunc()
 }
 
+// ByCreatedAt orders the results by the created_at field.
+func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCreatedAt, opts...).ToFunc()
+}
+
+// ByUpdatedAt orders the results by the updated_at field.
+func ByUpdatedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldUpdatedAt, opts...).ToFunc()
+}
+
 // ByTitleID orders the results by the title_id field.
 func ByTitleID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldTitleID, opts...).ToFunc()
@@ -224,16 +237,6 @@ func ByRedeliveryCount(opts ...sql.OrderTermOption) OrderOption {
 // ByStatus orders the results by the status field.
 func ByStatus(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldStatus, opts...).ToFunc()
-}
-
-// ByCreatedAt orders the results by the created_at field.
-func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldCreatedAt, opts...).ToFunc()
-}
-
-// ByUpdatedAt orders the results by the updated_at field.
-func ByUpdatedAt(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldUpdatedAt, opts...).ToFunc()
 }
 
 // ByTitleField orders the results by title field.

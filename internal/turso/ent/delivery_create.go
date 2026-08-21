@@ -21,6 +21,40 @@ type DeliveryCreate struct {
 	hooks    []Hook
 }
 
+// SetMetadata sets the "metadata" field.
+func (_c *DeliveryCreate) SetMetadata(v map[string]interface{}) *DeliveryCreate {
+	_c.mutation.SetMetadata(v)
+	return _c
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (_c *DeliveryCreate) SetCreatedAt(v time.Time) *DeliveryCreate {
+	_c.mutation.SetCreatedAt(v)
+	return _c
+}
+
+// SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
+func (_c *DeliveryCreate) SetNillableCreatedAt(v *time.Time) *DeliveryCreate {
+	if v != nil {
+		_c.SetCreatedAt(*v)
+	}
+	return _c
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (_c *DeliveryCreate) SetUpdatedAt(v time.Time) *DeliveryCreate {
+	_c.mutation.SetUpdatedAt(v)
+	return _c
+}
+
+// SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
+func (_c *DeliveryCreate) SetNillableUpdatedAt(v *time.Time) *DeliveryCreate {
+	if v != nil {
+		_c.SetUpdatedAt(*v)
+	}
+	return _c
+}
+
 // SetTitleID sets the "title_id" field.
 func (_c *DeliveryCreate) SetTitleID(v string) *DeliveryCreate {
 	_c.mutation.SetTitleID(v)
@@ -50,34 +84,6 @@ func (_c *DeliveryCreate) SetNillableStatus(v *delivery.Status) *DeliveryCreate 
 // SetTargetDate sets the "target_date" field.
 func (_c *DeliveryCreate) SetTargetDate(v time.Time) *DeliveryCreate {
 	_c.mutation.SetTargetDate(v)
-	return _c
-}
-
-// SetCreatedAt sets the "created_at" field.
-func (_c *DeliveryCreate) SetCreatedAt(v time.Time) *DeliveryCreate {
-	_c.mutation.SetCreatedAt(v)
-	return _c
-}
-
-// SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
-func (_c *DeliveryCreate) SetNillableCreatedAt(v *time.Time) *DeliveryCreate {
-	if v != nil {
-		_c.SetCreatedAt(*v)
-	}
-	return _c
-}
-
-// SetUpdatedAt sets the "updated_at" field.
-func (_c *DeliveryCreate) SetUpdatedAt(v time.Time) *DeliveryCreate {
-	_c.mutation.SetUpdatedAt(v)
-	return _c
-}
-
-// SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
-func (_c *DeliveryCreate) SetNillableUpdatedAt(v *time.Time) *DeliveryCreate {
-	if v != nil {
-		_c.SetUpdatedAt(*v)
-	}
 	return _c
 }
 
@@ -127,10 +133,6 @@ func (_c *DeliveryCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (_c *DeliveryCreate) defaults() {
-	if _, ok := _c.mutation.Status(); !ok {
-		v := delivery.DefaultStatus
-		_c.mutation.SetStatus(v)
-	}
 	if _, ok := _c.mutation.CreatedAt(); !ok {
 		v := delivery.DefaultCreatedAt()
 		_c.mutation.SetCreatedAt(v)
@@ -139,10 +141,20 @@ func (_c *DeliveryCreate) defaults() {
 		v := delivery.DefaultUpdatedAt()
 		_c.mutation.SetUpdatedAt(v)
 	}
+	if _, ok := _c.mutation.Status(); !ok {
+		v := delivery.DefaultStatus
+		_c.mutation.SetStatus(v)
+	}
 }
 
 // check runs all checks and user-defined validators on the builder.
 func (_c *DeliveryCreate) check() error {
+	if _, ok := _c.mutation.CreatedAt(); !ok {
+		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Delivery.created_at"`)}
+	}
+	if _, ok := _c.mutation.UpdatedAt(); !ok {
+		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "Delivery.updated_at"`)}
+	}
 	if _, ok := _c.mutation.TitleID(); !ok {
 		return &ValidationError{Name: "title_id", err: errors.New(`ent: missing required field "Delivery.title_id"`)}
 	}
@@ -169,12 +181,6 @@ func (_c *DeliveryCreate) check() error {
 	}
 	if _, ok := _c.mutation.TargetDate(); !ok {
 		return &ValidationError{Name: "target_date", err: errors.New(`ent: missing required field "Delivery.target_date"`)}
-	}
-	if _, ok := _c.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Delivery.created_at"`)}
-	}
-	if _, ok := _c.mutation.UpdatedAt(); !ok {
-		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "Delivery.updated_at"`)}
 	}
 	if v, ok := _c.mutation.ID(); ok {
 		if err := delivery.IDValidator(v); err != nil {
@@ -219,6 +225,18 @@ func (_c *DeliveryCreate) createSpec() (*Delivery, *sqlgraph.CreateSpec) {
 		_node.ID = id
 		_spec.ID.Value = id
 	}
+	if value, ok := _c.mutation.Metadata(); ok {
+		_spec.SetField(delivery.FieldMetadata, field.TypeJSON, value)
+		_node.Metadata = value
+	}
+	if value, ok := _c.mutation.CreatedAt(); ok {
+		_spec.SetField(delivery.FieldCreatedAt, field.TypeTime, value)
+		_node.CreatedAt = value
+	}
+	if value, ok := _c.mutation.UpdatedAt(); ok {
+		_spec.SetField(delivery.FieldUpdatedAt, field.TypeTime, value)
+		_node.UpdatedAt = value
+	}
 	if value, ok := _c.mutation.Country(); ok {
 		_spec.SetField(delivery.FieldCountry, field.TypeString, value)
 		_node.Country = value
@@ -230,14 +248,6 @@ func (_c *DeliveryCreate) createSpec() (*Delivery, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.TargetDate(); ok {
 		_spec.SetField(delivery.FieldTargetDate, field.TypeTime, value)
 		_node.TargetDate = value
-	}
-	if value, ok := _c.mutation.CreatedAt(); ok {
-		_spec.SetField(delivery.FieldCreatedAt, field.TypeTime, value)
-		_node.CreatedAt = value
-	}
-	if value, ok := _c.mutation.UpdatedAt(); ok {
-		_spec.SetField(delivery.FieldUpdatedAt, field.TypeTime, value)
-		_node.UpdatedAt = value
 	}
 	if nodes := _c.mutation.TitleIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

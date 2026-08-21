@@ -23,6 +23,40 @@ type TitleCreate struct {
 	hooks    []Hook
 }
 
+// SetMetadata sets the "metadata" field.
+func (_c *TitleCreate) SetMetadata(v map[string]interface{}) *TitleCreate {
+	_c.mutation.SetMetadata(v)
+	return _c
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (_c *TitleCreate) SetCreatedAt(v time.Time) *TitleCreate {
+	_c.mutation.SetCreatedAt(v)
+	return _c
+}
+
+// SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
+func (_c *TitleCreate) SetNillableCreatedAt(v *time.Time) *TitleCreate {
+	if v != nil {
+		_c.SetCreatedAt(*v)
+	}
+	return _c
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (_c *TitleCreate) SetUpdatedAt(v time.Time) *TitleCreate {
+	_c.mutation.SetUpdatedAt(v)
+	return _c
+}
+
+// SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
+func (_c *TitleCreate) SetNillableUpdatedAt(v *time.Time) *TitleCreate {
+	if v != nil {
+		_c.SetUpdatedAt(*v)
+	}
+	return _c
+}
+
 // SetName sets the "name" field.
 func (_c *TitleCreate) SetName(v string) *TitleCreate {
 	_c.mutation.SetName(v)
@@ -79,34 +113,6 @@ func (_c *TitleCreate) SetOverallStatus(v title.OverallStatus) *TitleCreate {
 func (_c *TitleCreate) SetNillableOverallStatus(v *title.OverallStatus) *TitleCreate {
 	if v != nil {
 		_c.SetOverallStatus(*v)
-	}
-	return _c
-}
-
-// SetCreatedAt sets the "created_at" field.
-func (_c *TitleCreate) SetCreatedAt(v time.Time) *TitleCreate {
-	_c.mutation.SetCreatedAt(v)
-	return _c
-}
-
-// SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
-func (_c *TitleCreate) SetNillableCreatedAt(v *time.Time) *TitleCreate {
-	if v != nil {
-		_c.SetCreatedAt(*v)
-	}
-	return _c
-}
-
-// SetUpdatedAt sets the "updated_at" field.
-func (_c *TitleCreate) SetUpdatedAt(v time.Time) *TitleCreate {
-	_c.mutation.SetUpdatedAt(v)
-	return _c
-}
-
-// SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
-func (_c *TitleCreate) SetNillableUpdatedAt(v *time.Time) *TitleCreate {
-	if v != nil {
-		_c.SetUpdatedAt(*v)
 	}
 	return _c
 }
@@ -197,6 +203,14 @@ func (_c *TitleCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (_c *TitleCreate) defaults() {
+	if _, ok := _c.mutation.CreatedAt(); !ok {
+		v := title.DefaultCreatedAt()
+		_c.mutation.SetCreatedAt(v)
+	}
+	if _, ok := _c.mutation.UpdatedAt(); !ok {
+		v := title.DefaultUpdatedAt()
+		_c.mutation.SetUpdatedAt(v)
+	}
 	if _, ok := _c.mutation.GetType(); !ok {
 		v := title.DefaultType
 		_c.mutation.SetType(v)
@@ -209,18 +223,16 @@ func (_c *TitleCreate) defaults() {
 		v := title.DefaultOverallStatus
 		_c.mutation.SetOverallStatus(v)
 	}
-	if _, ok := _c.mutation.CreatedAt(); !ok {
-		v := title.DefaultCreatedAt()
-		_c.mutation.SetCreatedAt(v)
-	}
-	if _, ok := _c.mutation.UpdatedAt(); !ok {
-		v := title.DefaultUpdatedAt()
-		_c.mutation.SetUpdatedAt(v)
-	}
 }
 
 // check runs all checks and user-defined validators on the builder.
 func (_c *TitleCreate) check() error {
+	if _, ok := _c.mutation.CreatedAt(); !ok {
+		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Title.created_at"`)}
+	}
+	if _, ok := _c.mutation.UpdatedAt(); !ok {
+		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "Title.updated_at"`)}
+	}
 	if _, ok := _c.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "Title.name"`)}
 	}
@@ -264,12 +276,6 @@ func (_c *TitleCreate) check() error {
 			return &ValidationError{Name: "overall_status", err: fmt.Errorf(`ent: validator failed for field "Title.overall_status": %w`, err)}
 		}
 	}
-	if _, ok := _c.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Title.created_at"`)}
-	}
-	if _, ok := _c.mutation.UpdatedAt(); !ok {
-		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "Title.updated_at"`)}
-	}
 	if v, ok := _c.mutation.ID(); ok {
 		if err := title.IDValidator(v); err != nil {
 			return &ValidationError{Name: "id", err: fmt.Errorf(`ent: validator failed for field "Title.id": %w`, err)}
@@ -310,6 +316,18 @@ func (_c *TitleCreate) createSpec() (*Title, *sqlgraph.CreateSpec) {
 		_node.ID = id
 		_spec.ID.Value = id
 	}
+	if value, ok := _c.mutation.Metadata(); ok {
+		_spec.SetField(title.FieldMetadata, field.TypeJSON, value)
+		_node.Metadata = value
+	}
+	if value, ok := _c.mutation.CreatedAt(); ok {
+		_spec.SetField(title.FieldCreatedAt, field.TypeTime, value)
+		_node.CreatedAt = value
+	}
+	if value, ok := _c.mutation.UpdatedAt(); ok {
+		_spec.SetField(title.FieldUpdatedAt, field.TypeTime, value)
+		_node.UpdatedAt = value
+	}
 	if value, ok := _c.mutation.Name(); ok {
 		_spec.SetField(title.FieldName, field.TypeString, value)
 		_node.Name = value
@@ -333,14 +351,6 @@ func (_c *TitleCreate) createSpec() (*Title, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.OverallStatus(); ok {
 		_spec.SetField(title.FieldOverallStatus, field.TypeEnum, value)
 		_node.OverallStatus = value
-	}
-	if value, ok := _c.mutation.CreatedAt(); ok {
-		_spec.SetField(title.FieldCreatedAt, field.TypeTime, value)
-		_node.CreatedAt = value
-	}
-	if value, ok := _c.mutation.UpdatedAt(); ok {
-		_spec.SetField(title.FieldUpdatedAt, field.TypeTime, value)
-		_node.UpdatedAt = value
 	}
 	if nodes := _c.mutation.MastersIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

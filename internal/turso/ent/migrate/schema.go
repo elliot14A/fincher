@@ -11,11 +11,12 @@ var (
 	// DeliveriesColumns holds the columns for the "deliveries" table.
 	DeliveriesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeString, Unique: true},
+		{Name: "metadata", Type: field.TypeJSON, Nullable: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "country", Type: field.TypeString},
 		{Name: "status", Type: field.TypeEnum, Enums: []string{"PENDING", "READY_TO_SHIP", "HOLD", "SHIPPED"}, Default: "PENDING"},
 		{Name: "target_date", Type: field.TypeTime},
-		{Name: "created_at", Type: field.TypeTime},
-		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "title_id", Type: field.TypeString},
 	}
 	// DeliveriesTable holds the schema information for the "deliveries" table.
@@ -26,7 +27,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "deliveries_titles_deliveries",
-				Columns:    []*schema.Column{DeliveriesColumns[6]},
+				Columns:    []*schema.Column{DeliveriesColumns[7]},
 				RefColumns: []*schema.Column{TitlesColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -85,14 +86,15 @@ var (
 	// MediaPackagesColumns holds the columns for the "media_packages" table.
 	MediaPackagesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeString, Unique: true},
+		{Name: "metadata", Type: field.TypeJSON, Nullable: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "component", Type: field.TypeEnum, Enums: []string{"VIDEO", "AUDIO", "SUBTITLE", "METADATA"}},
 		{Name: "language", Type: field.TypeString},
 		{Name: "version", Type: field.TypeString},
 		{Name: "derived_from_master_version", Type: field.TypeString},
 		{Name: "redelivery_count", Type: field.TypeInt, Default: 0},
 		{Name: "status", Type: field.TypeEnum, Enums: []string{"PENDING", "VALID", "INVALIDATED", "RE_QC_PENDING"}, Default: "PENDING"},
-		{Name: "created_at", Type: field.TypeTime},
-		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "title_id", Type: field.TypeString},
 		{Name: "vendor_id", Type: field.TypeString},
 	}
@@ -104,13 +106,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "media_packages_titles_packages",
-				Columns:    []*schema.Column{MediaPackagesColumns[9]},
+				Columns:    []*schema.Column{MediaPackagesColumns[10]},
 				RefColumns: []*schema.Column{TitlesColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "media_packages_vendors_packages",
-				Columns:    []*schema.Column{MediaPackagesColumns[10]},
+				Columns:    []*schema.Column{MediaPackagesColumns[11]},
 				RefColumns: []*schema.Column{VendorsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -119,14 +121,15 @@ var (
 	// TitlesColumns holds the columns for the "titles" table.
 	TitlesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeString, Unique: true},
+		{Name: "metadata", Type: field.TypeJSON, Nullable: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "name", Type: field.TypeString},
 		{Name: "type", Type: field.TypeEnum, Enums: []string{"FEATURE", "SERIES", "SPECIAL"}, Default: "FEATURE"},
 		{Name: "premiere_date", Type: field.TypeTime},
 		{Name: "territories", Type: field.TypeInt, Default: 1},
 		{Name: "current_master_version", Type: field.TypeString},
 		{Name: "overall_status", Type: field.TypeEnum, Enums: []string{"ON_TRACK", "AT_RISK", "HOLD", "PROCESSING", "SHIPPED"}, Default: "PROCESSING"},
-		{Name: "created_at", Type: field.TypeTime},
-		{Name: "updated_at", Type: field.TypeTime},
 	}
 	// TitlesTable holds the schema information for the "titles" table.
 	TitlesTable = &schema.Table{
@@ -137,10 +140,11 @@ var (
 	// VendorsColumns holds the columns for the "vendors" table.
 	VendorsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeString, Unique: true},
-		{Name: "name", Type: field.TypeString},
-		{Name: "specialty", Type: field.TypeString},
+		{Name: "metadata", Type: field.TypeJSON, Nullable: true},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "name", Type: field.TypeString},
+		{Name: "specialty", Type: field.TypeString},
 	}
 	// VendorsTable holds the schema information for the "vendors" table.
 	VendorsTable = &schema.Table{

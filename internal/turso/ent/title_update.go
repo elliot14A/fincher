@@ -31,6 +31,24 @@ func (_u *TitleUpdate) Where(ps ...predicate.Title) *TitleUpdate {
 	return _u
 }
 
+// SetMetadata sets the "metadata" field.
+func (_u *TitleUpdate) SetMetadata(v map[string]interface{}) *TitleUpdate {
+	_u.mutation.SetMetadata(v)
+	return _u
+}
+
+// ClearMetadata clears the value of the "metadata" field.
+func (_u *TitleUpdate) ClearMetadata() *TitleUpdate {
+	_u.mutation.ClearMetadata()
+	return _u
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (_u *TitleUpdate) SetUpdatedAt(v time.Time) *TitleUpdate {
+	_u.mutation.SetUpdatedAt(v)
+	return _u
+}
+
 // SetName sets the "name" field.
 func (_u *TitleUpdate) SetName(v string) *TitleUpdate {
 	_u.mutation.SetName(v)
@@ -119,12 +137,6 @@ func (_u *TitleUpdate) SetNillableOverallStatus(v *title.OverallStatus) *TitleUp
 	if v != nil {
 		_u.SetOverallStatus(*v)
 	}
-	return _u
-}
-
-// SetUpdatedAt sets the "updated_at" field.
-func (_u *TitleUpdate) SetUpdatedAt(v time.Time) *TitleUpdate {
-	_u.mutation.SetUpdatedAt(v)
 	return _u
 }
 
@@ -319,6 +331,15 @@ func (_u *TitleUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			}
 		}
 	}
+	if value, ok := _u.mutation.Metadata(); ok {
+		_spec.SetField(title.FieldMetadata, field.TypeJSON, value)
+	}
+	if _u.mutation.MetadataCleared() {
+		_spec.ClearField(title.FieldMetadata, field.TypeJSON)
+	}
+	if value, ok := _u.mutation.UpdatedAt(); ok {
+		_spec.SetField(title.FieldUpdatedAt, field.TypeTime, value)
+	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(title.FieldName, field.TypeString, value)
 	}
@@ -339,9 +360,6 @@ func (_u *TitleUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.OverallStatus(); ok {
 		_spec.SetField(title.FieldOverallStatus, field.TypeEnum, value)
-	}
-	if value, ok := _u.mutation.UpdatedAt(); ok {
-		_spec.SetField(title.FieldUpdatedAt, field.TypeTime, value)
 	}
 	if _u.mutation.MastersCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -498,6 +516,24 @@ type TitleUpdateOne struct {
 	mutation *TitleMutation
 }
 
+// SetMetadata sets the "metadata" field.
+func (_u *TitleUpdateOne) SetMetadata(v map[string]interface{}) *TitleUpdateOne {
+	_u.mutation.SetMetadata(v)
+	return _u
+}
+
+// ClearMetadata clears the value of the "metadata" field.
+func (_u *TitleUpdateOne) ClearMetadata() *TitleUpdateOne {
+	_u.mutation.ClearMetadata()
+	return _u
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (_u *TitleUpdateOne) SetUpdatedAt(v time.Time) *TitleUpdateOne {
+	_u.mutation.SetUpdatedAt(v)
+	return _u
+}
+
 // SetName sets the "name" field.
 func (_u *TitleUpdateOne) SetName(v string) *TitleUpdateOne {
 	_u.mutation.SetName(v)
@@ -586,12 +622,6 @@ func (_u *TitleUpdateOne) SetNillableOverallStatus(v *title.OverallStatus) *Titl
 	if v != nil {
 		_u.SetOverallStatus(*v)
 	}
-	return _u
-}
-
-// SetUpdatedAt sets the "updated_at" field.
-func (_u *TitleUpdateOne) SetUpdatedAt(v time.Time) *TitleUpdateOne {
-	_u.mutation.SetUpdatedAt(v)
 	return _u
 }
 
@@ -816,6 +846,15 @@ func (_u *TitleUpdateOne) sqlSave(ctx context.Context) (_node *Title, err error)
 			}
 		}
 	}
+	if value, ok := _u.mutation.Metadata(); ok {
+		_spec.SetField(title.FieldMetadata, field.TypeJSON, value)
+	}
+	if _u.mutation.MetadataCleared() {
+		_spec.ClearField(title.FieldMetadata, field.TypeJSON)
+	}
+	if value, ok := _u.mutation.UpdatedAt(); ok {
+		_spec.SetField(title.FieldUpdatedAt, field.TypeTime, value)
+	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(title.FieldName, field.TypeString, value)
 	}
@@ -836,9 +875,6 @@ func (_u *TitleUpdateOne) sqlSave(ctx context.Context) (_node *Title, err error)
 	}
 	if value, ok := _u.mutation.OverallStatus(); ok {
 		_spec.SetField(title.FieldOverallStatus, field.TypeEnum, value)
-	}
-	if value, ok := _u.mutation.UpdatedAt(); ok {
-		_spec.SetField(title.FieldUpdatedAt, field.TypeTime, value)
 	}
 	if _u.mutation.MastersCleared() {
 		edge := &sqlgraph.EdgeSpec{

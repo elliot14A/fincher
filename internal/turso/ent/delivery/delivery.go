@@ -15,6 +15,12 @@ const (
 	Label = "delivery"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
+	// FieldMetadata holds the string denoting the metadata field in the database.
+	FieldMetadata = "metadata"
+	// FieldCreatedAt holds the string denoting the created_at field in the database.
+	FieldCreatedAt = "created_at"
+	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
+	FieldUpdatedAt = "updated_at"
 	// FieldTitleID holds the string denoting the title_id field in the database.
 	FieldTitleID = "title_id"
 	// FieldCountry holds the string denoting the country field in the database.
@@ -23,10 +29,6 @@ const (
 	FieldStatus = "status"
 	// FieldTargetDate holds the string denoting the target_date field in the database.
 	FieldTargetDate = "target_date"
-	// FieldCreatedAt holds the string denoting the created_at field in the database.
-	FieldCreatedAt = "created_at"
-	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
-	FieldUpdatedAt = "updated_at"
 	// EdgeTitle holds the string denoting the title edge name in mutations.
 	EdgeTitle = "title"
 	// Table holds the table name of the delivery in the database.
@@ -43,12 +45,13 @@ const (
 // Columns holds all SQL columns for delivery fields.
 var Columns = []string{
 	FieldID,
+	FieldMetadata,
+	FieldCreatedAt,
+	FieldUpdatedAt,
 	FieldTitleID,
 	FieldCountry,
 	FieldStatus,
 	FieldTargetDate,
-	FieldCreatedAt,
-	FieldUpdatedAt,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -62,16 +65,16 @@ func ValidColumn(column string) bool {
 }
 
 var (
-	// TitleIDValidator is a validator for the "title_id" field. It is called by the builders before save.
-	TitleIDValidator func(string) error
-	// CountryValidator is a validator for the "country" field. It is called by the builders before save.
-	CountryValidator func(string) error
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
 	DefaultCreatedAt func() time.Time
 	// DefaultUpdatedAt holds the default value on creation for the "updated_at" field.
 	DefaultUpdatedAt func() time.Time
 	// UpdateDefaultUpdatedAt holds the default value on update for the "updated_at" field.
 	UpdateDefaultUpdatedAt func() time.Time
+	// TitleIDValidator is a validator for the "title_id" field. It is called by the builders before save.
+	TitleIDValidator func(string) error
+	// CountryValidator is a validator for the "country" field. It is called by the builders before save.
+	CountryValidator func(string) error
 	// IDValidator is a validator for the "id" field. It is called by the builders before save.
 	IDValidator func(string) error
 )
@@ -112,6 +115,16 @@ func ByID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldID, opts...).ToFunc()
 }
 
+// ByCreatedAt orders the results by the created_at field.
+func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCreatedAt, opts...).ToFunc()
+}
+
+// ByUpdatedAt orders the results by the updated_at field.
+func ByUpdatedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldUpdatedAt, opts...).ToFunc()
+}
+
 // ByTitleID orders the results by the title_id field.
 func ByTitleID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldTitleID, opts...).ToFunc()
@@ -130,16 +143,6 @@ func ByStatus(opts ...sql.OrderTermOption) OrderOption {
 // ByTargetDate orders the results by the target_date field.
 func ByTargetDate(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldTargetDate, opts...).ToFunc()
-}
-
-// ByCreatedAt orders the results by the created_at field.
-func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldCreatedAt, opts...).ToFunc()
-}
-
-// ByUpdatedAt orders the results by the updated_at field.
-func ByUpdatedAt(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldUpdatedAt, opts...).ToFunc()
 }
 
 // ByTitleField orders the results by title field.

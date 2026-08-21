@@ -31,6 +31,24 @@ func (_u *MediaPackageUpdate) Where(ps ...predicate.MediaPackage) *MediaPackageU
 	return _u
 }
 
+// SetMetadata sets the "metadata" field.
+func (_u *MediaPackageUpdate) SetMetadata(v map[string]interface{}) *MediaPackageUpdate {
+	_u.mutation.SetMetadata(v)
+	return _u
+}
+
+// ClearMetadata clears the value of the "metadata" field.
+func (_u *MediaPackageUpdate) ClearMetadata() *MediaPackageUpdate {
+	_u.mutation.ClearMetadata()
+	return _u
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (_u *MediaPackageUpdate) SetUpdatedAt(v time.Time) *MediaPackageUpdate {
+	_u.mutation.SetUpdatedAt(v)
+	return _u
+}
+
 // SetTitleID sets the "title_id" field.
 func (_u *MediaPackageUpdate) SetTitleID(v string) *MediaPackageUpdate {
 	_u.mutation.SetTitleID(v)
@@ -147,12 +165,6 @@ func (_u *MediaPackageUpdate) SetNillableStatus(v *mediapackage.Status) *MediaPa
 	if v != nil {
 		_u.SetStatus(*v)
 	}
-	return _u
-}
-
-// SetUpdatedAt sets the "updated_at" field.
-func (_u *MediaPackageUpdate) SetUpdatedAt(v time.Time) *MediaPackageUpdate {
-	_u.mutation.SetUpdatedAt(v)
 	return _u
 }
 
@@ -354,6 +366,15 @@ func (_u *MediaPackageUpdate) sqlSave(ctx context.Context) (_node int, err error
 			}
 		}
 	}
+	if value, ok := _u.mutation.Metadata(); ok {
+		_spec.SetField(mediapackage.FieldMetadata, field.TypeJSON, value)
+	}
+	if _u.mutation.MetadataCleared() {
+		_spec.ClearField(mediapackage.FieldMetadata, field.TypeJSON)
+	}
+	if value, ok := _u.mutation.UpdatedAt(); ok {
+		_spec.SetField(mediapackage.FieldUpdatedAt, field.TypeTime, value)
+	}
 	if value, ok := _u.mutation.Component(); ok {
 		_spec.SetField(mediapackage.FieldComponent, field.TypeEnum, value)
 	}
@@ -374,9 +395,6 @@ func (_u *MediaPackageUpdate) sqlSave(ctx context.Context) (_node int, err error
 	}
 	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(mediapackage.FieldStatus, field.TypeEnum, value)
-	}
-	if value, ok := _u.mutation.UpdatedAt(); ok {
-		_spec.SetField(mediapackage.FieldUpdatedAt, field.TypeTime, value)
 	}
 	if _u.mutation.TitleCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -546,6 +564,24 @@ type MediaPackageUpdateOne struct {
 	mutation *MediaPackageMutation
 }
 
+// SetMetadata sets the "metadata" field.
+func (_u *MediaPackageUpdateOne) SetMetadata(v map[string]interface{}) *MediaPackageUpdateOne {
+	_u.mutation.SetMetadata(v)
+	return _u
+}
+
+// ClearMetadata clears the value of the "metadata" field.
+func (_u *MediaPackageUpdateOne) ClearMetadata() *MediaPackageUpdateOne {
+	_u.mutation.ClearMetadata()
+	return _u
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (_u *MediaPackageUpdateOne) SetUpdatedAt(v time.Time) *MediaPackageUpdateOne {
+	_u.mutation.SetUpdatedAt(v)
+	return _u
+}
+
 // SetTitleID sets the "title_id" field.
 func (_u *MediaPackageUpdateOne) SetTitleID(v string) *MediaPackageUpdateOne {
 	_u.mutation.SetTitleID(v)
@@ -662,12 +698,6 @@ func (_u *MediaPackageUpdateOne) SetNillableStatus(v *mediapackage.Status) *Medi
 	if v != nil {
 		_u.SetStatus(*v)
 	}
-	return _u
-}
-
-// SetUpdatedAt sets the "updated_at" field.
-func (_u *MediaPackageUpdateOne) SetUpdatedAt(v time.Time) *MediaPackageUpdateOne {
-	_u.mutation.SetUpdatedAt(v)
 	return _u
 }
 
@@ -899,6 +929,15 @@ func (_u *MediaPackageUpdateOne) sqlSave(ctx context.Context) (_node *MediaPacka
 			}
 		}
 	}
+	if value, ok := _u.mutation.Metadata(); ok {
+		_spec.SetField(mediapackage.FieldMetadata, field.TypeJSON, value)
+	}
+	if _u.mutation.MetadataCleared() {
+		_spec.ClearField(mediapackage.FieldMetadata, field.TypeJSON)
+	}
+	if value, ok := _u.mutation.UpdatedAt(); ok {
+		_spec.SetField(mediapackage.FieldUpdatedAt, field.TypeTime, value)
+	}
 	if value, ok := _u.mutation.Component(); ok {
 		_spec.SetField(mediapackage.FieldComponent, field.TypeEnum, value)
 	}
@@ -919,9 +958,6 @@ func (_u *MediaPackageUpdateOne) sqlSave(ctx context.Context) (_node *MediaPacka
 	}
 	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(mediapackage.FieldStatus, field.TypeEnum, value)
-	}
-	if value, ok := _u.mutation.UpdatedAt(); ok {
-		_spec.SetField(mediapackage.FieldUpdatedAt, field.TypeTime, value)
 	}
 	if _u.mutation.TitleCleared() {
 		edge := &sqlgraph.EdgeSpec{

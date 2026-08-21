@@ -371,12 +371,12 @@ func (_q *TitleQuery) WithDeliveries(opts ...func(*DeliveryQuery)) *TitleQuery {
 // Example:
 //
 //	var v []struct {
-//		Name string `json:"name,omitempty"`
+//		Metadata map[string]interface {} `json:"metadata,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.Title.Query().
-//		GroupBy(title.FieldName).
+//		GroupBy(title.FieldMetadata).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (_q *TitleQuery) GroupBy(field string, fields ...string) *TitleGroupBy {
@@ -394,11 +394,11 @@ func (_q *TitleQuery) GroupBy(field string, fields ...string) *TitleGroupBy {
 // Example:
 //
 //	var v []struct {
-//		Name string `json:"name,omitempty"`
+//		Metadata map[string]interface {} `json:"metadata,omitempty"`
 //	}
 //
 //	client.Title.Query().
-//		Select(title.FieldName).
+//		Select(title.FieldMetadata).
 //		Scan(ctx, &v)
 func (_q *TitleQuery) Select(fields ...string) *TitleSelect {
 	_q.ctx.Fields = append(_q.ctx.Fields, fields...)

@@ -1,8 +1,6 @@
 package schema
 
 import (
-	"time"
-
 	"entgo.io/ent"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
@@ -13,13 +11,16 @@ type Title struct {
 	ent.Schema
 }
 
+// Mixin of the Title.
+func (Title) Mixin() []ent.Mixin {
+	return []ent.Mixin{
+		BaseMixin{},
+	}
+}
+
 // Fields of the Title.
 func (Title) Fields() []ent.Field {
 	return []ent.Field{
-		field.String("id").
-			Unique().
-			Immutable().
-			NotEmpty(),
 		field.String("name").
 			NotEmpty(),
 		field.Enum("type").
@@ -34,12 +35,6 @@ func (Title) Fields() []ent.Field {
 		field.Enum("overall_status").
 			Values("ON_TRACK", "AT_RISK", "HOLD", "PROCESSING", "SHIPPED").
 			Default("PROCESSING"),
-		field.Time("created_at").
-			Default(time.Now).
-			Immutable(),
-		field.Time("updated_at").
-			Default(time.Now).
-			UpdateDefault(time.Now),
 	}
 }
 

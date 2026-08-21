@@ -29,6 +29,24 @@ func (_u *VendorUpdate) Where(ps ...predicate.Vendor) *VendorUpdate {
 	return _u
 }
 
+// SetMetadata sets the "metadata" field.
+func (_u *VendorUpdate) SetMetadata(v map[string]interface{}) *VendorUpdate {
+	_u.mutation.SetMetadata(v)
+	return _u
+}
+
+// ClearMetadata clears the value of the "metadata" field.
+func (_u *VendorUpdate) ClearMetadata() *VendorUpdate {
+	_u.mutation.ClearMetadata()
+	return _u
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (_u *VendorUpdate) SetUpdatedAt(v time.Time) *VendorUpdate {
+	_u.mutation.SetUpdatedAt(v)
+	return _u
+}
+
 // SetName sets the "name" field.
 func (_u *VendorUpdate) SetName(v string) *VendorUpdate {
 	_u.mutation.SetName(v)
@@ -54,12 +72,6 @@ func (_u *VendorUpdate) SetNillableSpecialty(v *string) *VendorUpdate {
 	if v != nil {
 		_u.SetSpecialty(*v)
 	}
-	return _u
-}
-
-// SetUpdatedAt sets the "updated_at" field.
-func (_u *VendorUpdate) SetUpdatedAt(v time.Time) *VendorUpdate {
-	_u.mutation.SetUpdatedAt(v)
 	return _u
 }
 
@@ -167,14 +179,20 @@ func (_u *VendorUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			}
 		}
 	}
+	if value, ok := _u.mutation.Metadata(); ok {
+		_spec.SetField(vendor.FieldMetadata, field.TypeJSON, value)
+	}
+	if _u.mutation.MetadataCleared() {
+		_spec.ClearField(vendor.FieldMetadata, field.TypeJSON)
+	}
+	if value, ok := _u.mutation.UpdatedAt(); ok {
+		_spec.SetField(vendor.FieldUpdatedAt, field.TypeTime, value)
+	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(vendor.FieldName, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.Specialty(); ok {
 		_spec.SetField(vendor.FieldSpecialty, field.TypeString, value)
-	}
-	if value, ok := _u.mutation.UpdatedAt(); ok {
-		_spec.SetField(vendor.FieldUpdatedAt, field.TypeTime, value)
 	}
 	if _u.mutation.PackagesCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -241,6 +259,24 @@ type VendorUpdateOne struct {
 	mutation *VendorMutation
 }
 
+// SetMetadata sets the "metadata" field.
+func (_u *VendorUpdateOne) SetMetadata(v map[string]interface{}) *VendorUpdateOne {
+	_u.mutation.SetMetadata(v)
+	return _u
+}
+
+// ClearMetadata clears the value of the "metadata" field.
+func (_u *VendorUpdateOne) ClearMetadata() *VendorUpdateOne {
+	_u.mutation.ClearMetadata()
+	return _u
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (_u *VendorUpdateOne) SetUpdatedAt(v time.Time) *VendorUpdateOne {
+	_u.mutation.SetUpdatedAt(v)
+	return _u
+}
+
 // SetName sets the "name" field.
 func (_u *VendorUpdateOne) SetName(v string) *VendorUpdateOne {
 	_u.mutation.SetName(v)
@@ -266,12 +302,6 @@ func (_u *VendorUpdateOne) SetNillableSpecialty(v *string) *VendorUpdateOne {
 	if v != nil {
 		_u.SetSpecialty(*v)
 	}
-	return _u
-}
-
-// SetUpdatedAt sets the "updated_at" field.
-func (_u *VendorUpdateOne) SetUpdatedAt(v time.Time) *VendorUpdateOne {
-	_u.mutation.SetUpdatedAt(v)
 	return _u
 }
 
@@ -409,14 +439,20 @@ func (_u *VendorUpdateOne) sqlSave(ctx context.Context) (_node *Vendor, err erro
 			}
 		}
 	}
+	if value, ok := _u.mutation.Metadata(); ok {
+		_spec.SetField(vendor.FieldMetadata, field.TypeJSON, value)
+	}
+	if _u.mutation.MetadataCleared() {
+		_spec.ClearField(vendor.FieldMetadata, field.TypeJSON)
+	}
+	if value, ok := _u.mutation.UpdatedAt(); ok {
+		_spec.SetField(vendor.FieldUpdatedAt, field.TypeTime, value)
+	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(vendor.FieldName, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.Specialty(); ok {
 		_spec.SetField(vendor.FieldSpecialty, field.TypeString, value)
-	}
-	if value, ok := _u.mutation.UpdatedAt(); ok {
-		_spec.SetField(vendor.FieldUpdatedAt, field.TypeTime, value)
 	}
 	if _u.mutation.PackagesCleared() {
 		edge := &sqlgraph.EdgeSpec{

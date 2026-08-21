@@ -15,6 +15,12 @@ const (
 	Label = "title"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
+	// FieldMetadata holds the string denoting the metadata field in the database.
+	FieldMetadata = "metadata"
+	// FieldCreatedAt holds the string denoting the created_at field in the database.
+	FieldCreatedAt = "created_at"
+	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
+	FieldUpdatedAt = "updated_at"
 	// FieldName holds the string denoting the name field in the database.
 	FieldName = "name"
 	// FieldType holds the string denoting the type field in the database.
@@ -27,10 +33,6 @@ const (
 	FieldCurrentMasterVersion = "current_master_version"
 	// FieldOverallStatus holds the string denoting the overall_status field in the database.
 	FieldOverallStatus = "overall_status"
-	// FieldCreatedAt holds the string denoting the created_at field in the database.
-	FieldCreatedAt = "created_at"
-	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
-	FieldUpdatedAt = "updated_at"
 	// EdgeMasters holds the string denoting the masters edge name in mutations.
 	EdgeMasters = "masters"
 	// EdgePackages holds the string denoting the packages edge name in mutations.
@@ -65,14 +67,15 @@ const (
 // Columns holds all SQL columns for title fields.
 var Columns = []string{
 	FieldID,
+	FieldMetadata,
+	FieldCreatedAt,
+	FieldUpdatedAt,
 	FieldName,
 	FieldType,
 	FieldPremiereDate,
 	FieldTerritories,
 	FieldCurrentMasterVersion,
 	FieldOverallStatus,
-	FieldCreatedAt,
-	FieldUpdatedAt,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -86,6 +89,12 @@ func ValidColumn(column string) bool {
 }
 
 var (
+	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
+	DefaultCreatedAt func() time.Time
+	// DefaultUpdatedAt holds the default value on creation for the "updated_at" field.
+	DefaultUpdatedAt func() time.Time
+	// UpdateDefaultUpdatedAt holds the default value on update for the "updated_at" field.
+	UpdateDefaultUpdatedAt func() time.Time
 	// NameValidator is a validator for the "name" field. It is called by the builders before save.
 	NameValidator func(string) error
 	// DefaultTerritories holds the default value on creation for the "territories" field.
@@ -94,12 +103,6 @@ var (
 	TerritoriesValidator func(int) error
 	// CurrentMasterVersionValidator is a validator for the "current_master_version" field. It is called by the builders before save.
 	CurrentMasterVersionValidator func(string) error
-	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
-	DefaultCreatedAt func() time.Time
-	// DefaultUpdatedAt holds the default value on creation for the "updated_at" field.
-	DefaultUpdatedAt func() time.Time
-	// UpdateDefaultUpdatedAt holds the default value on update for the "updated_at" field.
-	UpdateDefaultUpdatedAt func() time.Time
 	// IDValidator is a validator for the "id" field. It is called by the builders before save.
 	IDValidator func(string) error
 )
@@ -168,6 +171,16 @@ func ByID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldID, opts...).ToFunc()
 }
 
+// ByCreatedAt orders the results by the created_at field.
+func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCreatedAt, opts...).ToFunc()
+}
+
+// ByUpdatedAt orders the results by the updated_at field.
+func ByUpdatedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldUpdatedAt, opts...).ToFunc()
+}
+
 // ByName orders the results by the name field.
 func ByName(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldName, opts...).ToFunc()
@@ -196,16 +209,6 @@ func ByCurrentMasterVersion(opts ...sql.OrderTermOption) OrderOption {
 // ByOverallStatus orders the results by the overall_status field.
 func ByOverallStatus(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldOverallStatus, opts...).ToFunc()
-}
-
-// ByCreatedAt orders the results by the created_at field.
-func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldCreatedAt, opts...).ToFunc()
-}
-
-// ByUpdatedAt orders the results by the updated_at field.
-func ByUpdatedAt(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldUpdatedAt, opts...).ToFunc()
 }
 
 // ByMastersCount orders the results by masters count.

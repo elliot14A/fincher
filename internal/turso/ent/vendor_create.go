@@ -21,15 +21,9 @@ type VendorCreate struct {
 	hooks    []Hook
 }
 
-// SetName sets the "name" field.
-func (_c *VendorCreate) SetName(v string) *VendorCreate {
-	_c.mutation.SetName(v)
-	return _c
-}
-
-// SetSpecialty sets the "specialty" field.
-func (_c *VendorCreate) SetSpecialty(v string) *VendorCreate {
-	_c.mutation.SetSpecialty(v)
+// SetMetadata sets the "metadata" field.
+func (_c *VendorCreate) SetMetadata(v map[string]interface{}) *VendorCreate {
+	_c.mutation.SetMetadata(v)
 	return _c
 }
 
@@ -58,6 +52,18 @@ func (_c *VendorCreate) SetNillableUpdatedAt(v *time.Time) *VendorCreate {
 	if v != nil {
 		_c.SetUpdatedAt(*v)
 	}
+	return _c
+}
+
+// SetName sets the "name" field.
+func (_c *VendorCreate) SetName(v string) *VendorCreate {
+	_c.mutation.SetName(v)
+	return _c
+}
+
+// SetSpecialty sets the "specialty" field.
+func (_c *VendorCreate) SetSpecialty(v string) *VendorCreate {
+	_c.mutation.SetSpecialty(v)
 	return _c
 }
 
@@ -129,6 +135,12 @@ func (_c *VendorCreate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (_c *VendorCreate) check() error {
+	if _, ok := _c.mutation.CreatedAt(); !ok {
+		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Vendor.created_at"`)}
+	}
+	if _, ok := _c.mutation.UpdatedAt(); !ok {
+		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "Vendor.updated_at"`)}
+	}
 	if _, ok := _c.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "Vendor.name"`)}
 	}
@@ -144,12 +156,6 @@ func (_c *VendorCreate) check() error {
 		if err := vendor.SpecialtyValidator(v); err != nil {
 			return &ValidationError{Name: "specialty", err: fmt.Errorf(`ent: validator failed for field "Vendor.specialty": %w`, err)}
 		}
-	}
-	if _, ok := _c.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Vendor.created_at"`)}
-	}
-	if _, ok := _c.mutation.UpdatedAt(); !ok {
-		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "Vendor.updated_at"`)}
 	}
 	if v, ok := _c.mutation.ID(); ok {
 		if err := vendor.IDValidator(v); err != nil {
@@ -191,13 +197,9 @@ func (_c *VendorCreate) createSpec() (*Vendor, *sqlgraph.CreateSpec) {
 		_node.ID = id
 		_spec.ID.Value = id
 	}
-	if value, ok := _c.mutation.Name(); ok {
-		_spec.SetField(vendor.FieldName, field.TypeString, value)
-		_node.Name = value
-	}
-	if value, ok := _c.mutation.Specialty(); ok {
-		_spec.SetField(vendor.FieldSpecialty, field.TypeString, value)
-		_node.Specialty = value
+	if value, ok := _c.mutation.Metadata(); ok {
+		_spec.SetField(vendor.FieldMetadata, field.TypeJSON, value)
+		_node.Metadata = value
 	}
 	if value, ok := _c.mutation.CreatedAt(); ok {
 		_spec.SetField(vendor.FieldCreatedAt, field.TypeTime, value)
@@ -206,6 +208,14 @@ func (_c *VendorCreate) createSpec() (*Vendor, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.UpdatedAt(); ok {
 		_spec.SetField(vendor.FieldUpdatedAt, field.TypeTime, value)
 		_node.UpdatedAt = value
+	}
+	if value, ok := _c.mutation.Name(); ok {
+		_spec.SetField(vendor.FieldName, field.TypeString, value)
+		_node.Name = value
+	}
+	if value, ok := _c.mutation.Specialty(); ok {
+		_spec.SetField(vendor.FieldSpecialty, field.TypeString, value)
+		_node.Specialty = value
 	}
 	if nodes := _c.mutation.PackagesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

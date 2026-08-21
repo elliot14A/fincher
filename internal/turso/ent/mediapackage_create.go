@@ -23,6 +23,40 @@ type MediaPackageCreate struct {
 	hooks    []Hook
 }
 
+// SetMetadata sets the "metadata" field.
+func (_c *MediaPackageCreate) SetMetadata(v map[string]interface{}) *MediaPackageCreate {
+	_c.mutation.SetMetadata(v)
+	return _c
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (_c *MediaPackageCreate) SetCreatedAt(v time.Time) *MediaPackageCreate {
+	_c.mutation.SetCreatedAt(v)
+	return _c
+}
+
+// SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
+func (_c *MediaPackageCreate) SetNillableCreatedAt(v *time.Time) *MediaPackageCreate {
+	if v != nil {
+		_c.SetCreatedAt(*v)
+	}
+	return _c
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (_c *MediaPackageCreate) SetUpdatedAt(v time.Time) *MediaPackageCreate {
+	_c.mutation.SetUpdatedAt(v)
+	return _c
+}
+
+// SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
+func (_c *MediaPackageCreate) SetNillableUpdatedAt(v *time.Time) *MediaPackageCreate {
+	if v != nil {
+		_c.SetUpdatedAt(*v)
+	}
+	return _c
+}
+
 // SetTitleID sets the "title_id" field.
 func (_c *MediaPackageCreate) SetTitleID(v string) *MediaPackageCreate {
 	_c.mutation.SetTitleID(v)
@@ -83,34 +117,6 @@ func (_c *MediaPackageCreate) SetStatus(v mediapackage.Status) *MediaPackageCrea
 func (_c *MediaPackageCreate) SetNillableStatus(v *mediapackage.Status) *MediaPackageCreate {
 	if v != nil {
 		_c.SetStatus(*v)
-	}
-	return _c
-}
-
-// SetCreatedAt sets the "created_at" field.
-func (_c *MediaPackageCreate) SetCreatedAt(v time.Time) *MediaPackageCreate {
-	_c.mutation.SetCreatedAt(v)
-	return _c
-}
-
-// SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
-func (_c *MediaPackageCreate) SetNillableCreatedAt(v *time.Time) *MediaPackageCreate {
-	if v != nil {
-		_c.SetCreatedAt(*v)
-	}
-	return _c
-}
-
-// SetUpdatedAt sets the "updated_at" field.
-func (_c *MediaPackageCreate) SetUpdatedAt(v time.Time) *MediaPackageCreate {
-	_c.mutation.SetUpdatedAt(v)
-	return _c
-}
-
-// SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
-func (_c *MediaPackageCreate) SetNillableUpdatedAt(v *time.Time) *MediaPackageCreate {
-	if v != nil {
-		_c.SetUpdatedAt(*v)
 	}
 	return _c
 }
@@ -196,14 +202,6 @@ func (_c *MediaPackageCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (_c *MediaPackageCreate) defaults() {
-	if _, ok := _c.mutation.RedeliveryCount(); !ok {
-		v := mediapackage.DefaultRedeliveryCount
-		_c.mutation.SetRedeliveryCount(v)
-	}
-	if _, ok := _c.mutation.Status(); !ok {
-		v := mediapackage.DefaultStatus
-		_c.mutation.SetStatus(v)
-	}
 	if _, ok := _c.mutation.CreatedAt(); !ok {
 		v := mediapackage.DefaultCreatedAt()
 		_c.mutation.SetCreatedAt(v)
@@ -212,10 +210,24 @@ func (_c *MediaPackageCreate) defaults() {
 		v := mediapackage.DefaultUpdatedAt()
 		_c.mutation.SetUpdatedAt(v)
 	}
+	if _, ok := _c.mutation.RedeliveryCount(); !ok {
+		v := mediapackage.DefaultRedeliveryCount
+		_c.mutation.SetRedeliveryCount(v)
+	}
+	if _, ok := _c.mutation.Status(); !ok {
+		v := mediapackage.DefaultStatus
+		_c.mutation.SetStatus(v)
+	}
 }
 
 // check runs all checks and user-defined validators on the builder.
 func (_c *MediaPackageCreate) check() error {
+	if _, ok := _c.mutation.CreatedAt(); !ok {
+		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "MediaPackage.created_at"`)}
+	}
+	if _, ok := _c.mutation.UpdatedAt(); !ok {
+		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "MediaPackage.updated_at"`)}
+	}
 	if _, ok := _c.mutation.TitleID(); !ok {
 		return &ValidationError{Name: "title_id", err: errors.New(`ent: missing required field "MediaPackage.title_id"`)}
 	}
@@ -280,12 +292,6 @@ func (_c *MediaPackageCreate) check() error {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "MediaPackage.status": %w`, err)}
 		}
 	}
-	if _, ok := _c.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "MediaPackage.created_at"`)}
-	}
-	if _, ok := _c.mutation.UpdatedAt(); !ok {
-		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "MediaPackage.updated_at"`)}
-	}
 	if v, ok := _c.mutation.ID(); ok {
 		if err := mediapackage.IDValidator(v); err != nil {
 			return &ValidationError{Name: "id", err: fmt.Errorf(`ent: validator failed for field "MediaPackage.id": %w`, err)}
@@ -332,6 +338,18 @@ func (_c *MediaPackageCreate) createSpec() (*MediaPackage, *sqlgraph.CreateSpec)
 		_node.ID = id
 		_spec.ID.Value = id
 	}
+	if value, ok := _c.mutation.Metadata(); ok {
+		_spec.SetField(mediapackage.FieldMetadata, field.TypeJSON, value)
+		_node.Metadata = value
+	}
+	if value, ok := _c.mutation.CreatedAt(); ok {
+		_spec.SetField(mediapackage.FieldCreatedAt, field.TypeTime, value)
+		_node.CreatedAt = value
+	}
+	if value, ok := _c.mutation.UpdatedAt(); ok {
+		_spec.SetField(mediapackage.FieldUpdatedAt, field.TypeTime, value)
+		_node.UpdatedAt = value
+	}
 	if value, ok := _c.mutation.Component(); ok {
 		_spec.SetField(mediapackage.FieldComponent, field.TypeEnum, value)
 		_node.Component = value
@@ -355,14 +373,6 @@ func (_c *MediaPackageCreate) createSpec() (*MediaPackage, *sqlgraph.CreateSpec)
 	if value, ok := _c.mutation.Status(); ok {
 		_spec.SetField(mediapackage.FieldStatus, field.TypeEnum, value)
 		_node.Status = value
-	}
-	if value, ok := _c.mutation.CreatedAt(); ok {
-		_spec.SetField(mediapackage.FieldCreatedAt, field.TypeTime, value)
-		_node.CreatedAt = value
-	}
-	if value, ok := _c.mutation.UpdatedAt(); ok {
-		_spec.SetField(mediapackage.FieldUpdatedAt, field.TypeTime, value)
-		_node.UpdatedAt = value
 	}
 	if nodes := _c.mutation.TitleIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

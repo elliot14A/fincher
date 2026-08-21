@@ -29,6 +29,24 @@ func (_u *DeliveryUpdate) Where(ps ...predicate.Delivery) *DeliveryUpdate {
 	return _u
 }
 
+// SetMetadata sets the "metadata" field.
+func (_u *DeliveryUpdate) SetMetadata(v map[string]interface{}) *DeliveryUpdate {
+	_u.mutation.SetMetadata(v)
+	return _u
+}
+
+// ClearMetadata clears the value of the "metadata" field.
+func (_u *DeliveryUpdate) ClearMetadata() *DeliveryUpdate {
+	_u.mutation.ClearMetadata()
+	return _u
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (_u *DeliveryUpdate) SetUpdatedAt(v time.Time) *DeliveryUpdate {
+	_u.mutation.SetUpdatedAt(v)
+	return _u
+}
+
 // SetTitleID sets the "title_id" field.
 func (_u *DeliveryUpdate) SetTitleID(v string) *DeliveryUpdate {
 	_u.mutation.SetTitleID(v)
@@ -82,12 +100,6 @@ func (_u *DeliveryUpdate) SetNillableTargetDate(v *time.Time) *DeliveryUpdate {
 	if v != nil {
 		_u.SetTargetDate(*v)
 	}
-	return _u
-}
-
-// SetUpdatedAt sets the "updated_at" field.
-func (_u *DeliveryUpdate) SetUpdatedAt(v time.Time) *DeliveryUpdate {
-	_u.mutation.SetUpdatedAt(v)
 	return _u
 }
 
@@ -178,6 +190,15 @@ func (_u *DeliveryUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			}
 		}
 	}
+	if value, ok := _u.mutation.Metadata(); ok {
+		_spec.SetField(delivery.FieldMetadata, field.TypeJSON, value)
+	}
+	if _u.mutation.MetadataCleared() {
+		_spec.ClearField(delivery.FieldMetadata, field.TypeJSON)
+	}
+	if value, ok := _u.mutation.UpdatedAt(); ok {
+		_spec.SetField(delivery.FieldUpdatedAt, field.TypeTime, value)
+	}
 	if value, ok := _u.mutation.Country(); ok {
 		_spec.SetField(delivery.FieldCountry, field.TypeString, value)
 	}
@@ -186,9 +207,6 @@ func (_u *DeliveryUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.TargetDate(); ok {
 		_spec.SetField(delivery.FieldTargetDate, field.TypeTime, value)
-	}
-	if value, ok := _u.mutation.UpdatedAt(); ok {
-		_spec.SetField(delivery.FieldUpdatedAt, field.TypeTime, value)
 	}
 	if _u.mutation.TitleCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -237,6 +255,24 @@ type DeliveryUpdateOne struct {
 	fields   []string
 	hooks    []Hook
 	mutation *DeliveryMutation
+}
+
+// SetMetadata sets the "metadata" field.
+func (_u *DeliveryUpdateOne) SetMetadata(v map[string]interface{}) *DeliveryUpdateOne {
+	_u.mutation.SetMetadata(v)
+	return _u
+}
+
+// ClearMetadata clears the value of the "metadata" field.
+func (_u *DeliveryUpdateOne) ClearMetadata() *DeliveryUpdateOne {
+	_u.mutation.ClearMetadata()
+	return _u
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (_u *DeliveryUpdateOne) SetUpdatedAt(v time.Time) *DeliveryUpdateOne {
+	_u.mutation.SetUpdatedAt(v)
+	return _u
 }
 
 // SetTitleID sets the "title_id" field.
@@ -292,12 +328,6 @@ func (_u *DeliveryUpdateOne) SetNillableTargetDate(v *time.Time) *DeliveryUpdate
 	if v != nil {
 		_u.SetTargetDate(*v)
 	}
-	return _u
-}
-
-// SetUpdatedAt sets the "updated_at" field.
-func (_u *DeliveryUpdateOne) SetUpdatedAt(v time.Time) *DeliveryUpdateOne {
-	_u.mutation.SetUpdatedAt(v)
 	return _u
 }
 
@@ -418,6 +448,15 @@ func (_u *DeliveryUpdateOne) sqlSave(ctx context.Context) (_node *Delivery, err 
 			}
 		}
 	}
+	if value, ok := _u.mutation.Metadata(); ok {
+		_spec.SetField(delivery.FieldMetadata, field.TypeJSON, value)
+	}
+	if _u.mutation.MetadataCleared() {
+		_spec.ClearField(delivery.FieldMetadata, field.TypeJSON)
+	}
+	if value, ok := _u.mutation.UpdatedAt(); ok {
+		_spec.SetField(delivery.FieldUpdatedAt, field.TypeTime, value)
+	}
 	if value, ok := _u.mutation.Country(); ok {
 		_spec.SetField(delivery.FieldCountry, field.TypeString, value)
 	}
@@ -426,9 +465,6 @@ func (_u *DeliveryUpdateOne) sqlSave(ctx context.Context) (_node *Delivery, err 
 	}
 	if value, ok := _u.mutation.TargetDate(); ok {
 		_spec.SetField(delivery.FieldTargetDate, field.TypeTime, value)
-	}
-	if value, ok := _u.mutation.UpdatedAt(); ok {
-		_spec.SetField(delivery.FieldUpdatedAt, field.TypeTime, value)
 	}
 	if _u.mutation.TitleCleared() {
 		edge := &sqlgraph.EdgeSpec{
