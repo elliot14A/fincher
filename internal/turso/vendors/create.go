@@ -15,12 +15,16 @@ func Create(ctx context.Context, client *ent.Client, v *models.Vendor) domainerr
 		return domainerrors.Err[*models.Vendor](turso.NewError("vendors.Create", domainerrors.CodeInvalidInput, "invalid vendor data", err))
 	}
 
-	created, err := client.Vendor.Create().
+	builder := client.Vendor.Create().
 		SetID(v.ID).
 		SetName(v.Name).
-		SetSpecialty(v.Specialty).
-		Save(ctx)
+		SetSpecialty(v.Specialty)
 
+	if v.Metadata != nil {
+		builder.SetMetadata(v.Metadata)
+	}
+
+	created, err := builder.Save(ctx)
 	if err != nil {
 		return domainerrors.Err[*models.Vendor](turso.MapEntError("vendors.Create", "vendor", v.ID, err))
 	}

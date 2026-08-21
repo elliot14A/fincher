@@ -11,15 +11,18 @@ func toDomain(t *ent.Title) *models.Title {
 		return nil
 	}
 	return &models.Title{
-		ID:                   t.ID,
+		Base: models.Base{
+			ID:        t.ID,
+			Metadata:  t.Metadata,
+			CreatedAt: t.CreatedAt,
+			UpdatedAt: t.UpdatedAt,
+		},
 		Name:                 t.Name,
 		Type:                 models.TitleType(t.Type),
 		PremiereDate:         t.PremiereDate,
 		Territories:          t.Territories,
 		CurrentMasterVersion: t.CurrentMasterVersion,
 		OverallStatus:        models.TitleStatus(t.OverallStatus),
-		CreatedAt:            t.CreatedAt,
-		UpdatedAt:            t.UpdatedAt,
 	}
 }
 

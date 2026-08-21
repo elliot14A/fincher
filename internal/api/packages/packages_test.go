@@ -28,9 +28,9 @@ func setupTestServer(t *testing.T) (*api.Server, *ent.Client) {
 		t.Fatalf("failed to run ent automigration: %v", err)
 	}
 
-	// Seed Title
+	// 1. Seed Title
 	tursotitles.Create(ctx, client, &models.Title{
-		ID:                   "title-eclipse",
+		Base:                 models.Base{ID: "title-eclipse"},
 		Name:                 "Eclipse",
 		Type:                 models.TitleTypeFeature,
 		PremiereDate:         time.Now().Add(48 * time.Hour),
@@ -39,9 +39,9 @@ func setupTestServer(t *testing.T) (*api.Server, *ent.Client) {
 		OverallStatus:        models.StatusAtRisk,
 	})
 
-	// Seed Vendor
+	// 2. Seed Vendor
 	tursovendors.Create(ctx, client, &models.Vendor{
-		ID:        "vendor_a",
+		Base:      models.Base{ID: "vendor_a"},
 		Name:      "Vendor A",
 		Specialty: "AUDIO_DUBBING",
 	})
@@ -57,14 +57,20 @@ func TestPackages_HTTP_Lifecycle(t *testing.T) {
 	e := server.Router()
 
 	pkg := models.Package{
-		ID:                       "pkg-eclipse-es-audio",
+		Base: models.Base{
+			ID: "pkg-eclipse-es-audio",
+			Metadata: map[string]any{
+				"codec": "AAC",
+			},
+		},
 		TitleID:                  "title-eclipse",
 		Component:                models.ComponentAudio,
 		Language:                 "es",
 		Version:                  "v1",
 		VendorID:                 "vendor_a",
-		DerivedFromMasterVersion: "V12",
-		Status:                   models.PackageStatusValid,
+		DerivedFromMasterVersion: "V13",
+		RedeliveryCount:          0,
+		Status:                   models.PackageStatusPending,
 	}
 
 	// 1. POST /packages
@@ -78,7 +84,7 @@ func TestPackages_HTTP_Lifecycle(t *testing.T) {
 		t.Fatalf("expected status 201, got %d. body: %s", rec.Code, rec.Body.String())
 	}
 
-	// 2. GET /packages/:id
+	// 2. GET /packages/:id - assert response fields
 	req = httptest.NewRequest(http.MethodGet, "/packages/pkg-eclipse-es-audio", nil)
 	rec = httptest.NewRecorder()
 	e.ServeHTTP(rec, req)
@@ -86,14 +92,15 @@ func TestPackages_HTTP_Lifecycle(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("expected status 200, got %d", rec.Code)
 	}
-
-	var getRes models.Package
-	_ = json.Unmarshal(rec.Body.Bytes(), &getRes)
-	if getRes.Language != "es" || getRes.DerivedFromMasterVersion != "V12" {
-		t.Errorf("unexpected package data: %+v", getRes)
+	var fetched models.Package
+	if err := json.Unmarshal(rec.Body.Bytes(), &fetched); err != nil {
+		t.Fatalf("failed to parse get response: %v", err)
+	}
+	if fetched.Component != models.ComponentAudio || fetched.Language != "es" || fetched.VendorID != "vendor_a" {
+		t.Errorf("unexpected fetched package fields: %+v", fetched)
 	}
 
-	// 3. GET /packages?title_id=title-eclipse&component=AUDIO
+	// 3. GET /packages?title_id=title-eclipse&component=AUDIO - assert list length
 	req = httptest.NewRequest(http.MethodGet, "/packages?title_id=title-eclipse&component=AUDIO", nil)
 	rec = httptest.NewRecorder()
 	e.ServeHTTP(rec, req)
@@ -101,15 +108,15 @@ func TestPackages_HTTP_Lifecycle(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("expected status 200, got %d", rec.Code)
 	}
-	var listRes []models.Package
-	_ = json.Unmarshal(rec.Body.Bytes(), &listRes)
-	if len(listRes) != 1 {
-		t.Errorf("expected 1 package, got %d", len(listRes))
+	var list []models.Package
+	_ = json.Unmarshal(rec.Body.Bytes(), &list)
+	if len(list) != 1 {
+		t.Errorf("expected 1 package in list, got %d", len(list))
 	}
 
-	// 4. PATCH /packages/:id (Invalidate)
-	invStatus := models.PackageStatusInvalidated
-	patchReq := models.UpdatePackageInput{Status: &invStatus}
+	// 4. PATCH /packages/:id - verify partial update preserves other fields
+	newStatus := models.PackageStatusValid
+	patchReq := models.UpdatePackageInput{Status: &newStatus}
 	body, _ = json.Marshal(patchReq)
 	req = httptest.NewRequest(http.MethodPatch, "/packages/pkg-eclipse-es-audio", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
@@ -118,6 +125,16 @@ func TestPackages_HTTP_Lifecycle(t *testing.T) {
 
 	if rec.Code != http.StatusOK {
 		t.Fatalf("expected status 200 on patch, got %d", rec.Code)
+	}
+	var patched models.Package
+	if err := json.Unmarshal(rec.Body.Bytes(), &patched); err != nil {
+		t.Fatalf("failed to parse patch response: %v", err)
+	}
+	if patched.Status != models.PackageStatusValid {
+		t.Errorf("expected patched status VALID, got: %s", patched.Status)
+	}
+	if patched.Component != models.ComponentAudio || patched.Language != "es" || patched.VendorID != "vendor_a" {
+		t.Errorf("expected PATCH to preserve untouched fields (Component, Language, VendorID): %+v", patched)
 	}
 
 	// 5. DELETE /packages/:id

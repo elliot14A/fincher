@@ -11,15 +11,18 @@ func toDomain(v *ent.Vendor) *models.Vendor {
 		return nil
 	}
 	return &models.Vendor{
-		ID:        v.ID,
+		Base: models.Base{
+			ID:        v.ID,
+			Metadata:  v.Metadata,
+			CreatedAt: v.CreatedAt,
+			UpdatedAt: v.UpdatedAt,
+		},
 		Name:      v.Name,
 		Specialty: v.Specialty,
-		CreatedAt: v.CreatedAt,
-		UpdatedAt: v.UpdatedAt,
 	}
 }
 
-// toDomainList converts a slice of Ent Vendor entities to domain Vendor models.
+// toDomainList converts a slice of Ent Vendor entities to a slice of domain Vendor models.
 func toDomainList(items []*ent.Vendor) []*models.Vendor {
 	res := make([]*models.Vendor, len(items))
 	for i, item := range items {

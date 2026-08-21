@@ -26,7 +26,7 @@ func setupTestDB(t *testing.T) *ent.Client {
 
 	// Seed parent title
 	titleRes := titles.Create(ctx, client, &models.Title{
-		ID:                   "title-eclipse",
+		Base:                 models.Base{ID: "title-eclipse"},
 		Name:                 "Eclipse",
 		Type:                 models.TitleTypeFeature,
 		PremiereDate:         time.Now().Add(48 * time.Hour),
@@ -48,7 +48,13 @@ func TestDeliveries_CRUD(t *testing.T) {
 	ctx := context.Background()
 
 	d1 := &models.Delivery{
-		ID:         "del-eclipse-us",
+		Base: models.Base{
+			ID: "del-eclipse-us",
+			Metadata: map[string]any{
+				"carrier": "DirectLine",
+				"qc_gate": "passed",
+			},
+		},
 		TitleID:    "title-eclipse",
 		Country:    "US",
 		Status:     models.DeliveryStatusPending,
@@ -62,6 +68,9 @@ func TestDeliveries_CRUD(t *testing.T) {
 	}
 	if createRes.Unwrap().Country != "US" {
 		t.Errorf("unexpected delivery country: %s", createRes.Unwrap().Country)
+	}
+	if createRes.Unwrap().Metadata["carrier"] != "DirectLine" {
+		t.Errorf("expected metadata carrier, got: %v", createRes.Unwrap().Metadata["carrier"])
 	}
 
 	// 2. Get
@@ -87,12 +96,19 @@ func TestDeliveries_CRUD(t *testing.T) {
 	newStatus := models.DeliveryStatusReadyToShip
 	upRes := deliveries.Update(ctx, client, "del-eclipse-us", &models.UpdateDeliveryInput{
 		Status: &newStatus,
+		Metadata: map[string]any{
+			"carrier": "DirectLineExpress",
+			"qc_gate": "passed",
+		},
 	})
 	if upRes.IsErr() {
 		t.Fatalf("failed to update delivery: %v", upRes.Error())
 	}
 	if upRes.Unwrap().Status != models.DeliveryStatusReadyToShip {
 		t.Errorf("expected status READY_TO_SHIP, got %s", upRes.Unwrap().Status)
+	}
+	if upRes.Unwrap().Metadata["carrier"] != "DirectLineExpress" {
+		t.Errorf("expected updated carrier, got: %v", upRes.Unwrap().Metadata["carrier"])
 	}
 
 	// 5. Delete
@@ -109,7 +125,7 @@ func TestDeliveries_FK_Constraint(t *testing.T) {
 	ctx := context.Background()
 
 	orphanDel := &models.Delivery{
-		ID:         "del-orphan",
+		Base:       models.Base{ID: "del-orphan"},
 		TitleID:    "non-existent-title",
 		Country:    "US",
 		Status:     models.DeliveryStatusPending,

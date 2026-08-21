@@ -23,6 +23,9 @@ func Update(ctx context.Context, client *ent.Client, id string, input *models.Up
 	if input.Specialty != nil {
 		builder.SetSpecialty(*input.Specialty)
 	}
+	if input.Metadata != nil {
+		builder.SetMetadata(input.Metadata)
+	}
 
 	updated, err := builder.Save(ctx)
 	if err != nil {

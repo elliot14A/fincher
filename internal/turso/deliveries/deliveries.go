@@ -10,13 +10,16 @@ func toDomain(d *ent.Delivery) *models.Delivery {
 		return nil
 	}
 	return &models.Delivery{
-		ID:         d.ID,
+		Base: models.Base{
+			ID:        d.ID,
+			Metadata:  d.Metadata,
+			CreatedAt: d.CreatedAt,
+			UpdatedAt: d.UpdatedAt,
+		},
 		TitleID:    d.TitleID,
 		Country:    d.Country,
 		Status:     models.DeliveryStatus(d.Status),
 		TargetDate: d.TargetDate,
-		CreatedAt:  d.CreatedAt,
-		UpdatedAt:  d.UpdatedAt,
 	}
 }
 

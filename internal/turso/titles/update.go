@@ -10,7 +10,7 @@ import (
 	"github.com/elliot14A/fincher/pkg/domain/models"
 )
 
-// Update modifies an existing title using partial input.
+// Update modifies an existing title.
 func Update(ctx context.Context, client *ent.Client, id string, input *models.UpdateTitleInput) domainerrors.Result[*models.Title] {
 	if err := input.Validate(); err != nil {
 		return domainerrors.Err[*models.Title](turso.NewError("titles.Update", domainerrors.CodeInvalidInput, "invalid title update input", err))
@@ -35,6 +35,9 @@ func Update(ctx context.Context, client *ent.Client, id string, input *models.Up
 	}
 	if input.OverallStatus != nil {
 		builder.SetOverallStatus(enttitle.OverallStatus(*input.OverallStatus))
+	}
+	if input.Metadata != nil {
+		builder.SetMetadata(input.Metadata)
 	}
 
 	updated, err := builder.Save(ctx)

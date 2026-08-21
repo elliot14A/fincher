@@ -11,7 +11,12 @@ func toDomain(p *ent.MediaPackage) *models.Package {
 		return nil
 	}
 	return &models.Package{
-		ID:                       p.ID,
+		Base: models.Base{
+			ID:        p.ID,
+			Metadata:  p.Metadata,
+			CreatedAt: p.CreatedAt,
+			UpdatedAt: p.UpdatedAt,
+		},
 		TitleID:                  p.TitleID,
 		Component:                models.ComponentType(p.Component),
 		Language:                 p.Language,
@@ -20,12 +25,10 @@ func toDomain(p *ent.MediaPackage) *models.Package {
 		DerivedFromMasterVersion: p.DerivedFromMasterVersion,
 		RedeliveryCount:          p.RedeliveryCount,
 		Status:                   models.PackageStatus(p.Status),
-		CreatedAt:                p.CreatedAt,
-		UpdatedAt:                p.UpdatedAt,
 	}
 }
 
-// toDomainList converts a slice of Ent MediaPackage entities to domain Package models.
+// toDomainList converts a slice of Ent MediaPackage entities to a slice of domain Package models.
 func toDomainList(items []*ent.MediaPackage) []*models.Package {
 	res := make([]*models.Package, len(items))
 	for i, item := range items {

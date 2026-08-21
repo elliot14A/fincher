@@ -36,16 +36,21 @@ func TestTitles_HTTP_Lifecycle(t *testing.T) {
 
 	e := server.Router()
 
-	now := time.Date(2026, 8, 21, 12, 0, 0, 0, time.UTC)
+	now := time.Now().UTC().Truncate(time.Second)
 	premiere := now.Add(48 * time.Hour)
 
 	title := models.Title{
-		ID:                   "title-eclipse",
+		Base: models.Base{
+			ID: "title-eclipse",
+			Metadata: map[string]any{
+				"poster_url": "https://cdn.lume.stream/posters/eclipse.jpg",
+			},
+		},
 		Name:                 "Eclipse",
 		Type:                 models.TitleTypeFeature,
 		PremiereDate:         premiere,
 		Territories:          40,
-		CurrentMasterVersion: "V13",
+		CurrentMasterVersion: "V12",
 		OverallStatus:        models.StatusAtRisk,
 	}
 
@@ -60,7 +65,15 @@ func TestTitles_HTTP_Lifecycle(t *testing.T) {
 		t.Fatalf("expected status 201, got %d. body: %s", rec.Code, rec.Body.String())
 	}
 
-	// 2. GET /titles/:id
+	var created models.Title
+	if err := json.Unmarshal(rec.Body.Bytes(), &created); err != nil {
+		t.Fatalf("failed to parse response body: %v", err)
+	}
+	if created.ID != "title-eclipse" || created.Name != "Eclipse" {
+		t.Errorf("unexpected created title data: %+v", created)
+	}
+
+	// 2. GET /titles/:id - assert response fields
 	req = httptest.NewRequest(http.MethodGet, "/titles/title-eclipse", nil)
 	rec = httptest.NewRecorder()
 	e.ServeHTTP(rec, req)
@@ -68,32 +81,32 @@ func TestTitles_HTTP_Lifecycle(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("expected status 200, got %d", rec.Code)
 	}
-
-	var getRes models.Title
-	_ = json.Unmarshal(rec.Body.Bytes(), &getRes)
-	if getRes.Name != "Eclipse" || getRes.Territories != 40 {
-		t.Errorf("unexpected fetched title: %+v", getRes)
+	var fetched models.Title
+	if err := json.Unmarshal(rec.Body.Bytes(), &fetched); err != nil {
+		t.Fatalf("failed to parse get response: %v", err)
+	}
+	if fetched.Name != "Eclipse" || fetched.Territories != 40 || fetched.CurrentMasterVersion != "V12" {
+		t.Errorf("unexpected fetched title fields: %+v", fetched)
 	}
 
-	// 3. GET /titles (List)
+	// 3. GET /titles (list)
 	req = httptest.NewRequest(http.MethodGet, "/titles", nil)
 	rec = httptest.NewRecorder()
 	e.ServeHTTP(rec, req)
 
 	if rec.Code != http.StatusOK {
-		t.Fatalf("expected status 200, got %d", rec.Code)
-	}
-	var listRes []models.Title
-	_ = json.Unmarshal(rec.Body.Bytes(), &listRes)
-	if len(listRes) != 1 {
-		t.Errorf("expected 1 title in list, got %d", len(listRes))
+		t.Fatalf("expected status 200 on list, got %d", rec.Code)
 	}
 
-	// 4. PATCH /titles/:id (Partial Update)
-	patchStatus := models.StatusHold
-	patchReq := models.UpdateTitleInput{
-		OverallStatus: &patchStatus,
+	var list []models.Title
+	_ = json.Unmarshal(rec.Body.Bytes(), &list)
+	if len(list) != 1 {
+		t.Errorf("expected 1 title in list, got %d", len(list))
 	}
+
+	// 4. PATCH /titles/:id - verify partial update preserves other fields
+	newStatus := models.StatusHold
+	patchReq := models.UpdateTitleInput{OverallStatus: &newStatus}
 	body, _ = json.Marshal(patchReq)
 	req = httptest.NewRequest(http.MethodPatch, "/titles/title-eclipse", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
@@ -101,13 +114,17 @@ func TestTitles_HTTP_Lifecycle(t *testing.T) {
 	e.ServeHTTP(rec, req)
 
 	if rec.Code != http.StatusOK {
-		t.Fatalf("expected status 200 on partial update, got %d. body: %s", rec.Code, rec.Body.String())
+		t.Fatalf("expected status 200 on patch, got %d", rec.Code)
 	}
-
-	var patchRes models.Title
-	_ = json.Unmarshal(rec.Body.Bytes(), &patchRes)
-	if patchRes.OverallStatus != models.StatusHold || patchRes.Name != "Eclipse" || patchRes.Territories != 40 {
-		t.Errorf("partial update did not retain original fields: %+v", patchRes)
+	var patched models.Title
+	if err := json.Unmarshal(rec.Body.Bytes(), &patched); err != nil {
+		t.Fatalf("failed to parse patch response: %v", err)
+	}
+	if patched.OverallStatus != models.StatusHold {
+		t.Errorf("expected patched status HOLD, got: %s", patched.OverallStatus)
+	}
+	if patched.Name != "Eclipse" || patched.Territories != 40 || patched.CurrentMasterVersion != "V12" {
+		t.Errorf("expected PATCH to preserve untouched fields (Name, Territories, MasterVersion): %+v", patched)
 	}
 
 	// 5. DELETE /titles/:id
@@ -119,7 +136,7 @@ func TestTitles_HTTP_Lifecycle(t *testing.T) {
 		t.Fatalf("expected status 204 on delete, got %d", rec.Code)
 	}
 
-	// 6. GET /titles/:id after delete (404)
+	// 6. GET /titles/:id -> should return 404
 	req = httptest.NewRequest(http.MethodGet, "/titles/title-eclipse", nil)
 	rec = httptest.NewRecorder()
 	e.ServeHTTP(rec, req)

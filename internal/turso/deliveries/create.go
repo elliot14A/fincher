@@ -16,14 +16,18 @@ func Create(ctx context.Context, client *ent.Client, d *models.Delivery) domaine
 		return domainerrors.Err[*models.Delivery](turso.NewError("deliveries.Create", domainerrors.CodeInvalidInput, "invalid delivery data", err))
 	}
 
-	created, err := client.Delivery.Create().
+	builder := client.Delivery.Create().
 		SetID(d.ID).
 		SetTitleID(d.TitleID).
 		SetCountry(d.Country).
 		SetStatus(entdelivery.Status(d.Status)).
-		SetTargetDate(d.TargetDate).
-		Save(ctx)
+		SetTargetDate(d.TargetDate)
 
+	if d.Metadata != nil {
+		builder.SetMetadata(d.Metadata)
+	}
+
+	created, err := builder.Save(ctx)
 	if err != nil {
 		return domainerrors.Err[*models.Delivery](turso.MapEntError("deliveries.Create", "delivery", d.ID, err))
 	}

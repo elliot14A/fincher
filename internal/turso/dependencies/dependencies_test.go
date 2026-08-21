@@ -28,7 +28,7 @@ func setupTestDB(t *testing.T) *ent.Client {
 
 	// 1. Seed Title
 	_ = titles.Create(ctx, client, &models.Title{
-		ID:                   "title-eclipse",
+		Base:                 models.Base{ID: "title-eclipse"},
 		Name:                 "Eclipse",
 		Type:                 models.TitleTypeFeature,
 		PremiereDate:         time.Now().Add(48 * time.Hour),
@@ -39,14 +39,14 @@ func setupTestDB(t *testing.T) *ent.Client {
 
 	// 2. Seed Vendor
 	_ = vendors.Create(ctx, client, &models.Vendor{
-		ID:        "vendor_a",
+		Base:      models.Base{ID: "vendor_a"},
 		Name:      "Vendor A",
 		Specialty: "AUDIO_DUBBING",
 	})
 
 	// 3. Seed Packages: Video, Spanish Audio, Spanish Subtitles
 	_ = packages.Create(ctx, client, &models.Package{
-		ID:                       "pkg-video-ov",
+		Base:                     models.Base{ID: "pkg-video-ov"},
 		TitleID:                  "title-eclipse",
 		Component:                models.ComponentVideo,
 		Language:                 "ov",
@@ -57,7 +57,7 @@ func setupTestDB(t *testing.T) *ent.Client {
 	})
 
 	_ = packages.Create(ctx, client, &models.Package{
-		ID:                       "pkg-audio-es",
+		Base:                     models.Base{ID: "pkg-audio-es"},
 		TitleID:                  "title-eclipse",
 		Component:                models.ComponentAudio,
 		Language:                 "es",
@@ -68,7 +68,7 @@ func setupTestDB(t *testing.T) *ent.Client {
 	})
 
 	_ = packages.Create(ctx, client, &models.Package{
-		ID:                       "pkg-sub-es",
+		Base:                     models.Base{ID: "pkg-sub-es"},
 		TitleID:                  "title-eclipse",
 		Component:                models.ComponentSubtitle,
 		Language:                 "es",
@@ -206,7 +206,7 @@ func TestDependencies_CrossTitleRejection(t *testing.T) {
 
 	// Seed Title B and Package on Title B
 	_ = titles.Create(ctx, client, &models.Title{
-		ID:                   "title-atlas",
+		Base:                 models.Base{ID: "title-atlas"},
 		Name:                 "Atlas",
 		Type:                 models.TitleTypeFeature,
 		PremiereDate:         time.Now().Add(72 * time.Hour),
@@ -216,7 +216,7 @@ func TestDependencies_CrossTitleRejection(t *testing.T) {
 	})
 
 	_ = packages.Create(ctx, client, &models.Package{
-		ID:                       "pkg-atlas-video",
+		Base:                     models.Base{ID: "pkg-atlas-video"},
 		TitleID:                  "title-atlas",
 		Component:                models.ComponentVideo,
 		Language:                 "ov",

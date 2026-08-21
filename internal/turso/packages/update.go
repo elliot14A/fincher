@@ -39,6 +39,9 @@ func Update(ctx context.Context, client *ent.Client, id string, input *models.Up
 	if input.Status != nil {
 		builder.SetStatus(entmediapackage.Status(*input.Status))
 	}
+	if input.Metadata != nil {
+		builder.SetMetadata(input.Metadata)
+	}
 
 	updated, err := builder.Save(ctx)
 	if err != nil {

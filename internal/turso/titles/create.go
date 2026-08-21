@@ -16,16 +16,20 @@ func Create(ctx context.Context, client *ent.Client, t *models.Title) domainerro
 		return domainerrors.Err[*models.Title](turso.NewError("titles.Create", domainerrors.CodeInvalidInput, "invalid title data", err))
 	}
 
-	created, err := client.Title.Create().
+	builder := client.Title.Create().
 		SetID(t.ID).
 		SetName(t.Name).
 		SetType(enttitle.Type(t.Type)).
 		SetPremiereDate(t.PremiereDate).
 		SetTerritories(t.Territories).
 		SetCurrentMasterVersion(t.CurrentMasterVersion).
-		SetOverallStatus(enttitle.OverallStatus(t.OverallStatus)).
-		Save(ctx)
+		SetOverallStatus(enttitle.OverallStatus(t.OverallStatus))
 
+	if t.Metadata != nil {
+		builder.SetMetadata(t.Metadata)
+	}
+
+	created, err := builder.Save(ctx)
 	if err != nil {
 		return domainerrors.Err[*models.Title](turso.MapEntError("titles.Create", "title", t.ID, err))
 	}

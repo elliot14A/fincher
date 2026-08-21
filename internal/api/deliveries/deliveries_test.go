@@ -29,7 +29,7 @@ func setupTestServer(t *testing.T) (*api.Server, *ent.Client) {
 
 	// Seed Title
 	tursotitles.Create(ctx, client, &models.Title{
-		ID:                   "title-eclipse",
+		Base:                 models.Base{ID: "title-eclipse"},
 		Name:                 "Eclipse",
 		Type:                 models.TitleTypeFeature,
 		PremiereDate:         time.Now().Add(48 * time.Hour),
@@ -49,7 +49,12 @@ func TestDeliveries_HTTP_Lifecycle(t *testing.T) {
 	e := server.Router()
 
 	del := models.Delivery{
-		ID:         "del-eclipse-es",
+		Base: models.Base{
+			ID: "del-eclipse-es",
+			Metadata: map[string]any{
+				"carrier": "DirectLine",
+			},
+		},
 		TitleID:    "title-eclipse",
 		Country:    "ES",
 		Status:     models.DeliveryStatusPending,

@@ -29,12 +29,12 @@ func setupTestServer(t *testing.T) (*api.Server, *ent.Client) {
 
 	// Seed Title
 	tursotitles.Create(ctx, client, &models.Title{
-		ID:                   "title-eclipse",
+		Base:                 models.Base{ID: "title-eclipse"},
 		Name:                 "Eclipse",
 		Type:                 models.TitleTypeFeature,
 		PremiereDate:         time.Now().Add(48 * time.Hour),
 		Territories:          40,
-		CurrentMasterVersion: "V13",
+		CurrentMasterVersion: "V12",
 		OverallStatus:        models.StatusAtRisk,
 	})
 

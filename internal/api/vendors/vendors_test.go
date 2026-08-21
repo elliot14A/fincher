@@ -36,8 +36,13 @@ func TestVendors_HTTP_Lifecycle(t *testing.T) {
 	e := server.Router()
 
 	vendor := models.Vendor{
-		ID:        "vendor_a",
-		Name:      "Vendor A Audio Labs",
+		Base: models.Base{
+			ID: "vendor_a",
+			Metadata: map[string]any{
+				"tier": "P0",
+			},
+		},
+		Name:      "Vendor A",
 		Specialty: "AUDIO_DUBBING",
 	}
 
@@ -71,7 +76,7 @@ func TestVendors_HTTP_Lifecycle(t *testing.T) {
 	}
 
 	// 4. PATCH /vendors/:id
-	newName := "Vendor A Global Dubs"
+	newName := "Vendor A International"
 	patchReq := models.UpdateVendorInput{Name: &newName}
 	body, _ = json.Marshal(patchReq)
 	req = httptest.NewRequest(http.MethodPatch, "/vendors/vendor_a", bytes.NewReader(body))

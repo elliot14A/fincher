@@ -16,7 +16,7 @@ func Create(ctx context.Context, client *ent.Client, p *models.Package) domainer
 		return domainerrors.Err[*models.Package](turso.NewError("packages.Create", domainerrors.CodeInvalidInput, "invalid package data", err))
 	}
 
-	created, err := client.MediaPackage.Create().
+	builder := client.MediaPackage.Create().
 		SetID(p.ID).
 		SetTitleID(p.TitleID).
 		SetComponent(entmediapackage.Component(p.Component)).
@@ -25,9 +25,13 @@ func Create(ctx context.Context, client *ent.Client, p *models.Package) domainer
 		SetVendorID(p.VendorID).
 		SetDerivedFromMasterVersion(p.DerivedFromMasterVersion).
 		SetRedeliveryCount(p.RedeliveryCount).
-		SetStatus(entmediapackage.Status(p.Status)).
-		Save(ctx)
+		SetStatus(entmediapackage.Status(p.Status))
 
+	if p.Metadata != nil {
+		builder.SetMetadata(p.Metadata)
+	}
+
+	created, err := builder.Save(ctx)
 	if err != nil {
 		return domainerrors.Err[*models.Package](turso.MapEntError("packages.Create", "package", p.ID, err))
 	}

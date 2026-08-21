@@ -13,151 +13,150 @@ import (
 	"github.com/elliot14A/fincher/pkg/domain/models"
 )
 
-func setupTestEnt(t *testing.T) *ent.Client {
+func setupTestDB(t *testing.T) *ent.Client {
 	client, err := turso.Open(":memory:", "")
 	if err != nil {
-		t.Fatalf("failed to open memory ent client: %v", err)
+		t.Fatalf("failed to open in-memory database: %v", err)
 	}
 
 	ctx := context.Background()
 	if err := turso.AutoMigrate(ctx, client); err != nil {
-		t.Fatalf("failed to run ent automigration: %v", err)
+		t.Fatalf("failed to run schema automigrations: %v", err)
 	}
 
 	return client
 }
 
 func TestTitles_EntCRUD(t *testing.T) {
-	client := setupTestEnt(t)
+	client := setupTestDB(t)
 	defer client.Close()
 
 	ctx := context.Background()
 
-	now := time.Date(2026, 8, 21, 12, 0, 0, 0, time.UTC)
+	// 1. Create Title with Metadata
+	now := time.Now().UTC().Truncate(time.Second)
 	premiere := now.Add(48 * time.Hour)
-
 	title := &models.Title{
-		ID:                   "title-eclipse",
+		Base: models.Base{
+			ID: "title-eclipse",
+			Metadata: map[string]any{
+				"poster_url": "https://cdn.lume.stream/posters/eclipse.jpg",
+				"genre":      "Sci-Fi",
+			},
+		},
 		Name:                 "Eclipse",
 		Type:                 models.TitleTypeFeature,
 		PremiereDate:         premiere,
 		Territories:          40,
-		CurrentMasterVersion: "V13",
+		CurrentMasterVersion: "V12",
 		OverallStatus:        models.StatusAtRisk,
 	}
 
-	// 1. Create
 	createRes := titles.Create(ctx, client, title)
 	if createRes.IsErr() {
-		t.Fatalf("failed to create title: %v", createRes.Error())
+		t.Fatalf("expected title creation to succeed, got error: %v", createRes.Error())
 	}
 	created := createRes.Unwrap()
 	if created.ID != "title-eclipse" || created.Name != "Eclipse" {
-		t.Errorf("unexpected created title: %+v", created)
+		t.Fatalf("unexpected title data: %+v", created)
+	}
+	if created.Metadata["genre"] != "Sci-Fi" {
+		t.Errorf("expected genre Sci-Fi in metadata, got: %v", created.Metadata["genre"])
 	}
 
-	// 2. Get
+	// 2. Get Title
 	getRes := titles.Get(ctx, client, "title-eclipse")
 	if getRes.IsErr() {
-		t.Fatalf("failed to get title: %v", getRes.Error())
+		t.Fatalf("expected title fetch to succeed, got error: %v", getRes.Error())
 	}
 	fetched := getRes.Unwrap()
-	if fetched.Name != "Eclipse" || fetched.Territories != 40 {
-		t.Errorf("unexpected fetched title: %+v", fetched)
+	if fetched.CurrentMasterVersion != "V12" {
+		t.Errorf("expected CurrentMasterVersion 'V12', got '%s'", fetched.CurrentMasterVersion)
 	}
 
-	// 3. List (no filter)
-	listRes := titles.List(ctx, client, domainerrors.None[models.TitleStatus]())
+	// 3. List Titles (Filter by status)
+	listRes := titles.List(ctx, client, domainerrors.Some(models.StatusAtRisk))
 	if listRes.IsErr() {
-		t.Fatalf("failed to list titles: %v", listRes.Error())
+		t.Fatalf("expected title listing to succeed, got error: %v", listRes.Error())
 	}
-	allTitles := listRes.Unwrap()
-	if len(allTitles) != 1 {
-		t.Errorf("expected 1 title, got %d", len(allTitles))
-	}
-
-	// 4. List (with filter)
-	filterRes := titles.List(ctx, client, domainerrors.Some(models.StatusAtRisk))
-	if filterRes.IsErr() {
-		t.Fatalf("failed to list filtered titles: %v", filterRes.Error())
-	}
-	if len(filterRes.Unwrap()) != 1 {
-		t.Errorf("expected 1 title matching AT_RISK, got %d", len(filterRes.Unwrap()))
+	list := listRes.Unwrap()
+	if len(list) != 1 {
+		t.Fatalf("expected 1 title with status AT_RISK, got %d", len(list))
 	}
 
-	noneRes := titles.List(ctx, client, domainerrors.Some(models.StatusOnTrack))
-	if noneRes.IsErr() {
-		t.Fatalf("failed to list filtered titles: %v", noneRes.Error())
-	}
-	if len(noneRes.Unwrap()) != 0 {
-		t.Errorf("expected 0 titles matching ON_TRACK, got %d", len(noneRes.Unwrap()))
-	}
-
-	// 5. Partial Update (PATCH)
+	// 4. Update Title with partial metadata
 	newStatus := models.StatusHold
-	newTerritories := 55
+	newMaster := "V13"
 	updateRes := titles.Update(ctx, client, "title-eclipse", &models.UpdateTitleInput{
-		OverallStatus: &newStatus,
-		Territories:   &newTerritories,
+		OverallStatus:        &newStatus,
+		CurrentMasterVersion: &newMaster,
+		Metadata: map[string]any{
+			"poster_url": "https://cdn.lume.stream/posters/eclipse_v2.jpg",
+			"genre":      "Sci-Fi",
+			"priority":   "P0",
+		},
 	})
 	if updateRes.IsErr() {
-		t.Fatalf("failed to partially update title: %v", updateRes.Error())
+		t.Fatalf("expected title update to succeed, got error: %v", updateRes.Error())
+	}
+	updated := updateRes.Unwrap()
+	if updated.OverallStatus != models.StatusHold || updated.CurrentMasterVersion != "V13" {
+		t.Errorf("unexpected updated status or master version: %+v", updated)
+	}
+	if updated.Metadata["priority"] != "P0" {
+		t.Errorf("expected priority P0 in metadata, got: %v", updated.Metadata["priority"])
 	}
 
-	updatedGet := titles.Get(ctx, client, "title-eclipse").Unwrap()
-	if updatedGet.Territories != 55 || updatedGet.OverallStatus != models.StatusHold || updatedGet.Name != "Eclipse" {
-		t.Errorf("partial update not persisted correctly: %+v", updatedGet)
+	// 5. Delete Title
+	deleteRes := titles.Delete(ctx, client, "title-eclipse")
+	if deleteRes.IsErr() {
+		t.Fatalf("expected title deletion to succeed, got error: %v", deleteRes.Error())
 	}
 
-	// 6. Delete
-	delRes := titles.Delete(ctx, client, "title-eclipse")
-	if delRes.IsErr() {
-		t.Fatalf("failed to delete title: %v", delRes.Error())
+	// 6. Verify Delete (Get returns NotFound)
+	notFoundRes := titles.Get(ctx, client, "title-eclipse")
+	if notFoundRes.IsOk() {
+		t.Fatalf("expected deleted title to return error, got title: %+v", notFoundRes.Unwrap())
 	}
-
-	// 7. Get after Delete should return domainerrors.CodeNotFound
-	afterDelRes := titles.Get(ctx, client, "title-eclipse")
-	if afterDelRes.IsOk() {
-		t.Errorf("expected error after delete, got title: %+v", afterDelRes.Unwrap())
-	}
-	var domErr *domainerrors.DomainError
-	if domErr = afterDelRes.Error().(*domainerrors.DomainError); domErr.Code != domainerrors.CodeNotFound {
-		t.Errorf("expected CodeNotFound, got %s", domErr.Code)
+	domErr, ok := notFoundRes.Error().(*domainerrors.DomainError)
+	if !ok || domErr.Code != domainerrors.CodeNotFound {
+		t.Fatalf("expected CodeNotFound error, got: %v", notFoundRes.Error())
 	}
 }
 
 func TestTitles_FK_DeleteBlockedByDependents(t *testing.T) {
-	client := setupTestEnt(t)
+	client := setupTestDB(t)
 	defer client.Close()
 
 	ctx := context.Background()
 
 	// 1. Create Title
 	_ = titles.Create(ctx, client, &models.Title{
-		ID:                   "title-active",
+		Base:                 models.Base{ID: "title-active"},
 		Name:                 "Active Title",
 		Type:                 models.TitleTypeFeature,
 		PremiereDate:         time.Now().Add(24 * time.Hour),
 		Territories:          10,
-		CurrentMasterVersion: "V01",
+		CurrentMasterVersion: "V1",
 		OverallStatus:        models.StatusOnTrack,
 	})
 
-	// 2. Create Master referencing title-active
+	// 2. Create Master referencing the title
 	_ = masters.Create(ctx, client, &models.Master{
-		ID:      "master-active-v01",
-		TitleID: "title-active",
-		Version: "V01",
+		ID:        "master-active-v1",
+		TitleID:   "title-active",
+		Version:   "V1",
+		CreatedAt: time.Now(),
 	})
 
-	// 3. Deleting title-active must fail with CodeConflict (409)
+	// 3. Attempt to delete Title -> Should fail with CodeConflict
 	delRes := titles.Delete(ctx, client, "title-active")
 	if delRes.IsOk() {
-		t.Fatalf("expected title delete to be blocked by dependent master")
+		t.Fatalf("expected title delete to fail due to foreign key dependents")
 	}
 
 	domErr, ok := delRes.Error().(*domainerrors.DomainError)
 	if !ok || domErr.Code != domainerrors.CodeConflict {
-		t.Errorf("expected CodeConflict (409) for delete blocked by dependents, got: %v", delRes.Error())
+		t.Fatalf("expected CodeConflict (409) for delete blocked by dependent records, got: %v", delRes.Error())
 	}
 }

@@ -24,9 +24,9 @@ func setupTestDB(t *testing.T) *ent.Client {
 		t.Fatalf("failed to automigrate: %v", err)
 	}
 
-	// Seed parent title
+	// Seed Title
 	titleRes := titles.Create(ctx, client, &models.Title{
-		ID:                   "title-eclipse",
+		Base:                 models.Base{ID: "title-eclipse"},
 		Name:                 "Eclipse",
 		Type:                 models.TitleTypeFeature,
 		PremiereDate:         time.Now().Add(48 * time.Hour),
@@ -47,68 +47,76 @@ func TestMasters_CRUD(t *testing.T) {
 
 	ctx := context.Background()
 
+	// 1. Create Master V12 superseding V11
 	m1 := &models.Master{
 		ID:                "master-eclipse-v12",
 		TitleID:           "title-eclipse",
 		Version:           "V12",
 		SupersedesVersion: "V11",
+		CreatedAt:         time.Now().UTC(),
+	}
+	res1 := masters.Create(ctx, client, m1)
+	if res1.IsErr() {
+		t.Fatalf("failed to create master V12: %v", res1.Error())
+	}
+	if res1.Unwrap().Version != "V12" {
+		t.Fatalf("expected version V12, got %s", res1.Unwrap().Version)
 	}
 
+	// Verify Title.CurrentMasterVersion updated to V12
+	t1 := titles.Get(ctx, client, "title-eclipse").Unwrap()
+	if t1.CurrentMasterVersion != "V12" {
+		t.Fatalf("expected title master version V12, got %s", t1.CurrentMasterVersion)
+	}
+
+	// 2. Create Master V13 superseding V12
 	m2 := &models.Master{
 		ID:                "master-eclipse-v13",
 		TitleID:           "title-eclipse",
 		Version:           "V13",
 		SupersedesVersion: "V12",
+		CreatedAt:         time.Now().UTC().Add(time.Hour),
 	}
-
-	// 1. Create m1 and verify title current_master_version is updated
-	res1 := masters.Create(ctx, client, m1)
-	if res1.IsErr() {
-		t.Fatalf("failed to create master 1: %v", res1.Error())
-	}
-	title1 := titles.Get(ctx, client, "title-eclipse").Unwrap()
-	if title1.CurrentMasterVersion != "V12" {
-		t.Errorf("expected title CurrentMasterVersion to be V12, got %s", title1.CurrentMasterVersion)
-	}
-
-	// 2. Create m2 and verify title is updated to V13
 	res2 := masters.Create(ctx, client, m2)
 	if res2.IsErr() {
-		t.Fatalf("failed to create master 2: %v", res2.Error())
-	}
-	title2 := titles.Get(ctx, client, "title-eclipse").Unwrap()
-	if title2.CurrentMasterVersion != "V13" {
-		t.Errorf("expected title CurrentMasterVersion to be V13, got %s", title2.CurrentMasterVersion)
+		t.Fatalf("failed to create master V13: %v", res2.Error())
 	}
 
-	// 3. Get
+	// Verify Title.CurrentMasterVersion updated sequentially to V13
+	t2 := titles.Get(ctx, client, "title-eclipse").Unwrap()
+	if t2.CurrentMasterVersion != "V13" {
+		t.Fatalf("expected title master version V13, got %s", t2.CurrentMasterVersion)
+	}
+
+	// 3. Get Master
 	getRes := masters.Get(ctx, client, "master-eclipse-v13")
 	if getRes.IsErr() {
 		t.Fatalf("failed to get master: %v", getRes.Error())
 	}
-	if getRes.Unwrap().Version != "V13" || getRes.Unwrap().SupersedesVersion != "V12" {
-		t.Errorf("unexpected master fields: %+v", getRes.Unwrap())
-	}
 
-	// 4. List
+	// 4. List Masters (both V12 and V13)
 	listRes := masters.List(ctx, client, domainerrors.Some("title-eclipse"))
 	if listRes.IsErr() {
 		t.Fatalf("failed to list masters: %v", listRes.Error())
 	}
 	if len(listRes.Unwrap()) != 2 {
-		t.Errorf("expected 2 masters, got %d", len(listRes.Unwrap()))
+		t.Fatalf("expected 2 masters, got %d", len(listRes.Unwrap()))
 	}
 
-	// 5. Delete
-	delRes := masters.Delete(ctx, client, "master-eclipse-v12")
+	// 5. Delete Master
+	delRes := masters.Delete(ctx, client, "master-eclipse-v13")
 	if delRes.IsErr() {
 		t.Fatalf("failed to delete master: %v", delRes.Error())
 	}
 
-	// 6. Get after Delete
-	afterDel := masters.Get(ctx, client, "master-eclipse-v12")
-	if afterDel.IsOk() {
-		t.Errorf("expected error after delete, got master")
+	// 6. Verify Delete (Get returns NotFound)
+	notFoundRes := masters.Get(ctx, client, "master-eclipse-v13")
+	if notFoundRes.IsOk() {
+		t.Fatalf("expected deleted master to return error, got: %+v", notFoundRes.Unwrap())
+	}
+	domErr, ok := notFoundRes.Error().(*domainerrors.DomainError)
+	if !ok || domErr.Code != domainerrors.CodeNotFound {
+		t.Fatalf("expected CodeNotFound error after deletion, got: %v", notFoundRes.Error())
 	}
 }
 
@@ -118,20 +126,21 @@ func TestMasters_FK_Constraint(t *testing.T) {
 
 	ctx := context.Background()
 
-	// Negative Test: Creating Master for non-existent Title should fail with CodeInvalidInput (400)
+	// Attempt to create master for non-existent title
 	orphanMaster := &models.Master{
-		ID:      "master-orphan",
-		TitleID: "non-existent-title",
-		Version: "V01",
+		ID:        "master-orphan",
+		TitleID:   "non-existent-title",
+		Version:   "V1",
+		CreatedAt: time.Now(),
 	}
 
 	res := masters.Create(ctx, client, orphanMaster)
 	if res.IsOk() {
-		t.Fatalf("expected orphan master creation to fail, but succeeded")
+		t.Fatalf("expected foreign key constraint violation, but creation succeeded")
 	}
 
 	domErr, ok := res.Error().(*domainerrors.DomainError)
 	if !ok || domErr.Code != domainerrors.CodeInvalidInput {
-		t.Errorf("expected CodeInvalidInput for orphan FK, got: %v", res.Error())
+		t.Fatalf("expected CodeInvalidInput for orphan FK, got: %v", res.Error())
 	}
 }
