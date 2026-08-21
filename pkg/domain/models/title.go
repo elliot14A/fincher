@@ -24,34 +24,39 @@ const (
 
 // Title represents a media release entity.
 type Title struct {
-	ID                   string      `json:"id" validate:"required"`
+	Base
 	Name                 string      `json:"name" validate:"required"`
 	Type                 TitleType   `json:"type" validate:"required,oneof=FEATURE SERIES SPECIAL"`
 	PremiereDate         time.Time   `json:"premiere_date" validate:"required"`
 	Territories          int         `json:"territories" validate:"required,gte=1"`
 	CurrentMasterVersion string      `json:"current_master_version" validate:"required"`
 	OverallStatus        TitleStatus `json:"overall_status" validate:"required,oneof=ON_TRACK AT_RISK HOLD PROCESSING SHIPPED"`
-	CreatedAt            time.Time   `json:"created_at"`
-	UpdatedAt            time.Time   `json:"updated_at"`
 }
 
 // Validate verifies title attributes.
 func (t *Title) Validate() error {
+	if err := t.ValidateMetadata(); err != nil {
+		return err
+	}
 	return validate.Struct(t)
 }
 
 // UpdateTitleInput represents partial update attributes for a Title.
 type UpdateTitleInput struct {
-	Name                 *string      `json:"name,omitempty" validate:"omitempty,min=1"`
-	Type                 *TitleType   `json:"type,omitempty" validate:"omitempty,oneof=FEATURE SERIES SPECIAL"`
-	PremiereDate         *time.Time   `json:"premiere_date,omitempty"`
-	Territories          *int         `json:"territories,omitempty" validate:"omitempty,gte=1"`
-	CurrentMasterVersion *string      `json:"current_master_version,omitempty" validate:"omitempty,min=1"`
-	OverallStatus        *TitleStatus `json:"overall_status,omitempty" validate:"omitempty,oneof=ON_TRACK AT_RISK HOLD PROCESSING SHIPPED"`
+	Name                 *string        `json:"name,omitempty" validate:"omitempty,min=1"`
+	Type                 *TitleType     `json:"type,omitempty" validate:"omitempty,oneof=FEATURE SERIES SPECIAL"`
+	PremiereDate         *time.Time     `json:"premiere_date,omitempty"`
+	Territories          *int           `json:"territories,omitempty" validate:"omitempty,gte=1"`
+	CurrentMasterVersion *string        `json:"current_master_version,omitempty" validate:"omitempty,min=1"`
+	OverallStatus        *TitleStatus   `json:"overall_status,omitempty" validate:"omitempty,oneof=ON_TRACK AT_RISK HOLD PROCESSING SHIPPED"`
+	Metadata             map[string]any `json:"metadata,omitempty"`
 }
 
 // Validate verifies partial title update constraints.
 func (u *UpdateTitleInput) Validate() error {
+	if err := ValidateMetadataMap(u.Metadata); err != nil {
+		return err
+	}
 	return validate.Struct(u)
 }
 
