@@ -6,5 +6,14 @@ import (
 	"entgo.io/ent/dialect/sql"
 )
 
+// Master is the predicate function for master builders.
+type Master func(*sql.Selector)
+
+// MediaPackage is the predicate function for mediapackage builders.
+type MediaPackage func(*sql.Selector)
+
 // Title is the predicate function for title builders.
 type Title func(*sql.Selector)
+
+// Vendor is the predicate function for vendor builders.
+type Vendor func(*sql.Selector)

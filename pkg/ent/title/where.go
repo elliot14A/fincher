@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/elliot14A/fincher/pkg/ent/predicate"
 )
 
@@ -422,6 +423,52 @@ func UpdatedAtLT(v time.Time) predicate.Title {
 // UpdatedAtLTE applies the LTE predicate on the "updated_at" field.
 func UpdatedAtLTE(v time.Time) predicate.Title {
 	return predicate.Title(sql.FieldLTE(FieldUpdatedAt, v))
+}
+
+// HasMasters applies the HasEdge predicate on the "masters" edge.
+func HasMasters() predicate.Title {
+	return predicate.Title(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, MastersTable, MastersColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasMastersWith applies the HasEdge predicate on the "masters" edge with a given conditions (other predicates).
+func HasMastersWith(preds ...predicate.Master) predicate.Title {
+	return predicate.Title(func(s *sql.Selector) {
+		step := newMastersStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasPackages applies the HasEdge predicate on the "packages" edge.
+func HasPackages() predicate.Title {
+	return predicate.Title(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, PackagesTable, PackagesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasPackagesWith applies the HasEdge predicate on the "packages" edge with a given conditions (other predicates).
+func HasPackagesWith(preds ...predicate.MediaPackage) predicate.Title {
+	return predicate.Title(func(s *sql.Selector) {
+		step := newPackagesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
 }
 
 // And groups predicates with the AND operator between them.

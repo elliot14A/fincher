@@ -32,8 +32,40 @@ type Title struct {
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// UpdatedAt holds the value of the "updated_at" field.
-	UpdatedAt    time.Time `json:"updated_at,omitempty"`
+	UpdatedAt time.Time `json:"updated_at,omitempty"`
+	// Edges holds the relations/edges for other nodes in the graph.
+	// The values are being populated by the TitleQuery when eager-loading is set.
+	Edges        TitleEdges `json:"edges"`
 	selectValues sql.SelectValues
+}
+
+// TitleEdges holds the relations/edges for other nodes in the graph.
+type TitleEdges struct {
+	// Masters holds the value of the masters edge.
+	Masters []*Master `json:"masters,omitempty"`
+	// Packages holds the value of the packages edge.
+	Packages []*MediaPackage `json:"packages,omitempty"`
+	// loadedTypes holds the information for reporting if a
+	// type was loaded (or requested) in eager-loading or not.
+	loadedTypes [2]bool
+}
+
+// MastersOrErr returns the Masters value or an error if the edge
+// was not loaded in eager-loading.
+func (e TitleEdges) MastersOrErr() ([]*Master, error) {
+	if e.loadedTypes[0] {
+		return e.Masters, nil
+	}
+	return nil, &NotLoadedError{edge: "masters"}
+}
+
+// PackagesOrErr returns the Packages value or an error if the edge
+// was not loaded in eager-loading.
+func (e TitleEdges) PackagesOrErr() ([]*MediaPackage, error) {
+	if e.loadedTypes[1] {
+		return e.Packages, nil
+	}
+	return nil, &NotLoadedError{edge: "packages"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -127,6 +159,16 @@ func (_m *Title) assignValues(columns []string, values []any) error {
 // This includes values selected through modifiers, order, etc.
 func (_m *Title) Value(name string) (ent.Value, error) {
 	return _m.selectValues.Get(name)
+}
+
+// QueryMasters queries the "masters" edge of the Title entity.
+func (_m *Title) QueryMasters() *MasterQuery {
+	return NewTitleClient(_m.config).QueryMasters(_m)
+}
+
+// QueryPackages queries the "packages" edge of the Title entity.
+func (_m *Title) QueryPackages() *MediaPackageQuery {
+	return NewTitleClient(_m.config).QueryPackages(_m)
 }
 
 // Update returns a builder for updating this Title.

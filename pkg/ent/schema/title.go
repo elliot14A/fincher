@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"entgo.io/ent"
+	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 )
 
@@ -44,5 +45,8 @@ func (Title) Fields() []ent.Field {
 
 // Edges of the Title.
 func (Title) Edges() []ent.Edge {
-	return nil
+	return []ent.Edge{
+		edge.To("masters", Master.Type),
+		edge.To("packages", MediaPackage.Type),
+	}
 }

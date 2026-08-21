@@ -14,7 +14,11 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/elliot14A/fincher/pkg/ent/master"
+	"github.com/elliot14A/fincher/pkg/ent/mediapackage"
 	"github.com/elliot14A/fincher/pkg/ent/title"
+	"github.com/elliot14A/fincher/pkg/ent/vendor"
 )
 
 // Client is the client that holds all ent builders.
@@ -22,8 +26,14 @@ type Client struct {
 	config
 	// Schema is the client for creating, migrating and dropping schema.
 	Schema *migrate.Schema
+	// Master is the client for interacting with the Master builders.
+	Master *MasterClient
+	// MediaPackage is the client for interacting with the MediaPackage builders.
+	MediaPackage *MediaPackageClient
 	// Title is the client for interacting with the Title builders.
 	Title *TitleClient
+	// Vendor is the client for interacting with the Vendor builders.
+	Vendor *VendorClient
 }
 
 // NewClient creates a new client configured with the given options.
@@ -35,7 +45,10 @@ func NewClient(opts ...Option) *Client {
 
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
+	c.Master = NewMasterClient(c.config)
+	c.MediaPackage = NewMediaPackageClient(c.config)
 	c.Title = NewTitleClient(c.config)
+	c.Vendor = NewVendorClient(c.config)
 }
 
 type (
@@ -126,9 +139,12 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	cfg := c.config
 	cfg.driver = tx
 	return &Tx{
-		ctx:    ctx,
-		config: cfg,
-		Title:  NewTitleClient(cfg),
+		ctx:          ctx,
+		config:       cfg,
+		Master:       NewMasterClient(cfg),
+		MediaPackage: NewMediaPackageClient(cfg),
+		Title:        NewTitleClient(cfg),
+		Vendor:       NewVendorClient(cfg),
 	}, nil
 }
 
@@ -146,16 +162,19 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	cfg := c.config
 	cfg.driver = &txDriver{tx: tx, drv: c.driver}
 	return &Tx{
-		ctx:    ctx,
-		config: cfg,
-		Title:  NewTitleClient(cfg),
+		ctx:          ctx,
+		config:       cfg,
+		Master:       NewMasterClient(cfg),
+		MediaPackage: NewMediaPackageClient(cfg),
+		Title:        NewTitleClient(cfg),
+		Vendor:       NewVendorClient(cfg),
 	}, nil
 }
 
 // Debug returns a new debug-client. It's used to get verbose logging on specific operations.
 //
 //	client.Debug().
-//		Title.
+//		Master.
 //		Query().
 //		Count(ctx)
 func (c *Client) Debug() *Client {
@@ -177,22 +196,348 @@ func (c *Client) Close() error {
 // Use adds the mutation hooks to all the entity clients.
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
+	c.Master.Use(hooks...)
+	c.MediaPackage.Use(hooks...)
 	c.Title.Use(hooks...)
+	c.Vendor.Use(hooks...)
 }
 
 // Intercept adds the query interceptors to all the entity clients.
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
+	c.Master.Intercept(interceptors...)
+	c.MediaPackage.Intercept(interceptors...)
 	c.Title.Intercept(interceptors...)
+	c.Vendor.Intercept(interceptors...)
 }
 
 // Mutate implements the ent.Mutator interface.
 func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 	switch m := m.(type) {
+	case *MasterMutation:
+		return c.Master.mutate(ctx, m)
+	case *MediaPackageMutation:
+		return c.MediaPackage.mutate(ctx, m)
 	case *TitleMutation:
 		return c.Title.mutate(ctx, m)
+	case *VendorMutation:
+		return c.Vendor.mutate(ctx, m)
 	default:
 		return nil, fmt.Errorf("ent: unknown mutation type %T", m)
+	}
+}
+
+// MasterClient is a client for the Master schema.
+type MasterClient struct {
+	config
+}
+
+// NewMasterClient returns a client for the Master from the given config.
+func NewMasterClient(c config) *MasterClient {
+	return &MasterClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `master.Hooks(f(g(h())))`.
+func (c *MasterClient) Use(hooks ...Hook) {
+	c.hooks.Master = append(c.hooks.Master, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `master.Intercept(f(g(h())))`.
+func (c *MasterClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Master = append(c.inters.Master, interceptors...)
+}
+
+// Create returns a builder for creating a Master entity.
+func (c *MasterClient) Create() *MasterCreate {
+	mutation := newMasterMutation(c.config, OpCreate)
+	return &MasterCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Master entities.
+func (c *MasterClient) CreateBulk(builders ...*MasterCreate) *MasterCreateBulk {
+	return &MasterCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *MasterClient) MapCreateBulk(slice any, setFunc func(*MasterCreate, int)) *MasterCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &MasterCreateBulk{err: fmt.Errorf("calling to MasterClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*MasterCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &MasterCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Master.
+func (c *MasterClient) Update() *MasterUpdate {
+	mutation := newMasterMutation(c.config, OpUpdate)
+	return &MasterUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *MasterClient) UpdateOne(_m *Master) *MasterUpdateOne {
+	mutation := newMasterMutation(c.config, OpUpdateOne, withMaster(_m))
+	return &MasterUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *MasterClient) UpdateOneID(id string) *MasterUpdateOne {
+	mutation := newMasterMutation(c.config, OpUpdateOne, withMasterID(id))
+	return &MasterUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Master.
+func (c *MasterClient) Delete() *MasterDelete {
+	mutation := newMasterMutation(c.config, OpDelete)
+	return &MasterDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *MasterClient) DeleteOne(_m *Master) *MasterDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *MasterClient) DeleteOneID(id string) *MasterDeleteOne {
+	builder := c.Delete().Where(master.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &MasterDeleteOne{builder}
+}
+
+// Query returns a query builder for Master.
+func (c *MasterClient) Query() *MasterQuery {
+	return &MasterQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeMaster},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Master entity by its id.
+func (c *MasterClient) Get(ctx context.Context, id string) (*Master, error) {
+	return c.Query().Where(master.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *MasterClient) GetX(ctx context.Context, id string) *Master {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryTitle queries the title edge of a Master.
+func (c *MasterClient) QueryTitle(_m *Master) *TitleQuery {
+	query := (&TitleClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(master.Table, master.FieldID, id),
+			sqlgraph.To(title.Table, title.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, master.TitleTable, master.TitleColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *MasterClient) Hooks() []Hook {
+	return c.hooks.Master
+}
+
+// Interceptors returns the client interceptors.
+func (c *MasterClient) Interceptors() []Interceptor {
+	return c.inters.Master
+}
+
+func (c *MasterClient) mutate(ctx context.Context, m *MasterMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&MasterCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&MasterUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&MasterUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&MasterDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Master mutation op: %q", m.Op())
+	}
+}
+
+// MediaPackageClient is a client for the MediaPackage schema.
+type MediaPackageClient struct {
+	config
+}
+
+// NewMediaPackageClient returns a client for the MediaPackage from the given config.
+func NewMediaPackageClient(c config) *MediaPackageClient {
+	return &MediaPackageClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `mediapackage.Hooks(f(g(h())))`.
+func (c *MediaPackageClient) Use(hooks ...Hook) {
+	c.hooks.MediaPackage = append(c.hooks.MediaPackage, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `mediapackage.Intercept(f(g(h())))`.
+func (c *MediaPackageClient) Intercept(interceptors ...Interceptor) {
+	c.inters.MediaPackage = append(c.inters.MediaPackage, interceptors...)
+}
+
+// Create returns a builder for creating a MediaPackage entity.
+func (c *MediaPackageClient) Create() *MediaPackageCreate {
+	mutation := newMediaPackageMutation(c.config, OpCreate)
+	return &MediaPackageCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of MediaPackage entities.
+func (c *MediaPackageClient) CreateBulk(builders ...*MediaPackageCreate) *MediaPackageCreateBulk {
+	return &MediaPackageCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *MediaPackageClient) MapCreateBulk(slice any, setFunc func(*MediaPackageCreate, int)) *MediaPackageCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &MediaPackageCreateBulk{err: fmt.Errorf("calling to MediaPackageClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*MediaPackageCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &MediaPackageCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for MediaPackage.
+func (c *MediaPackageClient) Update() *MediaPackageUpdate {
+	mutation := newMediaPackageMutation(c.config, OpUpdate)
+	return &MediaPackageUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *MediaPackageClient) UpdateOne(_m *MediaPackage) *MediaPackageUpdateOne {
+	mutation := newMediaPackageMutation(c.config, OpUpdateOne, withMediaPackage(_m))
+	return &MediaPackageUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *MediaPackageClient) UpdateOneID(id string) *MediaPackageUpdateOne {
+	mutation := newMediaPackageMutation(c.config, OpUpdateOne, withMediaPackageID(id))
+	return &MediaPackageUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for MediaPackage.
+func (c *MediaPackageClient) Delete() *MediaPackageDelete {
+	mutation := newMediaPackageMutation(c.config, OpDelete)
+	return &MediaPackageDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *MediaPackageClient) DeleteOne(_m *MediaPackage) *MediaPackageDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *MediaPackageClient) DeleteOneID(id string) *MediaPackageDeleteOne {
+	builder := c.Delete().Where(mediapackage.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &MediaPackageDeleteOne{builder}
+}
+
+// Query returns a query builder for MediaPackage.
+func (c *MediaPackageClient) Query() *MediaPackageQuery {
+	return &MediaPackageQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeMediaPackage},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a MediaPackage entity by its id.
+func (c *MediaPackageClient) Get(ctx context.Context, id string) (*MediaPackage, error) {
+	return c.Query().Where(mediapackage.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *MediaPackageClient) GetX(ctx context.Context, id string) *MediaPackage {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryTitle queries the title edge of a MediaPackage.
+func (c *MediaPackageClient) QueryTitle(_m *MediaPackage) *TitleQuery {
+	query := (&TitleClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(mediapackage.Table, mediapackage.FieldID, id),
+			sqlgraph.To(title.Table, title.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, mediapackage.TitleTable, mediapackage.TitleColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryVendor queries the vendor edge of a MediaPackage.
+func (c *MediaPackageClient) QueryVendor(_m *MediaPackage) *VendorQuery {
+	query := (&VendorClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(mediapackage.Table, mediapackage.FieldID, id),
+			sqlgraph.To(vendor.Table, vendor.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, mediapackage.VendorTable, mediapackage.VendorColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *MediaPackageClient) Hooks() []Hook {
+	return c.hooks.MediaPackage
+}
+
+// Interceptors returns the client interceptors.
+func (c *MediaPackageClient) Interceptors() []Interceptor {
+	return c.inters.MediaPackage
+}
+
+func (c *MediaPackageClient) mutate(ctx context.Context, m *MediaPackageMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&MediaPackageCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&MediaPackageUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&MediaPackageUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&MediaPackageDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown MediaPackage mutation op: %q", m.Op())
 	}
 }
 
@@ -304,6 +649,38 @@ func (c *TitleClient) GetX(ctx context.Context, id string) *Title {
 	return obj
 }
 
+// QueryMasters queries the masters edge of a Title.
+func (c *TitleClient) QueryMasters(_m *Title) *MasterQuery {
+	query := (&MasterClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(title.Table, title.FieldID, id),
+			sqlgraph.To(master.Table, master.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, title.MastersTable, title.MastersColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryPackages queries the packages edge of a Title.
+func (c *TitleClient) QueryPackages(_m *Title) *MediaPackageQuery {
+	query := (&MediaPackageClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(title.Table, title.FieldID, id),
+			sqlgraph.To(mediapackage.Table, mediapackage.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, title.PackagesTable, title.PackagesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *TitleClient) Hooks() []Hook {
 	return c.hooks.Title
@@ -329,12 +706,161 @@ func (c *TitleClient) mutate(ctx context.Context, m *TitleMutation) (Value, erro
 	}
 }
 
+// VendorClient is a client for the Vendor schema.
+type VendorClient struct {
+	config
+}
+
+// NewVendorClient returns a client for the Vendor from the given config.
+func NewVendorClient(c config) *VendorClient {
+	return &VendorClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `vendor.Hooks(f(g(h())))`.
+func (c *VendorClient) Use(hooks ...Hook) {
+	c.hooks.Vendor = append(c.hooks.Vendor, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `vendor.Intercept(f(g(h())))`.
+func (c *VendorClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Vendor = append(c.inters.Vendor, interceptors...)
+}
+
+// Create returns a builder for creating a Vendor entity.
+func (c *VendorClient) Create() *VendorCreate {
+	mutation := newVendorMutation(c.config, OpCreate)
+	return &VendorCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Vendor entities.
+func (c *VendorClient) CreateBulk(builders ...*VendorCreate) *VendorCreateBulk {
+	return &VendorCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *VendorClient) MapCreateBulk(slice any, setFunc func(*VendorCreate, int)) *VendorCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &VendorCreateBulk{err: fmt.Errorf("calling to VendorClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*VendorCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &VendorCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Vendor.
+func (c *VendorClient) Update() *VendorUpdate {
+	mutation := newVendorMutation(c.config, OpUpdate)
+	return &VendorUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *VendorClient) UpdateOne(_m *Vendor) *VendorUpdateOne {
+	mutation := newVendorMutation(c.config, OpUpdateOne, withVendor(_m))
+	return &VendorUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *VendorClient) UpdateOneID(id string) *VendorUpdateOne {
+	mutation := newVendorMutation(c.config, OpUpdateOne, withVendorID(id))
+	return &VendorUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Vendor.
+func (c *VendorClient) Delete() *VendorDelete {
+	mutation := newVendorMutation(c.config, OpDelete)
+	return &VendorDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *VendorClient) DeleteOne(_m *Vendor) *VendorDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *VendorClient) DeleteOneID(id string) *VendorDeleteOne {
+	builder := c.Delete().Where(vendor.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &VendorDeleteOne{builder}
+}
+
+// Query returns a query builder for Vendor.
+func (c *VendorClient) Query() *VendorQuery {
+	return &VendorQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeVendor},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Vendor entity by its id.
+func (c *VendorClient) Get(ctx context.Context, id string) (*Vendor, error) {
+	return c.Query().Where(vendor.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *VendorClient) GetX(ctx context.Context, id string) *Vendor {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryPackages queries the packages edge of a Vendor.
+func (c *VendorClient) QueryPackages(_m *Vendor) *MediaPackageQuery {
+	query := (&MediaPackageClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(vendor.Table, vendor.FieldID, id),
+			sqlgraph.To(mediapackage.Table, mediapackage.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, vendor.PackagesTable, vendor.PackagesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *VendorClient) Hooks() []Hook {
+	return c.hooks.Vendor
+}
+
+// Interceptors returns the client interceptors.
+func (c *VendorClient) Interceptors() []Interceptor {
+	return c.inters.Vendor
+}
+
+func (c *VendorClient) mutate(ctx context.Context, m *VendorMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&VendorCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&VendorUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&VendorUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&VendorDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Vendor mutation op: %q", m.Op())
+	}
+}
+
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		Title []ent.Hook
+		Master, MediaPackage, Title, Vendor []ent.Hook
 	}
 	inters struct {
-		Title []ent.Interceptor
+		Master, MediaPackage, Title, Vendor []ent.Interceptor
 	}
 )

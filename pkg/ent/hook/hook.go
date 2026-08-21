@@ -9,6 +9,30 @@ import (
 	"github.com/elliot14A/fincher/pkg/ent"
 )
 
+// The MasterFunc type is an adapter to allow the use of ordinary
+// function as Master mutator.
+type MasterFunc func(context.Context, *ent.MasterMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f MasterFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.MasterMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.MasterMutation", m)
+}
+
+// The MediaPackageFunc type is an adapter to allow the use of ordinary
+// function as MediaPackage mutator.
+type MediaPackageFunc func(context.Context, *ent.MediaPackageMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f MediaPackageFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.MediaPackageMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.MediaPackageMutation", m)
+}
+
 // The TitleFunc type is an adapter to allow the use of ordinary
 // function as Title mutator.
 type TitleFunc func(context.Context, *ent.TitleMutation) (ent.Value, error)
@@ -19,6 +43,18 @@ func (f TitleFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error
 		return f(ctx, mv)
 	}
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.TitleMutation", m)
+}
+
+// The VendorFunc type is an adapter to allow the use of ordinary
+// function as Vendor mutator.
+type VendorFunc func(context.Context, *ent.VendorMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f VendorFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.VendorMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.VendorMutation", m)
 }
 
 // Condition is a hook condition function.

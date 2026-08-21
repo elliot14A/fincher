@@ -4,7 +4,6 @@ package ent
 
 import (
 	"context"
-	"database/sql/driver"
 	"fmt"
 	"math"
 
@@ -12,60 +11,60 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/elliot14A/fincher/pkg/ent/master"
 	"github.com/elliot14A/fincher/pkg/ent/mediapackage"
 	"github.com/elliot14A/fincher/pkg/ent/predicate"
 	"github.com/elliot14A/fincher/pkg/ent/title"
+	"github.com/elliot14A/fincher/pkg/ent/vendor"
 )
 
-// TitleQuery is the builder for querying Title entities.
-type TitleQuery struct {
+// MediaPackageQuery is the builder for querying MediaPackage entities.
+type MediaPackageQuery struct {
 	config
-	ctx          *QueryContext
-	order        []title.OrderOption
-	inters       []Interceptor
-	predicates   []predicate.Title
-	withMasters  *MasterQuery
-	withPackages *MediaPackageQuery
+	ctx        *QueryContext
+	order      []mediapackage.OrderOption
+	inters     []Interceptor
+	predicates []predicate.MediaPackage
+	withTitle  *TitleQuery
+	withVendor *VendorQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
 }
 
-// Where adds a new predicate for the TitleQuery builder.
-func (_q *TitleQuery) Where(ps ...predicate.Title) *TitleQuery {
+// Where adds a new predicate for the MediaPackageQuery builder.
+func (_q *MediaPackageQuery) Where(ps ...predicate.MediaPackage) *MediaPackageQuery {
 	_q.predicates = append(_q.predicates, ps...)
 	return _q
 }
 
 // Limit the number of records to be returned by this query.
-func (_q *TitleQuery) Limit(limit int) *TitleQuery {
+func (_q *MediaPackageQuery) Limit(limit int) *MediaPackageQuery {
 	_q.ctx.Limit = &limit
 	return _q
 }
 
 // Offset to start from.
-func (_q *TitleQuery) Offset(offset int) *TitleQuery {
+func (_q *MediaPackageQuery) Offset(offset int) *MediaPackageQuery {
 	_q.ctx.Offset = &offset
 	return _q
 }
 
 // Unique configures the query builder to filter duplicate records on query.
 // By default, unique is set to true, and can be disabled using this method.
-func (_q *TitleQuery) Unique(unique bool) *TitleQuery {
+func (_q *MediaPackageQuery) Unique(unique bool) *MediaPackageQuery {
 	_q.ctx.Unique = &unique
 	return _q
 }
 
 // Order specifies how the records should be ordered.
-func (_q *TitleQuery) Order(o ...title.OrderOption) *TitleQuery {
+func (_q *MediaPackageQuery) Order(o ...mediapackage.OrderOption) *MediaPackageQuery {
 	_q.order = append(_q.order, o...)
 	return _q
 }
 
-// QueryMasters chains the current query on the "masters" edge.
-func (_q *TitleQuery) QueryMasters() *MasterQuery {
-	query := (&MasterClient{config: _q.config}).Query()
+// QueryTitle chains the current query on the "title" edge.
+func (_q *MediaPackageQuery) QueryTitle() *TitleQuery {
+	query := (&TitleClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := _q.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -75,9 +74,9 @@ func (_q *TitleQuery) QueryMasters() *MasterQuery {
 			return nil, err
 		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(title.Table, title.FieldID, selector),
-			sqlgraph.To(master.Table, master.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, title.MastersTable, title.MastersColumn),
+			sqlgraph.From(mediapackage.Table, mediapackage.FieldID, selector),
+			sqlgraph.To(title.Table, title.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, mediapackage.TitleTable, mediapackage.TitleColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -85,9 +84,9 @@ func (_q *TitleQuery) QueryMasters() *MasterQuery {
 	return query
 }
 
-// QueryPackages chains the current query on the "packages" edge.
-func (_q *TitleQuery) QueryPackages() *MediaPackageQuery {
-	query := (&MediaPackageClient{config: _q.config}).Query()
+// QueryVendor chains the current query on the "vendor" edge.
+func (_q *MediaPackageQuery) QueryVendor() *VendorQuery {
+	query := (&VendorClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := _q.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -97,9 +96,9 @@ func (_q *TitleQuery) QueryPackages() *MediaPackageQuery {
 			return nil, err
 		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(title.Table, title.FieldID, selector),
-			sqlgraph.To(mediapackage.Table, mediapackage.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, title.PackagesTable, title.PackagesColumn),
+			sqlgraph.From(mediapackage.Table, mediapackage.FieldID, selector),
+			sqlgraph.To(vendor.Table, vendor.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, mediapackage.VendorTable, mediapackage.VendorColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -107,21 +106,21 @@ func (_q *TitleQuery) QueryPackages() *MediaPackageQuery {
 	return query
 }
 
-// First returns the first Title entity from the query.
-// Returns a *NotFoundError when no Title was found.
-func (_q *TitleQuery) First(ctx context.Context) (*Title, error) {
+// First returns the first MediaPackage entity from the query.
+// Returns a *NotFoundError when no MediaPackage was found.
+func (_q *MediaPackageQuery) First(ctx context.Context) (*MediaPackage, error) {
 	nodes, err := _q.Limit(1).All(setContextOp(ctx, _q.ctx, ent.OpQueryFirst))
 	if err != nil {
 		return nil, err
 	}
 	if len(nodes) == 0 {
-		return nil, &NotFoundError{title.Label}
+		return nil, &NotFoundError{mediapackage.Label}
 	}
 	return nodes[0], nil
 }
 
 // FirstX is like First, but panics if an error occurs.
-func (_q *TitleQuery) FirstX(ctx context.Context) *Title {
+func (_q *MediaPackageQuery) FirstX(ctx context.Context) *MediaPackage {
 	node, err := _q.First(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -129,22 +128,22 @@ func (_q *TitleQuery) FirstX(ctx context.Context) *Title {
 	return node
 }
 
-// FirstID returns the first Title ID from the query.
-// Returns a *NotFoundError when no Title ID was found.
-func (_q *TitleQuery) FirstID(ctx context.Context) (id string, err error) {
+// FirstID returns the first MediaPackage ID from the query.
+// Returns a *NotFoundError when no MediaPackage ID was found.
+func (_q *MediaPackageQuery) FirstID(ctx context.Context) (id string, err error) {
 	var ids []string
 	if ids, err = _q.Limit(1).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
 	if len(ids) == 0 {
-		err = &NotFoundError{title.Label}
+		err = &NotFoundError{mediapackage.Label}
 		return
 	}
 	return ids[0], nil
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (_q *TitleQuery) FirstIDX(ctx context.Context) string {
+func (_q *MediaPackageQuery) FirstIDX(ctx context.Context) string {
 	id, err := _q.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -152,10 +151,10 @@ func (_q *TitleQuery) FirstIDX(ctx context.Context) string {
 	return id
 }
 
-// Only returns a single Title entity found by the query, ensuring it only returns one.
-// Returns a *NotSingularError when more than one Title entity is found.
-// Returns a *NotFoundError when no Title entities are found.
-func (_q *TitleQuery) Only(ctx context.Context) (*Title, error) {
+// Only returns a single MediaPackage entity found by the query, ensuring it only returns one.
+// Returns a *NotSingularError when more than one MediaPackage entity is found.
+// Returns a *NotFoundError when no MediaPackage entities are found.
+func (_q *MediaPackageQuery) Only(ctx context.Context) (*MediaPackage, error) {
 	nodes, err := _q.Limit(2).All(setContextOp(ctx, _q.ctx, ent.OpQueryOnly))
 	if err != nil {
 		return nil, err
@@ -164,14 +163,14 @@ func (_q *TitleQuery) Only(ctx context.Context) (*Title, error) {
 	case 1:
 		return nodes[0], nil
 	case 0:
-		return nil, &NotFoundError{title.Label}
+		return nil, &NotFoundError{mediapackage.Label}
 	default:
-		return nil, &NotSingularError{title.Label}
+		return nil, &NotSingularError{mediapackage.Label}
 	}
 }
 
 // OnlyX is like Only, but panics if an error occurs.
-func (_q *TitleQuery) OnlyX(ctx context.Context) *Title {
+func (_q *MediaPackageQuery) OnlyX(ctx context.Context) *MediaPackage {
 	node, err := _q.Only(ctx)
 	if err != nil {
 		panic(err)
@@ -179,10 +178,10 @@ func (_q *TitleQuery) OnlyX(ctx context.Context) *Title {
 	return node
 }
 
-// OnlyID is like Only, but returns the only Title ID in the query.
-// Returns a *NotSingularError when more than one Title ID is found.
+// OnlyID is like Only, but returns the only MediaPackage ID in the query.
+// Returns a *NotSingularError when more than one MediaPackage ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (_q *TitleQuery) OnlyID(ctx context.Context) (id string, err error) {
+func (_q *MediaPackageQuery) OnlyID(ctx context.Context) (id string, err error) {
 	var ids []string
 	if ids, err = _q.Limit(2).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
@@ -191,15 +190,15 @@ func (_q *TitleQuery) OnlyID(ctx context.Context) (id string, err error) {
 	case 1:
 		id = ids[0]
 	case 0:
-		err = &NotFoundError{title.Label}
+		err = &NotFoundError{mediapackage.Label}
 	default:
-		err = &NotSingularError{title.Label}
+		err = &NotSingularError{mediapackage.Label}
 	}
 	return
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (_q *TitleQuery) OnlyIDX(ctx context.Context) string {
+func (_q *MediaPackageQuery) OnlyIDX(ctx context.Context) string {
 	id, err := _q.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -207,18 +206,18 @@ func (_q *TitleQuery) OnlyIDX(ctx context.Context) string {
 	return id
 }
 
-// All executes the query and returns a list of Titles.
-func (_q *TitleQuery) All(ctx context.Context) ([]*Title, error) {
+// All executes the query and returns a list of MediaPackages.
+func (_q *MediaPackageQuery) All(ctx context.Context) ([]*MediaPackage, error) {
 	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryAll)
 	if err := _q.prepareQuery(ctx); err != nil {
 		return nil, err
 	}
-	qr := querierAll[[]*Title, *TitleQuery]()
-	return withInterceptors[[]*Title](ctx, _q, qr, _q.inters)
+	qr := querierAll[[]*MediaPackage, *MediaPackageQuery]()
+	return withInterceptors[[]*MediaPackage](ctx, _q, qr, _q.inters)
 }
 
 // AllX is like All, but panics if an error occurs.
-func (_q *TitleQuery) AllX(ctx context.Context) []*Title {
+func (_q *MediaPackageQuery) AllX(ctx context.Context) []*MediaPackage {
 	nodes, err := _q.All(ctx)
 	if err != nil {
 		panic(err)
@@ -226,20 +225,20 @@ func (_q *TitleQuery) AllX(ctx context.Context) []*Title {
 	return nodes
 }
 
-// IDs executes the query and returns a list of Title IDs.
-func (_q *TitleQuery) IDs(ctx context.Context) (ids []string, err error) {
+// IDs executes the query and returns a list of MediaPackage IDs.
+func (_q *MediaPackageQuery) IDs(ctx context.Context) (ids []string, err error) {
 	if _q.ctx.Unique == nil && _q.path != nil {
 		_q.Unique(true)
 	}
 	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryIDs)
-	if err = _q.Select(title.FieldID).Scan(ctx, &ids); err != nil {
+	if err = _q.Select(mediapackage.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
 	return ids, nil
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (_q *TitleQuery) IDsX(ctx context.Context) []string {
+func (_q *MediaPackageQuery) IDsX(ctx context.Context) []string {
 	ids, err := _q.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -248,16 +247,16 @@ func (_q *TitleQuery) IDsX(ctx context.Context) []string {
 }
 
 // Count returns the count of the given query.
-func (_q *TitleQuery) Count(ctx context.Context) (int, error) {
+func (_q *MediaPackageQuery) Count(ctx context.Context) (int, error) {
 	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryCount)
 	if err := _q.prepareQuery(ctx); err != nil {
 		return 0, err
 	}
-	return withInterceptors[int](ctx, _q, querierCount[*TitleQuery](), _q.inters)
+	return withInterceptors[int](ctx, _q, querierCount[*MediaPackageQuery](), _q.inters)
 }
 
 // CountX is like Count, but panics if an error occurs.
-func (_q *TitleQuery) CountX(ctx context.Context) int {
+func (_q *MediaPackageQuery) CountX(ctx context.Context) int {
 	count, err := _q.Count(ctx)
 	if err != nil {
 		panic(err)
@@ -266,7 +265,7 @@ func (_q *TitleQuery) CountX(ctx context.Context) int {
 }
 
 // Exist returns true if the query has elements in the graph.
-func (_q *TitleQuery) Exist(ctx context.Context) (bool, error) {
+func (_q *MediaPackageQuery) Exist(ctx context.Context) (bool, error) {
 	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryExist)
 	switch _, err := _q.FirstID(ctx); {
 	case IsNotFound(err):
@@ -279,7 +278,7 @@ func (_q *TitleQuery) Exist(ctx context.Context) (bool, error) {
 }
 
 // ExistX is like Exist, but panics if an error occurs.
-func (_q *TitleQuery) ExistX(ctx context.Context) bool {
+func (_q *MediaPackageQuery) ExistX(ctx context.Context) bool {
 	exist, err := _q.Exist(ctx)
 	if err != nil {
 		panic(err)
@@ -287,45 +286,45 @@ func (_q *TitleQuery) ExistX(ctx context.Context) bool {
 	return exist
 }
 
-// Clone returns a duplicate of the TitleQuery builder, including all associated steps. It can be
+// Clone returns a duplicate of the MediaPackageQuery builder, including all associated steps. It can be
 // used to prepare common query builders and use them differently after the clone is made.
-func (_q *TitleQuery) Clone() *TitleQuery {
+func (_q *MediaPackageQuery) Clone() *MediaPackageQuery {
 	if _q == nil {
 		return nil
 	}
-	return &TitleQuery{
-		config:       _q.config,
-		ctx:          _q.ctx.Clone(),
-		order:        append([]title.OrderOption{}, _q.order...),
-		inters:       append([]Interceptor{}, _q.inters...),
-		predicates:   append([]predicate.Title{}, _q.predicates...),
-		withMasters:  _q.withMasters.Clone(),
-		withPackages: _q.withPackages.Clone(),
+	return &MediaPackageQuery{
+		config:     _q.config,
+		ctx:        _q.ctx.Clone(),
+		order:      append([]mediapackage.OrderOption{}, _q.order...),
+		inters:     append([]Interceptor{}, _q.inters...),
+		predicates: append([]predicate.MediaPackage{}, _q.predicates...),
+		withTitle:  _q.withTitle.Clone(),
+		withVendor: _q.withVendor.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
 	}
 }
 
-// WithMasters tells the query-builder to eager-load the nodes that are connected to
-// the "masters" edge. The optional arguments are used to configure the query builder of the edge.
-func (_q *TitleQuery) WithMasters(opts ...func(*MasterQuery)) *TitleQuery {
-	query := (&MasterClient{config: _q.config}).Query()
+// WithTitle tells the query-builder to eager-load the nodes that are connected to
+// the "title" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *MediaPackageQuery) WithTitle(opts ...func(*TitleQuery)) *MediaPackageQuery {
+	query := (&TitleClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	_q.withMasters = query
+	_q.withTitle = query
 	return _q
 }
 
-// WithPackages tells the query-builder to eager-load the nodes that are connected to
-// the "packages" edge. The optional arguments are used to configure the query builder of the edge.
-func (_q *TitleQuery) WithPackages(opts ...func(*MediaPackageQuery)) *TitleQuery {
-	query := (&MediaPackageClient{config: _q.config}).Query()
+// WithVendor tells the query-builder to eager-load the nodes that are connected to
+// the "vendor" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *MediaPackageQuery) WithVendor(opts ...func(*VendorQuery)) *MediaPackageQuery {
+	query := (&VendorClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	_q.withPackages = query
+	_q.withVendor = query
 	return _q
 }
 
@@ -335,19 +334,19 @@ func (_q *TitleQuery) WithPackages(opts ...func(*MediaPackageQuery)) *TitleQuery
 // Example:
 //
 //	var v []struct {
-//		Name string `json:"name,omitempty"`
+//		TitleID string `json:"title_id,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
-//	client.Title.Query().
-//		GroupBy(title.FieldName).
+//	client.MediaPackage.Query().
+//		GroupBy(mediapackage.FieldTitleID).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
-func (_q *TitleQuery) GroupBy(field string, fields ...string) *TitleGroupBy {
+func (_q *MediaPackageQuery) GroupBy(field string, fields ...string) *MediaPackageGroupBy {
 	_q.ctx.Fields = append([]string{field}, fields...)
-	grbuild := &TitleGroupBy{build: _q}
+	grbuild := &MediaPackageGroupBy{build: _q}
 	grbuild.flds = &_q.ctx.Fields
-	grbuild.label = title.Label
+	grbuild.label = mediapackage.Label
 	grbuild.scan = grbuild.Scan
 	return grbuild
 }
@@ -358,26 +357,26 @@ func (_q *TitleQuery) GroupBy(field string, fields ...string) *TitleGroupBy {
 // Example:
 //
 //	var v []struct {
-//		Name string `json:"name,omitempty"`
+//		TitleID string `json:"title_id,omitempty"`
 //	}
 //
-//	client.Title.Query().
-//		Select(title.FieldName).
+//	client.MediaPackage.Query().
+//		Select(mediapackage.FieldTitleID).
 //		Scan(ctx, &v)
-func (_q *TitleQuery) Select(fields ...string) *TitleSelect {
+func (_q *MediaPackageQuery) Select(fields ...string) *MediaPackageSelect {
 	_q.ctx.Fields = append(_q.ctx.Fields, fields...)
-	sbuild := &TitleSelect{TitleQuery: _q}
-	sbuild.label = title.Label
+	sbuild := &MediaPackageSelect{MediaPackageQuery: _q}
+	sbuild.label = mediapackage.Label
 	sbuild.flds, sbuild.scan = &_q.ctx.Fields, sbuild.Scan
 	return sbuild
 }
 
-// Aggregate returns a TitleSelect configured with the given aggregations.
-func (_q *TitleQuery) Aggregate(fns ...AggregateFunc) *TitleSelect {
+// Aggregate returns a MediaPackageSelect configured with the given aggregations.
+func (_q *MediaPackageQuery) Aggregate(fns ...AggregateFunc) *MediaPackageSelect {
 	return _q.Select().Aggregate(fns...)
 }
 
-func (_q *TitleQuery) prepareQuery(ctx context.Context) error {
+func (_q *MediaPackageQuery) prepareQuery(ctx context.Context) error {
 	for _, inter := range _q.inters {
 		if inter == nil {
 			return fmt.Errorf("ent: uninitialized interceptor (forgotten import ent/runtime?)")
@@ -389,7 +388,7 @@ func (_q *TitleQuery) prepareQuery(ctx context.Context) error {
 		}
 	}
 	for _, f := range _q.ctx.Fields {
-		if !title.ValidColumn(f) {
+		if !mediapackage.ValidColumn(f) {
 			return &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
 		}
 	}
@@ -403,20 +402,20 @@ func (_q *TitleQuery) prepareQuery(ctx context.Context) error {
 	return nil
 }
 
-func (_q *TitleQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Title, error) {
+func (_q *MediaPackageQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*MediaPackage, error) {
 	var (
-		nodes       = []*Title{}
+		nodes       = []*MediaPackage{}
 		_spec       = _q.querySpec()
 		loadedTypes = [2]bool{
-			_q.withMasters != nil,
-			_q.withPackages != nil,
+			_q.withTitle != nil,
+			_q.withVendor != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
-		return (*Title).scanValues(nil, columns)
+		return (*MediaPackage).scanValues(nil, columns)
 	}
 	_spec.Assign = func(columns []string, values []any) error {
-		node := &Title{config: _q.config}
+		node := &MediaPackage{config: _q.config}
 		nodes = append(nodes, node)
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
@@ -430,85 +429,81 @@ func (_q *TitleQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Title,
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-	if query := _q.withMasters; query != nil {
-		if err := _q.loadMasters(ctx, query, nodes,
-			func(n *Title) { n.Edges.Masters = []*Master{} },
-			func(n *Title, e *Master) { n.Edges.Masters = append(n.Edges.Masters, e) }); err != nil {
+	if query := _q.withTitle; query != nil {
+		if err := _q.loadTitle(ctx, query, nodes, nil,
+			func(n *MediaPackage, e *Title) { n.Edges.Title = e }); err != nil {
 			return nil, err
 		}
 	}
-	if query := _q.withPackages; query != nil {
-		if err := _q.loadPackages(ctx, query, nodes,
-			func(n *Title) { n.Edges.Packages = []*MediaPackage{} },
-			func(n *Title, e *MediaPackage) { n.Edges.Packages = append(n.Edges.Packages, e) }); err != nil {
+	if query := _q.withVendor; query != nil {
+		if err := _q.loadVendor(ctx, query, nodes, nil,
+			func(n *MediaPackage, e *Vendor) { n.Edges.Vendor = e }); err != nil {
 			return nil, err
 		}
 	}
 	return nodes, nil
 }
 
-func (_q *TitleQuery) loadMasters(ctx context.Context, query *MasterQuery, nodes []*Title, init func(*Title), assign func(*Title, *Master)) error {
-	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[string]*Title)
+func (_q *MediaPackageQuery) loadTitle(ctx context.Context, query *TitleQuery, nodes []*MediaPackage, init func(*MediaPackage), assign func(*MediaPackage, *Title)) error {
+	ids := make([]string, 0, len(nodes))
+	nodeids := make(map[string][]*MediaPackage)
 	for i := range nodes {
-		fks = append(fks, nodes[i].ID)
-		nodeids[nodes[i].ID] = nodes[i]
-		if init != nil {
-			init(nodes[i])
+		fk := nodes[i].TitleID
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
 		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
 	}
-	if len(query.ctx.Fields) > 0 {
-		query.ctx.AppendFieldOnce(master.FieldTitleID)
+	if len(ids) == 0 {
+		return nil
 	}
-	query.Where(predicate.Master(func(s *sql.Selector) {
-		s.Where(sql.InValues(s.C(title.MastersColumn), fks...))
-	}))
+	query.Where(title.IDIn(ids...))
 	neighbors, err := query.All(ctx)
 	if err != nil {
 		return err
 	}
 	for _, n := range neighbors {
-		fk := n.TitleID
-		node, ok := nodeids[fk]
+		nodes, ok := nodeids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "title_id" returned %v for node %v`, fk, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "title_id" returned %v`, n.ID)
 		}
-		assign(node, n)
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
 	}
 	return nil
 }
-func (_q *TitleQuery) loadPackages(ctx context.Context, query *MediaPackageQuery, nodes []*Title, init func(*Title), assign func(*Title, *MediaPackage)) error {
-	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[string]*Title)
+func (_q *MediaPackageQuery) loadVendor(ctx context.Context, query *VendorQuery, nodes []*MediaPackage, init func(*MediaPackage), assign func(*MediaPackage, *Vendor)) error {
+	ids := make([]string, 0, len(nodes))
+	nodeids := make(map[string][]*MediaPackage)
 	for i := range nodes {
-		fks = append(fks, nodes[i].ID)
-		nodeids[nodes[i].ID] = nodes[i]
-		if init != nil {
-			init(nodes[i])
+		fk := nodes[i].VendorID
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
 		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
 	}
-	if len(query.ctx.Fields) > 0 {
-		query.ctx.AppendFieldOnce(mediapackage.FieldTitleID)
+	if len(ids) == 0 {
+		return nil
 	}
-	query.Where(predicate.MediaPackage(func(s *sql.Selector) {
-		s.Where(sql.InValues(s.C(title.PackagesColumn), fks...))
-	}))
+	query.Where(vendor.IDIn(ids...))
 	neighbors, err := query.All(ctx)
 	if err != nil {
 		return err
 	}
 	for _, n := range neighbors {
-		fk := n.TitleID
-		node, ok := nodeids[fk]
+		nodes, ok := nodeids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "title_id" returned %v for node %v`, fk, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "vendor_id" returned %v`, n.ID)
 		}
-		assign(node, n)
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
 	}
 	return nil
 }
 
-func (_q *TitleQuery) sqlCount(ctx context.Context) (int, error) {
+func (_q *MediaPackageQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := _q.querySpec()
 	_spec.Node.Columns = _q.ctx.Fields
 	if len(_q.ctx.Fields) > 0 {
@@ -517,8 +512,8 @@ func (_q *TitleQuery) sqlCount(ctx context.Context) (int, error) {
 	return sqlgraph.CountNodes(ctx, _q.driver, _spec)
 }
 
-func (_q *TitleQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(title.Table, title.Columns, sqlgraph.NewFieldSpec(title.FieldID, field.TypeString))
+func (_q *MediaPackageQuery) querySpec() *sqlgraph.QuerySpec {
+	_spec := sqlgraph.NewQuerySpec(mediapackage.Table, mediapackage.Columns, sqlgraph.NewFieldSpec(mediapackage.FieldID, field.TypeString))
 	_spec.From = _q.sql
 	if unique := _q.ctx.Unique; unique != nil {
 		_spec.Unique = *unique
@@ -527,11 +522,17 @@ func (_q *TitleQuery) querySpec() *sqlgraph.QuerySpec {
 	}
 	if fields := _q.ctx.Fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
-		_spec.Node.Columns = append(_spec.Node.Columns, title.FieldID)
+		_spec.Node.Columns = append(_spec.Node.Columns, mediapackage.FieldID)
 		for i := range fields {
-			if fields[i] != title.FieldID {
+			if fields[i] != mediapackage.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
+		}
+		if _q.withTitle != nil {
+			_spec.Node.AddColumnOnce(mediapackage.FieldTitleID)
+		}
+		if _q.withVendor != nil {
+			_spec.Node.AddColumnOnce(mediapackage.FieldVendorID)
 		}
 	}
 	if ps := _q.predicates; len(ps) > 0 {
@@ -557,12 +558,12 @@ func (_q *TitleQuery) querySpec() *sqlgraph.QuerySpec {
 	return _spec
 }
 
-func (_q *TitleQuery) sqlQuery(ctx context.Context) *sql.Selector {
+func (_q *MediaPackageQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	builder := sql.Dialect(_q.driver.Dialect())
-	t1 := builder.Table(title.Table)
+	t1 := builder.Table(mediapackage.Table)
 	columns := _q.ctx.Fields
 	if len(columns) == 0 {
-		columns = title.Columns
+		columns = mediapackage.Columns
 	}
 	selector := builder.Select(t1.Columns(columns...)...).From(t1)
 	if _q.sql != nil {
@@ -589,28 +590,28 @@ func (_q *TitleQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	return selector
 }
 
-// TitleGroupBy is the group-by builder for Title entities.
-type TitleGroupBy struct {
+// MediaPackageGroupBy is the group-by builder for MediaPackage entities.
+type MediaPackageGroupBy struct {
 	selector
-	build *TitleQuery
+	build *MediaPackageQuery
 }
 
 // Aggregate adds the given aggregation functions to the group-by query.
-func (_g *TitleGroupBy) Aggregate(fns ...AggregateFunc) *TitleGroupBy {
+func (_g *MediaPackageGroupBy) Aggregate(fns ...AggregateFunc) *MediaPackageGroupBy {
 	_g.fns = append(_g.fns, fns...)
 	return _g
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (_g *TitleGroupBy) Scan(ctx context.Context, v any) error {
+func (_g *MediaPackageGroupBy) Scan(ctx context.Context, v any) error {
 	ctx = setContextOp(ctx, _g.build.ctx, ent.OpQueryGroupBy)
 	if err := _g.build.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*TitleQuery, *TitleGroupBy](ctx, _g.build, _g, _g.build.inters, v)
+	return scanWithInterceptors[*MediaPackageQuery, *MediaPackageGroupBy](ctx, _g.build, _g, _g.build.inters, v)
 }
 
-func (_g *TitleGroupBy) sqlScan(ctx context.Context, root *TitleQuery, v any) error {
+func (_g *MediaPackageGroupBy) sqlScan(ctx context.Context, root *MediaPackageQuery, v any) error {
 	selector := root.sqlQuery(ctx).Select()
 	aggregation := make([]string, 0, len(_g.fns))
 	for _, fn := range _g.fns {
@@ -637,28 +638,28 @@ func (_g *TitleGroupBy) sqlScan(ctx context.Context, root *TitleQuery, v any) er
 	return sql.ScanSlice(rows, v)
 }
 
-// TitleSelect is the builder for selecting fields of Title entities.
-type TitleSelect struct {
-	*TitleQuery
+// MediaPackageSelect is the builder for selecting fields of MediaPackage entities.
+type MediaPackageSelect struct {
+	*MediaPackageQuery
 	selector
 }
 
 // Aggregate adds the given aggregation functions to the selector query.
-func (_s *TitleSelect) Aggregate(fns ...AggregateFunc) *TitleSelect {
+func (_s *MediaPackageSelect) Aggregate(fns ...AggregateFunc) *MediaPackageSelect {
 	_s.fns = append(_s.fns, fns...)
 	return _s
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (_s *TitleSelect) Scan(ctx context.Context, v any) error {
+func (_s *MediaPackageSelect) Scan(ctx context.Context, v any) error {
 	ctx = setContextOp(ctx, _s.ctx, ent.OpQuerySelect)
 	if err := _s.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*TitleQuery, *TitleSelect](ctx, _s.TitleQuery, _s, _s.inters, v)
+	return scanWithInterceptors[*MediaPackageQuery, *MediaPackageSelect](ctx, _s.MediaPackageQuery, _s, _s.inters, v)
 }
 
-func (_s *TitleSelect) sqlScan(ctx context.Context, root *TitleQuery, v any) error {
+func (_s *MediaPackageSelect) sqlScan(ctx context.Context, root *MediaPackageQuery, v any) error {
 	selector := root.sqlQuery(ctx)
 	aggregation := make([]string, 0, len(_s.fns))
 	for _, fn := range _s.fns {

@@ -11,6 +11,8 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/elliot14A/fincher/pkg/ent/master"
+	"github.com/elliot14A/fincher/pkg/ent/mediapackage"
 	"github.com/elliot14A/fincher/pkg/ent/predicate"
 	"github.com/elliot14A/fincher/pkg/ent/title"
 )
@@ -125,9 +127,81 @@ func (_u *TitleUpdate) SetUpdatedAt(v time.Time) *TitleUpdate {
 	return _u
 }
 
+// AddMasterIDs adds the "masters" edge to the Master entity by IDs.
+func (_u *TitleUpdate) AddMasterIDs(ids ...string) *TitleUpdate {
+	_u.mutation.AddMasterIDs(ids...)
+	return _u
+}
+
+// AddMasters adds the "masters" edges to the Master entity.
+func (_u *TitleUpdate) AddMasters(v ...*Master) *TitleUpdate {
+	ids := make([]string, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddMasterIDs(ids...)
+}
+
+// AddPackageIDs adds the "packages" edge to the MediaPackage entity by IDs.
+func (_u *TitleUpdate) AddPackageIDs(ids ...string) *TitleUpdate {
+	_u.mutation.AddPackageIDs(ids...)
+	return _u
+}
+
+// AddPackages adds the "packages" edges to the MediaPackage entity.
+func (_u *TitleUpdate) AddPackages(v ...*MediaPackage) *TitleUpdate {
+	ids := make([]string, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddPackageIDs(ids...)
+}
+
 // Mutation returns the TitleMutation object of the builder.
 func (_u *TitleUpdate) Mutation() *TitleMutation {
 	return _u.mutation
+}
+
+// ClearMasters clears all "masters" edges to the Master entity.
+func (_u *TitleUpdate) ClearMasters() *TitleUpdate {
+	_u.mutation.ClearMasters()
+	return _u
+}
+
+// RemoveMasterIDs removes the "masters" edge to Master entities by IDs.
+func (_u *TitleUpdate) RemoveMasterIDs(ids ...string) *TitleUpdate {
+	_u.mutation.RemoveMasterIDs(ids...)
+	return _u
+}
+
+// RemoveMasters removes "masters" edges to Master entities.
+func (_u *TitleUpdate) RemoveMasters(v ...*Master) *TitleUpdate {
+	ids := make([]string, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveMasterIDs(ids...)
+}
+
+// ClearPackages clears all "packages" edges to the MediaPackage entity.
+func (_u *TitleUpdate) ClearPackages() *TitleUpdate {
+	_u.mutation.ClearPackages()
+	return _u
+}
+
+// RemovePackageIDs removes the "packages" edge to MediaPackage entities by IDs.
+func (_u *TitleUpdate) RemovePackageIDs(ids ...string) *TitleUpdate {
+	_u.mutation.RemovePackageIDs(ids...)
+	return _u
+}
+
+// RemovePackages removes "packages" edges to MediaPackage entities.
+func (_u *TitleUpdate) RemovePackages(v ...*MediaPackage) *TitleUpdate {
+	ids := make([]string, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemovePackageIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -231,6 +305,96 @@ func (_u *TitleUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(title.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if _u.mutation.MastersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   title.MastersTable,
+			Columns: []string{title.MastersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(master.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedMastersIDs(); len(nodes) > 0 && !_u.mutation.MastersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   title.MastersTable,
+			Columns: []string{title.MastersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(master.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.MastersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   title.MastersTable,
+			Columns: []string{title.MastersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(master.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.PackagesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   title.PackagesTable,
+			Columns: []string{title.PackagesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(mediapackage.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedPackagesIDs(); len(nodes) > 0 && !_u.mutation.PackagesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   title.PackagesTable,
+			Columns: []string{title.PackagesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(mediapackage.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.PackagesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   title.PackagesTable,
+			Columns: []string{title.PackagesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(mediapackage.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -349,9 +513,81 @@ func (_u *TitleUpdateOne) SetUpdatedAt(v time.Time) *TitleUpdateOne {
 	return _u
 }
 
+// AddMasterIDs adds the "masters" edge to the Master entity by IDs.
+func (_u *TitleUpdateOne) AddMasterIDs(ids ...string) *TitleUpdateOne {
+	_u.mutation.AddMasterIDs(ids...)
+	return _u
+}
+
+// AddMasters adds the "masters" edges to the Master entity.
+func (_u *TitleUpdateOne) AddMasters(v ...*Master) *TitleUpdateOne {
+	ids := make([]string, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddMasterIDs(ids...)
+}
+
+// AddPackageIDs adds the "packages" edge to the MediaPackage entity by IDs.
+func (_u *TitleUpdateOne) AddPackageIDs(ids ...string) *TitleUpdateOne {
+	_u.mutation.AddPackageIDs(ids...)
+	return _u
+}
+
+// AddPackages adds the "packages" edges to the MediaPackage entity.
+func (_u *TitleUpdateOne) AddPackages(v ...*MediaPackage) *TitleUpdateOne {
+	ids := make([]string, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddPackageIDs(ids...)
+}
+
 // Mutation returns the TitleMutation object of the builder.
 func (_u *TitleUpdateOne) Mutation() *TitleMutation {
 	return _u.mutation
+}
+
+// ClearMasters clears all "masters" edges to the Master entity.
+func (_u *TitleUpdateOne) ClearMasters() *TitleUpdateOne {
+	_u.mutation.ClearMasters()
+	return _u
+}
+
+// RemoveMasterIDs removes the "masters" edge to Master entities by IDs.
+func (_u *TitleUpdateOne) RemoveMasterIDs(ids ...string) *TitleUpdateOne {
+	_u.mutation.RemoveMasterIDs(ids...)
+	return _u
+}
+
+// RemoveMasters removes "masters" edges to Master entities.
+func (_u *TitleUpdateOne) RemoveMasters(v ...*Master) *TitleUpdateOne {
+	ids := make([]string, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveMasterIDs(ids...)
+}
+
+// ClearPackages clears all "packages" edges to the MediaPackage entity.
+func (_u *TitleUpdateOne) ClearPackages() *TitleUpdateOne {
+	_u.mutation.ClearPackages()
+	return _u
+}
+
+// RemovePackageIDs removes the "packages" edge to MediaPackage entities by IDs.
+func (_u *TitleUpdateOne) RemovePackageIDs(ids ...string) *TitleUpdateOne {
+	_u.mutation.RemovePackageIDs(ids...)
+	return _u
+}
+
+// RemovePackages removes "packages" edges to MediaPackage entities.
+func (_u *TitleUpdateOne) RemovePackages(v ...*MediaPackage) *TitleUpdateOne {
+	ids := make([]string, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemovePackageIDs(ids...)
 }
 
 // Where appends a list predicates to the TitleUpdate builder.
@@ -485,6 +721,96 @@ func (_u *TitleUpdateOne) sqlSave(ctx context.Context) (_node *Title, err error)
 	}
 	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(title.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if _u.mutation.MastersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   title.MastersTable,
+			Columns: []string{title.MastersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(master.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedMastersIDs(); len(nodes) > 0 && !_u.mutation.MastersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   title.MastersTable,
+			Columns: []string{title.MastersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(master.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.MastersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   title.MastersTable,
+			Columns: []string{title.MastersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(master.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.PackagesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   title.PackagesTable,
+			Columns: []string{title.PackagesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(mediapackage.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedPackagesIDs(); len(nodes) > 0 && !_u.mutation.PackagesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   title.PackagesTable,
+			Columns: []string{title.PackagesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(mediapackage.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.PackagesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   title.PackagesTable,
+			Columns: []string{title.PackagesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(mediapackage.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &Title{config: _u.config}
 	_spec.Assign = _node.assignValues

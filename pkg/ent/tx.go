@@ -12,8 +12,14 @@ import (
 // Tx is a transactional client that is created by calling Client.Tx().
 type Tx struct {
 	config
+	// Master is the client for interacting with the Master builders.
+	Master *MasterClient
+	// MediaPackage is the client for interacting with the MediaPackage builders.
+	MediaPackage *MediaPackageClient
 	// Title is the client for interacting with the Title builders.
 	Title *TitleClient
+	// Vendor is the client for interacting with the Vendor builders.
+	Vendor *VendorClient
 
 	// lazily loaded.
 	client     *Client
@@ -145,7 +151,10 @@ func (tx *Tx) Client() *Client {
 }
 
 func (tx *Tx) init() {
+	tx.Master = NewMasterClient(tx.config)
+	tx.MediaPackage = NewMediaPackageClient(tx.config)
 	tx.Title = NewTitleClient(tx.config)
+	tx.Vendor = NewVendorClient(tx.config)
 }
 
 // txDriver wraps the given dialect.Tx with a nop dialect.Driver implementation.
@@ -155,7 +164,7 @@ func (tx *Tx) init() {
 // of them in order to commit or rollback the transaction.
 //
 // If a closed transaction is embedded in one of the generated entities, and the entity
-// applies a query, for example: Title.QueryXXX(), the query will be executed
+// applies a query, for example: Master.QueryXXX(), the query will be executed
 // through the driver which created this transaction.
 //
 // Note that txDriver is not goroutine safe.

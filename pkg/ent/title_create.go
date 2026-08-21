@@ -10,6 +10,8 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/elliot14A/fincher/pkg/ent/master"
+	"github.com/elliot14A/fincher/pkg/ent/mediapackage"
 	"github.com/elliot14A/fincher/pkg/ent/title"
 )
 
@@ -112,6 +114,36 @@ func (_c *TitleCreate) SetNillableUpdatedAt(v *time.Time) *TitleCreate {
 func (_c *TitleCreate) SetID(v string) *TitleCreate {
 	_c.mutation.SetID(v)
 	return _c
+}
+
+// AddMasterIDs adds the "masters" edge to the Master entity by IDs.
+func (_c *TitleCreate) AddMasterIDs(ids ...string) *TitleCreate {
+	_c.mutation.AddMasterIDs(ids...)
+	return _c
+}
+
+// AddMasters adds the "masters" edges to the Master entity.
+func (_c *TitleCreate) AddMasters(v ...*Master) *TitleCreate {
+	ids := make([]string, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddMasterIDs(ids...)
+}
+
+// AddPackageIDs adds the "packages" edge to the MediaPackage entity by IDs.
+func (_c *TitleCreate) AddPackageIDs(ids ...string) *TitleCreate {
+	_c.mutation.AddPackageIDs(ids...)
+	return _c
+}
+
+// AddPackages adds the "packages" edges to the MediaPackage entity.
+func (_c *TitleCreate) AddPackages(v ...*MediaPackage) *TitleCreate {
+	ids := make([]string, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddPackageIDs(ids...)
 }
 
 // Mutation returns the TitleMutation object of the builder.
@@ -293,6 +325,38 @@ func (_c *TitleCreate) createSpec() (*Title, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.UpdatedAt(); ok {
 		_spec.SetField(title.FieldUpdatedAt, field.TypeTime, value)
 		_node.UpdatedAt = value
+	}
+	if nodes := _c.mutation.MastersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   title.MastersTable,
+			Columns: []string{title.MastersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(master.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.PackagesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   title.PackagesTable,
+			Columns: []string{title.PackagesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(mediapackage.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
 }

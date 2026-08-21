@@ -5,14 +5,77 @@ package ent
 import (
 	"time"
 
+	"github.com/elliot14A/fincher/pkg/ent/master"
+	"github.com/elliot14A/fincher/pkg/ent/mediapackage"
 	"github.com/elliot14A/fincher/pkg/ent/schema"
 	"github.com/elliot14A/fincher/pkg/ent/title"
+	"github.com/elliot14A/fincher/pkg/ent/vendor"
 )
 
 // The init function reads all schema descriptors with runtime code
 // (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
+	masterFields := schema.Master{}.Fields()
+	_ = masterFields
+	// masterDescTitleID is the schema descriptor for title_id field.
+	masterDescTitleID := masterFields[1].Descriptor()
+	// master.TitleIDValidator is a validator for the "title_id" field. It is called by the builders before save.
+	master.TitleIDValidator = masterDescTitleID.Validators[0].(func(string) error)
+	// masterDescVersion is the schema descriptor for version field.
+	masterDescVersion := masterFields[2].Descriptor()
+	// master.VersionValidator is a validator for the "version" field. It is called by the builders before save.
+	master.VersionValidator = masterDescVersion.Validators[0].(func(string) error)
+	// masterDescCreatedAt is the schema descriptor for created_at field.
+	masterDescCreatedAt := masterFields[4].Descriptor()
+	// master.DefaultCreatedAt holds the default value on creation for the created_at field.
+	master.DefaultCreatedAt = masterDescCreatedAt.Default.(func() time.Time)
+	// masterDescID is the schema descriptor for id field.
+	masterDescID := masterFields[0].Descriptor()
+	// master.IDValidator is a validator for the "id" field. It is called by the builders before save.
+	master.IDValidator = masterDescID.Validators[0].(func(string) error)
+	mediapackageFields := schema.MediaPackage{}.Fields()
+	_ = mediapackageFields
+	// mediapackageDescTitleID is the schema descriptor for title_id field.
+	mediapackageDescTitleID := mediapackageFields[1].Descriptor()
+	// mediapackage.TitleIDValidator is a validator for the "title_id" field. It is called by the builders before save.
+	mediapackage.TitleIDValidator = mediapackageDescTitleID.Validators[0].(func(string) error)
+	// mediapackageDescLanguage is the schema descriptor for language field.
+	mediapackageDescLanguage := mediapackageFields[3].Descriptor()
+	// mediapackage.LanguageValidator is a validator for the "language" field. It is called by the builders before save.
+	mediapackage.LanguageValidator = mediapackageDescLanguage.Validators[0].(func(string) error)
+	// mediapackageDescVersion is the schema descriptor for version field.
+	mediapackageDescVersion := mediapackageFields[4].Descriptor()
+	// mediapackage.VersionValidator is a validator for the "version" field. It is called by the builders before save.
+	mediapackage.VersionValidator = mediapackageDescVersion.Validators[0].(func(string) error)
+	// mediapackageDescVendorID is the schema descriptor for vendor_id field.
+	mediapackageDescVendorID := mediapackageFields[5].Descriptor()
+	// mediapackage.VendorIDValidator is a validator for the "vendor_id" field. It is called by the builders before save.
+	mediapackage.VendorIDValidator = mediapackageDescVendorID.Validators[0].(func(string) error)
+	// mediapackageDescDerivedFromMasterVersion is the schema descriptor for derived_from_master_version field.
+	mediapackageDescDerivedFromMasterVersion := mediapackageFields[6].Descriptor()
+	// mediapackage.DerivedFromMasterVersionValidator is a validator for the "derived_from_master_version" field. It is called by the builders before save.
+	mediapackage.DerivedFromMasterVersionValidator = mediapackageDescDerivedFromMasterVersion.Validators[0].(func(string) error)
+	// mediapackageDescRedeliveryCount is the schema descriptor for redelivery_count field.
+	mediapackageDescRedeliveryCount := mediapackageFields[7].Descriptor()
+	// mediapackage.DefaultRedeliveryCount holds the default value on creation for the redelivery_count field.
+	mediapackage.DefaultRedeliveryCount = mediapackageDescRedeliveryCount.Default.(int)
+	// mediapackage.RedeliveryCountValidator is a validator for the "redelivery_count" field. It is called by the builders before save.
+	mediapackage.RedeliveryCountValidator = mediapackageDescRedeliveryCount.Validators[0].(func(int) error)
+	// mediapackageDescCreatedAt is the schema descriptor for created_at field.
+	mediapackageDescCreatedAt := mediapackageFields[9].Descriptor()
+	// mediapackage.DefaultCreatedAt holds the default value on creation for the created_at field.
+	mediapackage.DefaultCreatedAt = mediapackageDescCreatedAt.Default.(func() time.Time)
+	// mediapackageDescUpdatedAt is the schema descriptor for updated_at field.
+	mediapackageDescUpdatedAt := mediapackageFields[10].Descriptor()
+	// mediapackage.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	mediapackage.DefaultUpdatedAt = mediapackageDescUpdatedAt.Default.(func() time.Time)
+	// mediapackage.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	mediapackage.UpdateDefaultUpdatedAt = mediapackageDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// mediapackageDescID is the schema descriptor for id field.
+	mediapackageDescID := mediapackageFields[0].Descriptor()
+	// mediapackage.IDValidator is a validator for the "id" field. It is called by the builders before save.
+	mediapackage.IDValidator = mediapackageDescID.Validators[0].(func(string) error)
 	titleFields := schema.Title{}.Fields()
 	_ = titleFields
 	// titleDescName is the schema descriptor for name field.
@@ -43,4 +106,28 @@ func init() {
 	titleDescID := titleFields[0].Descriptor()
 	// title.IDValidator is a validator for the "id" field. It is called by the builders before save.
 	title.IDValidator = titleDescID.Validators[0].(func(string) error)
+	vendorFields := schema.Vendor{}.Fields()
+	_ = vendorFields
+	// vendorDescName is the schema descriptor for name field.
+	vendorDescName := vendorFields[1].Descriptor()
+	// vendor.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	vendor.NameValidator = vendorDescName.Validators[0].(func(string) error)
+	// vendorDescSpecialty is the schema descriptor for specialty field.
+	vendorDescSpecialty := vendorFields[2].Descriptor()
+	// vendor.SpecialtyValidator is a validator for the "specialty" field. It is called by the builders before save.
+	vendor.SpecialtyValidator = vendorDescSpecialty.Validators[0].(func(string) error)
+	// vendorDescCreatedAt is the schema descriptor for created_at field.
+	vendorDescCreatedAt := vendorFields[3].Descriptor()
+	// vendor.DefaultCreatedAt holds the default value on creation for the created_at field.
+	vendor.DefaultCreatedAt = vendorDescCreatedAt.Default.(func() time.Time)
+	// vendorDescUpdatedAt is the schema descriptor for updated_at field.
+	vendorDescUpdatedAt := vendorFields[4].Descriptor()
+	// vendor.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	vendor.DefaultUpdatedAt = vendorDescUpdatedAt.Default.(func() time.Time)
+	// vendor.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	vendor.UpdateDefaultUpdatedAt = vendorDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// vendorDescID is the schema descriptor for id field.
+	vendorDescID := vendorFields[0].Descriptor()
+	// vendor.IDValidator is a validator for the "id" field. It is called by the builders before save.
+	vendor.IDValidator = vendorDescID.Validators[0].(func(string) error)
 }

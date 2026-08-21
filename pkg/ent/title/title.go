@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 )
 
 const (
@@ -30,8 +31,26 @@ const (
 	FieldCreatedAt = "created_at"
 	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
 	FieldUpdatedAt = "updated_at"
+	// EdgeMasters holds the string denoting the masters edge name in mutations.
+	EdgeMasters = "masters"
+	// EdgePackages holds the string denoting the packages edge name in mutations.
+	EdgePackages = "packages"
 	// Table holds the table name of the title in the database.
 	Table = "titles"
+	// MastersTable is the table that holds the masters relation/edge.
+	MastersTable = "masters"
+	// MastersInverseTable is the table name for the Master entity.
+	// It exists in this package in order to avoid circular dependency with the "master" package.
+	MastersInverseTable = "masters"
+	// MastersColumn is the table column denoting the masters relation/edge.
+	MastersColumn = "title_id"
+	// PackagesTable is the table that holds the packages relation/edge.
+	PackagesTable = "media_packages"
+	// PackagesInverseTable is the table name for the MediaPackage entity.
+	// It exists in this package in order to avoid circular dependency with the "mediapackage" package.
+	PackagesInverseTable = "media_packages"
+	// PackagesColumn is the table column denoting the packages relation/edge.
+	PackagesColumn = "title_id"
 )
 
 // Columns holds all SQL columns for title fields.
@@ -178,4 +197,46 @@ func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
 // ByUpdatedAt orders the results by the updated_at field.
 func ByUpdatedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldUpdatedAt, opts...).ToFunc()
+}
+
+// ByMastersCount orders the results by masters count.
+func ByMastersCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newMastersStep(), opts...)
+	}
+}
+
+// ByMasters orders the results by masters terms.
+func ByMasters(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newMastersStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByPackagesCount orders the results by packages count.
+func ByPackagesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newPackagesStep(), opts...)
+	}
+}
+
+// ByPackages orders the results by packages terms.
+func ByPackages(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newPackagesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+func newMastersStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(MastersInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, MastersTable, MastersColumn),
+	)
+}
+func newPackagesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(PackagesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, PackagesTable, PackagesColumn),
+	)
 }
