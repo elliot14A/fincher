@@ -1,49 +1,42 @@
-# Fincher — System Requirements Specification
+# Fincher — System Requirements Specification (Workflow DAG Edition)
 
 ## 1. Functional Requirements
 
-### Ingestion & Event Model (`REQ-INGEST`)
-* **REQ-INGEST-01**: The system must provide a REST endpoint `POST /api/v1/events` to ingest standard media lifecycle events (`MASTER_UPDATED`, `ASSET_UPDATED`, `PACKAGE_CREATED`, `QC_FAILED`, `QC_PASSED`, etc.).
-* **REQ-INGEST-02**: All incoming events must be validated against the canonical `ProductionEvent` schema.
-* **REQ-INGEST-03**: Events must be persisted synchronously to SQLite and ClickHouse (via MCP / store writer) before triggering investigation.
+### ClickHouse Analytical History & MCP (`REQ-CH`)
+* **REQ-CH-01**: ClickHouse manages denormalized event tables (`qc_events`, `delivery_events`, `asset_events`, `dependency_events`, `node_execution_events`).
+* **REQ-CH-02**: ClickHouse provides 4 precomputed Materialized Views: `vendor_check_failure_rates`, `package_lineage`, `redelivery_counts`, `recent_master_changes`.
+* **REQ-CH-03**: All runtime analytical reads by workflow nodes route strictly through the official `mcp-clickhouse` server over HTTP transport (`FINCHER_MCP_URL`).
 
-### Application State & Storage (`REQ-STATE`)
-* **REQ-STATE-01**: SQLite must manage operational entities: `deliveries`, `packages`, `qc_results`, `incidents`, `human_approvals`, and `audit_logs`.
-* **REQ-STATE-02**: SQLite must operate in WAL mode (`_journal_mode=WAL`) with foreign key enforcement and single-writer concurrency (`SetMaxOpenConns(1)`).
-* **REQ-STATE-03**: State changes must be atomic, idempotent, and emit traceable audit log entries.
+### Turso / libSQL Application State (`REQ-TURSO`)
+* **REQ-TURSO-01**: Turso stores the delivery domain: `titles`, `masters`, `packages`, `vendors`, `deliveries`, `dependencies`.
+* **REQ-TURSO-02**: Turso stores the workflow execution domain: `workflow_definitions`, `workflow_runs`, `node_executions`, `node_inputs`, `node_outputs`, `query_log`, `decisions`, `executed_actions`, `notifications`, `budget_counters`.
+* **REQ-TURSO-03**: Database schema is managed via type-safe Ent ORM schemas in `pkg/ent/schema/` with automated migrations.
 
-### ClickHouse MCP Integration (`REQ-MCP`)
-* **REQ-MCP-01**: The Go backend must act as a remote MCP client communicating over HTTP transport (`FINCHER_MCP_URL`) with the official `ghcr.io/clickhouse/mcp-clickhouse:latest` container.
-* **REQ-MCP-02**: ClickHouse database credentials must remain strictly isolated inside the MCP service environment.
-* **REQ-MCP-03**: AI agents must access ClickHouse strictly through MCP read-only tools (`run_query`, `list_tables`, `list_databases`).
+### Workflow DAG & Node Palette (`REQ-DAG`)
+* **REQ-DAG-01**: Workflows are directed acyclic graphs (DAG) composed from a fixed palette of 17 node types.
+* **REQ-DAG-02**: Trigger & Gate: `schedule_trigger` and `delta_gate` (exits at zero LLM cost if no new events).
+* **REQ-DAG-03**: Query Nodes: `vendor_reliability_query`, `lineage_query`, `redelivery_query`, `recent_master_change_query`, `time_to_premiere`.
+* **REQ-DAG-04**: Agent Nodes (Gemini Flash): `vendor_risk_agent`, `dependency_impact_agent`, `assessment_agent` (Pro).
+* **REQ-DAG-05**: Decision Node (Gemini Pro): Combines deterministic query inputs and agent synthesis to select a branch (`HOLD`, `RE_QC`, `RELEASE`, `NONE`) with recorded rationale.
+* **REQ-DAG-06**: Action & Sink: `hold_delivery_action`, `request_requc_action`, `release_delivery_action`, `stakeholder_notice_action` (drafted notice), `release_notice_action`, `event_emitter`.
 
-### Multi-Agent Investigation & Planning (`REQ-AGENT`)
-* **REQ-AGENT-01**: The **Historian Agent** and **Dependency Agent** must execute in parallel goroutines upon receiving an anomaly event.
-* **REQ-AGENT-02**: Historian Agent must query historical vendor defect rates and past check anomalies via ClickHouse MCP.
-* **REQ-AGENT-03**: Dependency Agent must query master version lineage and identify all downstream localized packages affected by upstream changes via ClickHouse MCP.
-* **REQ-AGENT-04**: The **Incident Analyst Agent** must synthesize findings into an `AnalystAssessment` with classification, severity, confidence, and root-cause analysis.
-* **REQ-AGENT-05**: The **Action Planner Agent** must propose a structured `ActionPlan` with discrete candidate remediation actions (`INVALIDATE_PACKAGE`, `CREATE_RE_QC`, `HOLD_DELIVERY`, `RELEASE_DELIVERY`, `CREATE_INCIDENT`, `ESCALATE_VENDOR`).
-* **REQ-AGENT-06**: All agent outputs must adhere strictly to structured JSON schemas using Google GenAI / ADK Go.
+### Backend API & Real-Time Stream (`REQ-API`)
+* **REQ-API-01**: Workflow management: `GET /workflows`, `GET /workflows/{id}`, `POST /workflows`, `PATCH /workflows/{id}`, `POST /workflows/{id}/run`.
+* **REQ-API-02**: Run inspection: `GET /runs/{id}`, `GET /runs/{id}/stream` (SSE live step execution).
+* **REQ-API-03**: Title catalog & CRUD: `GET /titles`, `GET /titles/{id}`, `POST /titles`, `PATCH /titles/{id}`, `DELETE /titles/{id}`.
+* **REQ-API-04**: Master & Package & Vendor CRUD: `POST /masters`, `GET /masters`, `POST /packages`, `GET /packages`, `PATCH /packages/{id}`, `POST /vendors`, `GET /vendors`.
+* **REQ-API-05**: Read-first Docent query: `POST /query`, `GET /query/{session}/stream`.
+* **REQ-API-06**: Palette & Budget: `GET /node-palette`, `GET /budget`.
 
-### Policy Gating (`REQ-POLICY`)
-* **REQ-POLICY-01**: The policy engine must be a pure Go deterministic evaluator querying active operational rules from the database `policies` table.
-* **REQ-POLICY-02**: Candidate actions must evaluate into `ALLOWED`, `DENIED`, or `HUMAN_APPROVAL_REQUIRED`.
-* **REQ-POLICY-03**: AI proposals must never bypass or override policy thresholds.
-
-### State Execution & Closed-Loop Feedback (`REQ-EXEC`)
-* **REQ-EXEC-01**: The Go Executor must execute state mutations strictly for actions verified as `ALLOWED` (or approved by a human operator).
-* **REQ-EXEC-02**: Every executed action must emit a downstream event (`PACKAGE_INVALIDATED`, `QC_STARTED`, `DELIVERY_RELEASED`, etc.).
-* **REQ-EXEC-03**: Fincher must consume its own resulting downstream events, driving the delivery lifecycle to terminal resolution (`READY_TO_SHIP` or `HOLD`) without manual human intervention.
-
-### Live Streaming & Operations Console (`REQ-STREAM` / `REQ-UI`)
-* **REQ-STREAM-01**: The system must provide a Server-Sent Events (SSE) endpoint `GET /api/v1/stream` broadcasting real-time events, agent reasoning stages, policy decisions, and state updates.
-* **REQ-STREAM-02**: The Operations Console UI must be served directly from the Go binary via `embed.FS`.
+### Causal Seeder & LUME World (`REQ-SEED`)
+* **REQ-SEED-01**: Idempotent seeder creates 5–7 LUME launch titles (*Eclipse*, *Atlas*, *Orbit*, *Meridian*, *Vantage*) with dynamic premiere dates relative to `now()`.
+* **REQ-SEED-02**: Causal vendor datasets (`vendor_a` degrading audio trend, `vendor_b` reliable subtitles, `vendor_c` mixed).
+* **REQ-SEED-03**: Pre-populates 250k+ historical QC records and a pre-resolved hero demonstration run.
 
 ---
 
-## 2. Non-Functional Requirements
-
-* **REQ-ENV-01**: All environment variables must adhere to `FINCHER_{SERVICE}_{SETTING}`.
-* **REQ-PERF-01**: Ingestion API response latency must be $< 20\text{ms}$.
-* **REQ-AUDIT-01**: 100% of agent queries, decisions, and mutations must be recorded in immutable SQLite audit logs with correlated `trace_id`.
-* **REQ-GO-01**: Codebase must pass `go build ./...`, `go vet ./...`, and race-detector tests with 0 warnings.
+## 2. Non-Functional & Safety Requirements
+* **REQ-GO-01**: Idiomatic Go 1.24+ passing `go test ./... -race` with 0 warnings.
+* **REQ-COLD-01**: Runs cleanly on cold Cloud Run (`min-instances: 0`) with DAG execution under 5 seconds.
+* **REQ-BUDGET-01**: Hard daily model invocation limit and kill switch in `budget_counters` to protect the $100 credit.
+* **REQ-MCP-01**: ClickHouse credentials isolated exclusively in MCP service.

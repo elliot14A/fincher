@@ -1,73 +1,136 @@
-# Fincher — Project Roadmap
+# Fincher — Feature-Wise Project Roadmap
 
-## Milestone Overview
+Build one complete feature slice end-to-end at a time:
+**Domain Entity Models + SQL Migrations + Store / DB Ops + REST API + Verification Tests**
+
+---
+
+## Milestone Progression (Feature-by-Feature)
 
 ```text
-[ Phase 01: Foundation & Storage ] ──► [ Phase 02: MCP & Multi-Agent ]
-                                                │
-                                                ▼
-[ Phase 04: UI & Live Stream ] ◄── [ Phase 03: Policy Engine & Executor ]
+[ Feature 01: Titles & Launch Calendar ]
+                 │
+                 ▼
+[ Feature 02: Masters, Packages & Vendors ]
+                 │
+                 ▼
+[ Feature 03: Deliveries & Dependencies ]
+                 │
+                 ▼
+[ Feature 04: ClickHouse History & MCP Client ]
+                 │
+                 ▼
+[ Feature 05: Workflow Definitions & DAG Spec ]
+                 │
+                 ▼
+[ Feature 06: Workflow Execution Engine & Runs ]
+                 │
+                 ▼
+[ Feature 07: Node Palette & Multi-Agent Investigation ]
+                 │
+                 ▼
+[ Feature 08: Docent Operator Assistant API ]
+                 │
+                 ▼
+[ Feature 09: System Hardening & Hackathon Seeder ]
 ```
 
 ---
 
-## Phases & Deliverables
+## Milestone Deliverables & Acceptance
 
-### Phase 01: Core Architecture, Setup, Domain Models & Storage
-* **Status**: `IN_PROGRESS`
-* **Goal**: Establish durable project setup, canonical domain types, SQLite state and policy tables with WAL mode, and configuration parsed via Kong.
+### Feature 01: Titles & Launch Calendar
+* **Scope**: LUME title catalog management, premiere date countdowns, status tracking.
 * **Deliverables**:
-  - `pkg/domain/types.go`: Core domain types (Delivery, Package, QCResult, Incident, Action, Evidence).
-  - `pkg/events/events.go`: Canonical event types and payload schemas.
-  - `pkg/policy/schema.go`: Policy schema structs.
-  - `internal/config/config.go`: Kong configuration adhering to `FINCHER_{SERVICE}_*`.
-  - `internal/store/sqlite.go`: SQLite store with schema migrations (operational entities & policies table) and WAL mode.
-  - `data/seed/media_events.json`: Realistic media operations dataset.
-* **Definition of Done (DoD)**:
-  - SQLite table migrations succeed and pass integration tests with race detector.
-  - Configuration parses all `FINCHER_*` environment variables cleanly.
+  - `pkg/domain/models/title.go`: Title model, status enums (`ON_TRACK`, `AT_RISK`, `HOLD`, `PROCESSING`, `SHIPPED`), validation, `HoursUntilPremiere`.
+  - `migrations/turso/001_titles.sql`: `titles` table.
+  - `pkg/turso/titles.go`: Create, Get, List (with status filter), Update, Delete.
+  - `internal/api/titles.go`: `GET /titles`, `GET /titles/{id}`, `POST /titles`, `PATCH /titles/{id}`, `DELETE /titles/{id}`.
+  - `internal/api/server.go`: Base Echo HTTP server setup with JSON middleware.
+* **Verification**: `go test -v ./... -race` verifying title CRUD and HTTP endpoints.
 
 ---
 
-### Phase 02: ClickHouse MCP Client & Multi-Agent Investigation
-* **Status**: `PENDING`
-* **Goal**: Implement remote HTTP MCP client and Google ADK Go parallel sub-agents (Historian, Dependency, Incident Analyst, Action Planner).
+### Feature 02: Masters, Packages & Vendors
+* **Scope**: Asset version tracking, audio/subtitle/video packages, vendor degradation registry.
 * **Deliverables**:
-  - `pkg/mcp/client.go`: Remote MCP client communicating over HTTP transport with `ghcr.io/clickhouse/mcp-clickhouse:latest`.
-  - `internal/agent/historian.go`: Historian agent querying vendor failure rates via MCP.
-  - `internal/agent/dependency.go`: Dependency agent querying asset version lineage via MCP.
-  - `internal/agent/analyst.go`: Incident Analyst synthesizing evidence into severity/classification.
-  - `internal/agent/planner.go`: Action Planner generating structured candidate `ActionPlan`.
-  - `internal/agent/orchestrator.go`: Multi-agent parallel coordination via goroutines / ADK Go.
-* **Definition of Done (DoD)**:
-  - Live MCP integration tests pass against ClickHouse MCP container.
-  - Parallel sub-agents execute concurrently and emit structured typed JSON outputs.
+  - `pkg/domain/models/master.go`, `package.go`, `vendor.go`.
+  - `migrations/turso/002_masters.sql`, `003_packages.sql`, `004_vendors.sql`.
+  - `pkg/turso/masters.go`, `packages.go`, `vendors.go`.
+  - `internal/api/packages.go`, `internal/api/vendors.go`.
+* **Verification**: Unit tests and HTTP tests for package staleness against masters and vendor lookups.
 
 ---
 
-### Phase 03: Policy Engine, Executor & Closed-Loop Pipeline
-* **Status**: `PENDING`
-* **Goal**: Implement pure Go deterministic policy evaluator backed by SQLite policies, state executor, and closed-loop re-evaluation loop.
+### Feature 03: Deliveries & Dependencies
+* **Scope**: Territory deliveries, blocking run IDs, and asset dependency graphs.
 * **Deliverables**:
-  - `internal/policy/engine.go`: Deterministic rule evaluator mapping DB-backed policies to action gating (`ALLOWED`, `DENIED`, `HUMAN_APPROVAL_REQUIRED`).
-  - `internal/executor/executor.go`: State mutator executing permitted actions and emitting downstream events.
-  - `internal/pipeline/pipeline.go`: Closed-loop orchestration pipeline driving workflows to resolution (`READY_TO_SHIP` or `HOLD`).
-* **Definition of Done (DoD)**:
-  - 100% unit test coverage across all policy rules.
-  - End-to-end event transition: `MASTER_UPDATED` $\rightarrow$ `PACKAGE_INVALIDATED` $\rightarrow$ `RE_QC_REQUESTED` $\rightarrow$ `QC_PASSED` $\rightarrow$ `DELIVERY_RELEASED`.
+  - `pkg/domain/models/delivery.go`, `dependency.go`.
+  - `migrations/turso/005_deliveries.sql`, `006_dependencies.sql`.
+  - `pkg/turso/deliveries.go`, `dependencies.go`.
+  - `internal/api/deliveries.go`.
+* **Verification**: Territory delivery hold/release status mutations and dependency queries.
 
 ---
 
-### Phase 04: REST API, SSE Live Stream & Operations Console UI
-* **Status**: `PENDING`
-* **Goal**: Build Echo HTTP handlers for ingestion and approvals, SSE real-time broadcasting, and embedded cinematic dark Operations Console UI.
+### Feature 04: ClickHouse History & MCP Client
+* **Scope**: ClickHouse schema migrations, 4 Materialized Views, and official MCP HTTP client.
 * **Deliverables**:
-  - `internal/api/server.go`: Echo HTTP server with middleware and CORS.
-  - `internal/api/events.go`: `POST /api/v1/events` ingestion handler.
-  - `internal/api/approvals.go`: `POST /api/v1/approvals/:id/resolve` human review handler.
-  - `internal/api/stream.go`: `GET /api/v1/stream` non-blocking SSE broadcaster.
-  - `web/`: Cinematic Operations Console single-page application served via `embed.FS`.
-  - `cmd/fincher/main.go`: Server binary entry point.
-* **Definition of Done (DoD)**:
-  - Ingestion endpoint validates and processes events end-to-end.
-  - UI displays real-time agent investigations, policy decisions, and audit timeline without page refresh.
+  - `migrations/clickhouse/001_qc_events.sql` through `009_mv_recent_master_changes.sql`.
+  - `pkg/mcp/client.go`: MCP JSON-RPC 2.0 HTTP transport client (`run_query`, `list_tables`).
+  - `pkg/turso/query_log.go`: Query logging and provenance tracking.
+* **Verification**: Live MCP connection test against `mcp-clickhouse` executing analytical queries against views.
+
+---
+
+### Feature 05: Workflow Definitions & DAG Spec
+* **Scope**: GraphSpec models, workflow template catalog, and definition authoring.
+* **Deliverables**:
+  - `pkg/domain/models/workflow_def.go`: DAG node & edge spec validation.
+  - `migrations/turso/007_workflow_definitions.sql`.
+  - `pkg/turso/workflow_defs.go`.
+  - `internal/api/workflows.go`: `GET /workflows`, `GET /workflows/{id}`, `POST /workflows`, `PATCH /workflows/{id}`, `GET /node-palette`.
+* **Verification**: Validates DAG topology (acyclic, valid triggers, valid node palette).
+
+---
+
+### Feature 06: Workflow Execution Engine & Runs
+* **Scope**: Single-request DAG runner, node dependency resolution, execution state recording.
+* **Deliverables**:
+  - `pkg/domain/models/run.go`: `WorkflowRun`, `NodeExecution`, `NodeInputs/Outputs`.
+  - `migrations/turso/008_workflow_runs.sql`, `009_node_executions.sql`, `010_node_inputs_outputs.sql`.
+  - `internal/engine/runner.go`: In-memory topological DAG runner.
+  - `internal/api/runs.go`: `POST /workflows/{id}/run`, `GET /runs/{id}`, `GET /runs/{id}/stream` (SSE).
+* **Verification**: Runs a minimal DAG (`schedule_trigger` $\rightarrow$ `delta_gate` $\rightarrow$ `event_emitter`) with full execution trail.
+
+---
+
+### Feature 07: Node Palette & Multi-Agent Investigation
+* **Scope**: All 17 node types, parallel Gemini Flash agents, Pro Decision Node (disagreement logic), actions, and drafted notices.
+* **Deliverables**:
+  - `internal/engine/nodes/`: Implement all 17 nodes.
+  - `migrations/turso/012_decisions.sql`, `013_executed_actions.sql`, `014_notifications.sql`.
+  - `pkg/turso/decisions.go`, `notifications.go`.
+* **Verification**: Full hero run (*Eclipse* V13 + Vendor A audio drift $\rightarrow$ HOLD decision + drafted notice).
+
+---
+
+### Feature 08: Docent Operator Assistant API
+* **Scope**: Read-first conversational assistant answering launch status and explaining run decisions with SQL query citations.
+* **Deliverables**:
+  - `pkg/domain/models/assistant.go`.
+  - `migrations/turso/016_query_sessions.sql`.
+  - `internal/assistant/docent.go`: Context assembler and Gemini Pro narrator.
+  - `internal/api/query.go`: `POST /query`, `GET /query/{session}/stream` (SSE).
+* **Verification**: Accurate answers to "What's releasing this weekend?" and "Why was Eclipse held?".
+
+---
+
+### Feature 09: System Hardening & Hackathon Seeder
+* **Scope**: Budget counter caps, scale-to-zero verification, and LUME demo causal seeder.
+* **Deliverables**:
+  - `migrations/turso/015_budget_counters.sql`.
+  - `pkg/turso/budget.go`: Enforces daily model limit & kill switch.
+  - `cmd/seed/main.go` & `data/seed/lume.go`: Seeds 250k+ ClickHouse QC rows, 5–7 titles, pre-resolved hero run.
+  - `cmd/fincher/main.go`: Production unified server binary.
+* **Verification**: Full unattended demo cold start and compliance verification.

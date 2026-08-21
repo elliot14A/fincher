@@ -11,8 +11,7 @@ services:
       - CLICKHOUSE_PASSWORD=
       - CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT=1
     volumes:
-      - clickhouse_data:/var/lib/clickhouse
-      - ./data/clickhouse/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+      - ./volumes/clickhouse:/var/lib/clickhouse
     healthcheck:
       test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:8123/ping || exit 1"]
       interval: 5s
@@ -47,6 +46,3 @@ services:
       retries: 10
       start_period: 5s
     restart: unless-stopped
-
-volumes:
-  clickhouse_data:

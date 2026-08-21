@@ -1,40 +1,32 @@
 # Fincher — Project State
 
 ## Current Position
-* **Active Milestone**: `Milestone 01: System Foundation & Setup`
-* **Active Phase**: `01-foundation`
-* **Phase Status**: `IN_PROGRESS`
-* **Last Updated**: `2026-08-18`
+* **Active Milestone**: `Feature 01: Titles & Launch Calendar`
+* **Active Phase**: `01-titles`
+* **Phase Status**: `COMPLETED`
+* **Last Updated**: `2026-08-21`
 
 ---
 
-## Active Phase Checklist (`01-foundation`)
+## Active Phase Checklist (`01-titles`)
 
-- [ ] **Setup & Workflow Revamp**: Adopt GSD Core spec-driven development with durable `.planning/` state artifacts.
-- [ ] **MCP Infrastructure**: Run official ClickHouse MCP server (`ghcr.io/clickhouse/mcp-clickhouse:latest`) over HTTP transport with isolated credentials in Docker Compose.
-- [ ] **Policies Storage**: Define operational policies table in SQLite schema.
-- [ ] **Realistic Datasets**: Establish synthetic media operations events in `data/seed/media_events.json`.
-- [ ] **Canonical Domain Models**: Re-scaffold `pkg/domain/types.go` and `pkg/events/vocabulary.go`.
-- [ ] **Configuration Layer**: Implement `internal/config/config.go` with strict `FINCHER_{SERVICE}_*` Kong struct tags.
-- [ ] **SQLite State Storage**: Implement `internal/store/sqlite.go` with WAL mode and unit tests.
-- [ ] **Phase 01 Verification**: Complete Phase 01 verification suite and generate `VERIFICATION.md`.
+- [x] **Step 1**: Create `pkg/domain/models/title.go` (Domain Model, Status Enums, Validator integration, Launch Calculations).
+- [x] **Step 2**: Create `pkg/domain/config/config.go` & `config_test.go` (Config Struct with `FINCHER_{SERVICE}_*` bindings & validation tests).
+- [x] **Step 3**: Create Ent schema in `pkg/ent/schema/title.go` and generate type-safe ORM entities in `pkg/ent/`.
+- [x] **Step 4**: Implement `pkg/turso/client.go` & pure functional action functions in `pkg/turso/titles/{create,get,list,update,delete}.go` returning Rust-style `Result[T]` and `Option[T]`.
+- [x] **Step 5**: Implement `internal/api/server.go` & pure functional Echo handlers in `internal/api/titles/{create,get,list,update,delete}.go`.
+- [x] **Step 6**: Complete integration tests `go test -v ./... -race` verifying full HTTP lifecycle (POST, GET, LIST with filter, PATCH, DELETE, 404).
 
 ---
 
 ## Key Decisions Record
-1. **GSD Core Workflow**: All development follows the 5-step phase loop (`DISCUSS` $\rightarrow$ `PLAN` $\rightarrow$ `EXECUTE` $\rightarrow$ `VERIFY` $\rightarrow$ `SHIP`) to prevent context rot.
-2. **ClickHouse MCP via HTTP Transport**: The Go application communicates with ClickHouse strictly via the remote MCP HTTP transport endpoint (`FINCHER_MCP_URL=http://127.0.0.1:8000/mcp`), isolating credentials in `docker-compose.yml`.
-3. **Environment Naming Standard**: Every environment variable adheres to `FINCHER_{SERVICE}_{SETTING}`.
-4. **Single Source of Mutation**: AI agents are strictly read-only analytical tools; state mutations are performed solely by the Go executor upon deterministic policy verification.
+1. **Ent ORM & Type-Safe Operations**: Migrated from raw SQL strings to `pkg/ent/` with zero manual SQL and automated migrations.
+2. **Pure Functional Action Functions**: Turso queries and API handlers are pure functions taking dependencies (`*ent.Client`) as parameters.
+3. **Rust-Style `Result[T]` & `Option[T]`**: Error handling across domain and store layers uses `pkg/domain/error.go`.
+4. **Decoupled API Error Package**: `internal/api/errors/errors.go` translates domain errors to HTTP JSON responses without import cycles.
+5. **Clean Comment Standards**: Minimal, grounded code comments without verbose package names.
 
 ---
 
-## Blocker Log
-* *None. Local ClickHouse (`:8123`) and official ClickHouse MCP server (`:8000`) containers are healthy and verified.*
-
----
-
-## Next Steps
-1. Create `01-foundation` phase execution artifacts (`.planning/phases/01-foundation/CONTEXT.md`, `PLAN.md`).
-2. Scaffold canonical domain contracts (`pkg/domain`, `pkg/events`, `pkg/policy`).
-3. Scaffold configuration (`internal/config`) and SQLite store (`internal/store`).
+## Next Milestone
+**Feature 02: Masters, Packages & Vendors** (Ent Schemas + Actions + REST API + Verification Tests).

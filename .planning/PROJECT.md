@@ -1,94 +1,87 @@
-# Fincher — Project Specification
+# Fincher — Project Specification (Workflow DAG Edition)
 
 ## 1. Executive Summary & Core Value
-**Fincher** is an event-driven, autonomous delivery-integrity operations engine for film and television post-production release pipelines. It continuously monitors production and QC events, conducts parallel historical investigations via the official ClickHouse Model Context Protocol (MCP) server, synthesizes evidence with Gemini, generates remediation action plans, and gates all state mutations behind deterministic database-backed operational policies.
+**Fincher** is an autonomous delivery-integrity workflow engine for **LUME**, a premier streaming service. The console is organized around a **launch calendar** of upcoming releases with firm premiere dates, so every incident carries real operational stakes (*"Will Eclipse ship across 40 territories in time for Friday's global premiere?"*).
+
+Fincher runs a structured **Studio Pipeline DAG** (Directed Acyclic Graph) of specialized nodes (data queries, Gemini Flash/Pro agent investigators, hybrid decision nodes, concrete state actions, and drafted stakeholder dispatches).
 
 > **Core Operating Principle**:  
-> **AI investigates and plans. Database policies decide what is permitted. Software executes and emits downstream events.**
+> **ClickHouse holds deep historical telemetry. Scheduled DAG nodes query OLAP views via MCP, AI synthesizes evidence with deterministic numbers inside the Decision Node, and software executes state mutations.**
 
 ---
 
-## 2. Problem Statement & Domain Context
-In modern media distribution (streaming platforms, theatrical releases, linear broadcast):
-* Upstream video/audio recuts (e.g. director trim +3 frames) frequently invalidate downstream localized assets (5.1 audio dubs, timed subtitles, forced narratives).
-* Undetected version drift and vendor-specific sync defects cause broadcast delays, SLA penalties, and silent release failures.
-* Traditional automation lacks historical context awareness (e.g. vendor failure rates, asset lineage), while pure LLM chatbots lack deterministic safety and operational execution authority.
+## 2. The Four-Beat Story & The Disagreement Money Shot
+Every run is legible in ten seconds:
+> **Delta detected → Agents query ClickHouse history via MCP → Decision Node synthesizes numbers + context → State action executed & stakeholder dispatch drafted.**
 
-Fincher solves this by creating a **closed-loop autonomous operations engine** combining:
-1. Fast historical analytical querying (ClickHouse via MCP).
-2. Parallel multi-agent investigation (Historian, Dependency, Incident Analyst, Action Planner).
-3. Deterministic policy gating (pure Go evaluator backed by operational policies table).
-4. Automated state mutations and closed-loop re-evaluation.
+### The Hero Scenario: Disagreement Panel
+* **Context**: *Eclipse* master bumps to V13 two days before a 40-territory launch. Vendor A's Spanish audio produces a borderline sync drift (110ms against a 120ms tolerance).
+* **Naive Rule Automation**: PASS (110ms is within the static 120ms threshold).
+* **Fincher Decision Node (Gemini Pro + ClickHouse MVs)**: HOLD. Combines quantitative inputs (36h to launch, 40 territories, redelivery count = 2) with historical evidence (Vendor A's rolling defect rate is escalating, upstream master superseded) to hold delivery and draft a stakeholder notice.
 
 ---
 
-## 3. System Architecture & Component Boundaries
+## 3. Architecture & Data Flow
 
 ```text
-               Production Event (REST API / Simulator)
-                                │
-                                ▼
-                       [ Ingestion Layer ]
-                                │
-                ┌───────────────┴───────────────┐
-                ▼                               ▼
-       [ SQLite: fincher.db ]         [ ClickHouse (MCP) ]
-   (State & Policy Tables)             (Historical Event Store)
-                │
-                ▼
-      [ Fincher Orchestrator ]
-                │
-    ┌───────────┴───────────┐
-    ▼                       ▼
-[ Historian Agent ]   [ Dependency Agent ]
- (ClickHouse MCP)       (ClickHouse MCP)
-    │                       │
-    └───────────┬───────────┘
-                ▼
-     [ Evidence Aggregator ]
-                │
-                ▼
-     [ Incident Analyst Agent ]
-                │
-                ▼
-      [ Action Planner Agent ]
-                │
-                ▼
-      [ Policy Engine ] (Evaluates rules from DB policies table)
-                │
-        ┌───────┴───────┐
-        ▼               ▼
-   [ ALLOWED ]   [ HUMAN APPROVAL ]
-        │               │
-        ▼               ▼
-  [ Go Executor ]  [ Approval Queue (UI) ]
-        │
-        ▼
- Mutate State & Emit Downstream Event (PACKAGE_INVALIDATED, RE_QC, etc.)
-        │
-        ▼
-  [ Closed-Loop Feedback to Orchestrator ]
+       Cloud Scheduler (Periodic ticks: every N mins)
+                    │  HTTP POST /workflows/{id}/run
+                    ▼
+     ┌──────────────────────────────────────────────┐
+     │          Single-Request DAG Runner           │
+     │                                              │
+     │ 1. [ schedule_trigger ]                      │
+     │ 2. [ delta_gate ] (0 LLM cost exit if idle) │
+     │       │ (if delta found)                     │
+     │ 3. Parallel Query Nodes (ClickHouse MCP)    │
+     │    - vendor_reliability_query                │
+     │    - lineage_query                           │
+     │    - redelivery_query                        │
+     │    - recent_master_change_query              │
+     │    - time_to_premiere (computed live)        │
+     │       │                                      │
+     │ 4. Parallel Agent Nodes (Gemini Flash)       │
+     │    - vendor_risk_agent                       │
+     │    - dependency_impact_agent                 │
+     │       │                                      │
+     │ 5. [ assessment_agent ] (Gemini Pro)         │
+     │       │                                      │
+     │ 6. [ decision_node ] (Gemini Pro)            │
+     │    (Combines deterministic inputs + agents)  │
+     │    Branches: HOLD / RE_QC / RELEASE / NONE   │
+     │       │                                      │
+     │ 7. Action & Notification Nodes               │
+     │    - hold_delivery_action / release_action   │
+     │    - stakeholder_notice_action (Flash draft) │
+     │ 8. [ event_emitter ] (Sink to ClickHouse)    │
+     └──────────────────────┬───────────────────────┘
+                            ▼
+     Turso (State, Runs, Node Executions, Notifications)
 ```
 
 ---
 
 ## 4. Technical Stack & Invariants
 
-| Component | Standard Technology | Architectural Rule |
+| Component | Standard Technology | Architectural Invariant |
 | :--- | :--- | :--- |
-| **Language** | Go (1.24+) | Standard library idioms, explicit error wrapping, `context.Context` everywhere |
-| **Application State & Policies DB** | SQLite (`mattn/go-sqlite3`) | High-performance operational state & policies table in WAL mode with `SetMaxOpenConns(1)` |
-| **Historical Analytics DB** | ClickHouse (`clickhouse:24.3-alpine`) | Time-series event store (`qc_events`, `asset_events`, `delivery_events`, `incident_events`) |
-| **Agent DB Interface** | Official ClickHouse MCP Server (`ghcr.io/clickhouse/mcp-clickhouse:latest`) | Remote MCP HTTP transport (`/mcp`). ClickHouse credentials isolated strictly in MCP container |
-| **AI Multi-Agent Runtime** | Google ADK Go (`google.golang.org/adk/v2`) + Google GenAI (`google.golang.org/genai`) | Code-first multi-agent orchestration, parallel goroutines, typed JSON schemas |
-| **Policy Engine** | Pure Go Deterministic Evaluator | Maps database policies to candidate action gating without AI overrides |
-| **HTTP Framework** | `github.com/labstack/echo/v4` | Event ingestion, approvals REST API, SSE real-time event streaming |
-| **Configuration** | `github.com/alecthomas/kong` | Strict `FINCHER_{SERVICE}_{SETTING}` environment variable naming |
+| **Language** | Go (1.24+) | Standard library idioms, explicit error wrapping, `context.Context` propagation |
+| **Runtime & Cloud** | Google Cloud Run (**cold / scale-to-zero**) | Stateless single-request DAG execution (~2–4s), $0 idle cost |
+| **Application State Store** | Turso / libSQL (`@libsql/client` / Go driver) | Serverless HTTP SQLite storing titles, packages, runs, node executions, notifications |
+| **Historical Analytics DB** | ClickHouse Cloud / Local Container (`24.3-alpine`) | 250k+ append-only QC/asset events + 4 Materialized Views |
+| **Agent DB Interface** | Official ClickHouse MCP Server (`mcp-clickhouse`) | Remote MCP HTTP transport (`/mcp`). ClickHouse credentials isolated exclusively in MCP service |
+| **AI Models** | Google GenAI SDK (`google.golang.org/genai` / ADK Go) | Gemini 2.5 Flash for query agents & draft notifications; Gemini 2.5 Pro for Assessment & Decision nodes |
+| **Decisions** | Hybrid `decision_node` | Combines quantitative MV metrics + agent synthesis into fixed branches (`HOLD`, `RE_QC`, `RELEASE`, `NONE`) |
+| **Operator Assistant** | Read-first Docent Assistant | Answers "What's releasing this weekend?" and explains past run decisions with SQL query citations |
+| **HTTP API & SSE** | `github.com/labstack/echo/v4` | REST endpoints for titles, workflow runs, and SSE for real-time node stepping |
+| **Frontend UI** | Preact Single-Page App | Launch Calendar + Studio Pipeline Visualizer + Disagreement Panel + Stakeholder Dispatch Preview |
+| **Configuration** | `github.com/alecthomas/kong` | Strict `FINCHER_{SERVICE}_{SETTING}` environment variable bindings |
 
 ---
 
-## 5. Non-Negotiable Standards
-1. **Event-Driven Resolution**: All decisions emerge dynamically from events, ClickHouse history, and database policies.
-2. **Operations Console**: Fincher is an autonomous operations engine, not a conversational chatbot.
-3. **Read-Only Agents**: Agents are strictly read-only. State mutations are executed solely by the Go executor upon policy authorization.
-4. **GSD Core Lifecycle**: Every phase follows the GSD phase loop (`DISCUSS` $\rightarrow$ `PLAN` $\rightarrow$ `EXECUTE` $\rightarrow$ `VERIFY` $\rightarrow$ `SHIP`) with persistent markdown state in `.planning/`.
+## 5. Non-Negotiable Rules
+1. **ClickHouse via MCP Only**: All analytical history queries at runtime route through the official `mcp-clickhouse` server.
+2. **Google Cloud AI Tooling Only**: Exclusively use Google Gemini SDKs.
+3. **Delta Gate Cost Protection**: Routine ticks with no new events exit in $< 10\text{ms}$ at $0 LLM cost.
+4. **Mocked Notifications**: Stakeholder emails/dispatches are drafted with realistic LLM content and stored as `drafted` for in-browser review.
+5. **Acyclic Workflow Execution**: A run is a single DAG execution; closed loops (hold $\rightarrow$ re-QC $\rightarrow$ release) occur across successive runs.

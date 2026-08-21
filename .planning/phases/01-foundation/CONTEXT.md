@@ -1,26 +1,27 @@
-# Phase 01: Core Architecture, Setup, Domain Models & Storage — Context
+# Phase 01: ClickHouse MCP Spike, Analytical Schemas & Turso State Store — Context
 
 ## Objective
-Establish the durable foundation for Fincher: Go module initialization, canonical domain models, event vocabulary, Kong configuration with `FINCHER_{SERVICE}_*` tags, SQLite state store with schema migrations and WAL mode, and declarative operational policies.
+Establish the foundational data layer and infrastructure for Fincher v2:
+1. Denormalized ClickHouse OLAP schema with Materialized Views optimized for vendor trends, asset lineage, and failure rates.
+2. Official ClickHouse MCP client connectivity validation over HTTP transport.
+3. Turso / libSQL application store with Launch Calendar tables (`titles`, `packages`, `deliveries`), `policies` (CEL rules), `workflows`, `work_queue`, and `audit_trail`.
+4. Synthetic causal seed dataset modeling LUME streaming titles (*Eclipse*, *Atlas*, *Orbit*, etc.) and vendors (`vendor_a` degradation).
+5. Canonical Go domain models and Kong configuration (`FINCHER_{SERVICE}_*`).
 
 ---
 
 ## Design Decisions
-1. **Module Name**: `github.com/elliot14A/fincher`
-2. **Go Version**: Go 1.24+ (or Go 1.26 on dev machine)
-3. **Database Architecture**:
-   - SQLite for application transactional state (`deliveries`, `packages`, `qc_results`, `incidents`, `human_approvals`, `audit_logs`).
-   - SQLite connection uses `_journal_mode=WAL`, `_busy_timeout=5000`, `_foreign_keys=ON`, and `SetMaxOpenConns(1)`.
-4. **Configuration Tagging**:
-   - Uses Kong struct tags with explicit `env:"FINCHER_{SERVICE}_{SETTING}"` bindings.
-   - Database credentials are not loaded into application config; agent operations communicate strictly via `FINCHER_MCP_URL`.
-5. **Database-Backed Policies**:
-   - `policies` table in SQLite stores operational rule constraints (`rule_id`, `condition_type`, `threshold`, `action`, `requires_approval`, `enabled`).
+1. **Module & Language**: `github.com/elliot14A/fincher`, Go 1.24+ standard library conventions.
+2. **State Store**: Turso / libSQL (via modern Go client compatible with both local SQLite file / in-memory for testing and remote Turso HTTP database).
+3. **Historical Store**: ClickHouse accessed by agents strictly via official `mcp-clickhouse` container (`http://127.0.0.1:8000/mcp`).
+4. **Policy Format**: CEL expression strings stored in `policies` table with rule IDs (`R-017`, `R-021`).
+5. **Causal Data Core**: Deterministic seed with realistic volume (historical QC/delivery events) and causal hooks (*Eclipse* V13 imminent premiere, `vendor_a` Spanish audio borderline drift).
 
 ---
 
 ## Invariants Checklist
-- [ ] Read-Only Agent Invariant
-- [ ] MCP Credential Isolation Invariant
+- [ ] Read-Only Agent Invariant (Agents only read ClickHouse via MCP)
+- [ ] MCP Credential Isolation Invariant (No ClickHouse credentials inside agent code)
 - [ ] Mandatory `FINCHER_*` Env Naming Invariant
-- [ ] Pure Go Deterministic Policy Gating Invariant
+- [ ] Cold Cloud Run Ready (Serverless state and durable work queue)
+- [ ] Deterministic CEL Policy Rule Storage

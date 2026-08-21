@@ -15,6 +15,12 @@ seed
 *.db-wal
 *.db-shm
 
+# Local container volumes
+volumes/
+
+# Agent-generated review reports
+.agents/reviews/
+
 # OS & Editor temporary files
 .DS_Store
 *.tmp
