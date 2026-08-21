@@ -11,19 +11,31 @@ import (
 	domainerrors "github.com/elliot14A/fincher/pkg/domain/errors"
 )
 
-// List handles GET /dependencies.
+// List handles GET /api/dependencies.
+//
+//	@Summary		List all dependency edges
+//	@Description	Fetches dependency edges, optionally filtered by parent or child package ID.
+//	@Tags			dependencies
+//	@Produce		json
+//	@Param			parent_id	query		string	false	"Parent package ID"
+//	@Param			child_id	query		string	false	"Child package ID"
+//	@Success		200			{array}		models.Dependency
+//	@Failure		500			{object}	errors.DomainError
+//	@Router			/dependencies [get]
 func List(client *ent.Client) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		filter := dependencies.ListFilter{
-			ParentID: domainerrors.None[string](),
-			ChildID:  domainerrors.None[string](),
+		var filter dependencies.ListFilter
+
+		if pID := c.QueryParam("parent_id"); pID != "" {
+			filter.ParentID = domainerrors.Some(pID)
+		} else {
+			filter.ParentID = domainerrors.None[string]()
 		}
 
-		if parentID := c.QueryParam("parent_id"); parentID != "" {
-			filter.ParentID = domainerrors.Some(parentID)
-		}
-		if childID := c.QueryParam("child_id"); childID != "" {
-			filter.ChildID = domainerrors.Some(childID)
+		if cID := c.QueryParam("child_id"); cID != "" {
+			filter.ChildID = domainerrors.Some(cID)
+		} else {
+			filter.ChildID = domainerrors.None[string]()
 		}
 
 		res := dependencies.List(c.Request().Context(), client, filter)

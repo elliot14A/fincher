@@ -10,7 +10,15 @@ import (
 	"github.com/elliot14A/fincher/internal/turso/ent"
 )
 
-// Delete handles DELETE /deliveries/:id.
+// Delete handles DELETE /api/deliveries/:id.
+//
+//	@Summary		Delete a territory delivery target
+//	@Description	Removes a territory delivery entry.
+//	@Tags			deliveries
+//	@Param			id	path	string	true	"Delivery ID"
+//	@Success		204	"No Content"
+//	@Failure		404	{object}	errors.DomainError
+//	@Router			/deliveries/{id} [delete]
 func Delete(client *ent.Client) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		id := c.Param("id")

@@ -12,12 +12,20 @@ import (
 	"github.com/elliot14A/fincher/pkg/domain/models"
 )
 
-// List handles GET /titles.
+// List handles GET /api/titles.
+//
+//	@Summary		List all media titles
+//	@Description	Fetches all releases in the launch calendar, optionally filtered by status.
+//	@Tags			titles
+//	@Produce		json
+//	@Param			status	query		string	false	"Status filter (ON_TRACK, AT_RISK, HOLD, PROCESSING, SHIPPED)"
+//	@Success		200		{array}		models.Title
+//	@Failure		500		{object}	errors.DomainError
+//	@Router			/titles [get]
 func List(client *ent.Client) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		statusParam := c.QueryParam("status")
 		var filter domainerrors.Option[models.TitleStatus]
-
 		if statusParam != "" {
 			filter = domainerrors.Some(models.TitleStatus(statusParam))
 		} else {

@@ -17,6 +17,13 @@ import (
 	"github.com/elliot14A/fincher/pkg/logger"
 )
 
+//	@title			Fincher Media Delivery Operations API
+//	@version		1.0.0
+//	@description	Autonomous delivery-integrity workflow engine for LUME streaming operations.
+//	@BasePath		/api
+//	@produce		json
+//	@consume		json
+
 var CLI struct {
 	Config config.Config `kong:"embed"`
 }

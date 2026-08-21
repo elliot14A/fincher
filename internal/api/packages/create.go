@@ -11,7 +11,17 @@ import (
 	"github.com/elliot14A/fincher/pkg/domain/models"
 )
 
-// Create handles POST /packages.
+// Create handles POST /api/packages.
+//
+//	@Summary		Create a media package
+//	@Description	Registers a video, audio dub, or subtitle package derived from a master cut.
+//	@Tags			packages
+//	@Accept			json
+//	@Produce		json
+//	@Param			package	body		models.Package	true	"Package payload"
+//	@Success		201		{object}	models.Package
+//	@Failure		400		{object}	errors.DomainError
+//	@Router			/packages [post]
 func Create(client *ent.Client) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var req models.Package

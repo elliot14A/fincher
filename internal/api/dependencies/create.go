@@ -11,7 +11,18 @@ import (
 	"github.com/elliot14A/fincher/pkg/domain/models"
 )
 
-// Create handles POST /dependencies.
+// Create handles POST /api/dependencies.
+//
+//	@Summary		Create an immutable dependency edge
+//	@Description	Registers a lineage edge between two packages with cycle prevention and same-title checks.
+//	@Tags			dependencies
+//	@Accept			json
+//	@Produce		json
+//	@Param			dependency	body		models.Dependency	true	"Dependency payload"
+//	@Success		201			{object}	models.Dependency
+//	@Failure		400			{object}	errors.DomainError
+//	@Failure		409			{object}	errors.DomainError
+//	@Router			/dependencies [post]
 func Create(client *ent.Client) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var req models.Dependency

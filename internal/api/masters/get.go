@@ -10,7 +10,16 @@ import (
 	tursomasters "github.com/elliot14A/fincher/internal/turso/masters"
 )
 
-// Get handles GET /masters/:id.
+// Get handles GET /api/masters/:id.
+//
+//	@Summary		Get master cut by ID
+//	@Description	Fetches master cut version and supersedes metadata.
+//	@Tags			masters
+//	@Produce		json
+//	@Param			id	path		string	true	"Master ID"
+//	@Success		200	{object}	models.Master
+//	@Failure		404	{object}	errors.DomainError
+//	@Router			/masters/{id} [get]
 func Get(client *ent.Client) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		id := c.Param("id")

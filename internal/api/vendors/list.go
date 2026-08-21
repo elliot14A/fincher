@@ -11,14 +11,22 @@ import (
 	domainerrors "github.com/elliot14A/fincher/pkg/domain/errors"
 )
 
-// List handles GET /vendors.
+// List handles GET /api/vendors.
+//
+//	@Summary		List all vendors
+//	@Description	Fetches registered vendors, optionally filtered by specialty.
+//	@Tags			vendors
+//	@Produce		json
+//	@Param			specialty	query		string	false	"Specialty filter (e.g. AUDIO_DUBBING, SUBTITLES)"
+//	@Success		200			{array}		models.Vendor
+//	@Failure		500			{object}	errors.DomainError
+//	@Router			/vendors [get]
 func List(client *ent.Client) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		specialty := c.QueryParam("specialty")
+		spec := c.QueryParam("specialty")
 		var filter domainerrors.Option[string]
-
-		if specialty != "" {
-			filter = domainerrors.Some(specialty)
+		if spec != "" {
+			filter = domainerrors.Some(spec)
 		} else {
 			filter = domainerrors.None[string]()
 		}

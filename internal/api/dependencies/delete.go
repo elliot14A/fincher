@@ -10,7 +10,15 @@ import (
 	"github.com/elliot14A/fincher/internal/turso/ent"
 )
 
-// Delete handles DELETE /dependencies/:id.
+// Delete handles DELETE /api/dependencies/:id.
+//
+//	@Summary		Delete a dependency edge
+//	@Description	Removes a lineage edge between parent and child media packages.
+//	@Tags			dependencies
+//	@Param			id	path	string	true	"Dependency ID"
+//	@Success		204	"No Content"
+//	@Failure		404	{object}	errors.DomainError
+//	@Router			/dependencies/{id} [delete]
 func Delete(client *ent.Client) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		id := c.Param("id")

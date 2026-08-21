@@ -11,7 +11,19 @@ import (
 	"github.com/elliot14A/fincher/pkg/domain/models"
 )
 
-// Update handles PATCH /packages/:id.
+// Update handles PATCH /api/packages/:id.
+//
+//	@Summary		Partial update of a media package
+//	@Description	Updates package status (e.g. RE_QC_PENDING, INVALIDATED), master version cut, or metadata.
+//	@Tags			packages
+//	@Accept			json
+//	@Produce		json
+//	@Param			id		path		string						true	"Package ID"
+//	@Param			update	body		models.UpdatePackageInput	true	"Partial package update payload"
+//	@Success		200		{object}	models.Package
+//	@Failure		400		{object}	errors.DomainError
+//	@Failure		404		{object}	errors.DomainError
+//	@Router			/packages/{id} [patch]
 func Update(client *ent.Client) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		id := c.Param("id")
@@ -19,7 +31,7 @@ func Update(client *ent.Client) echo.HandlerFunc {
 		if err := c.Bind(&req); err != nil {
 			return c.JSON(http.StatusBadRequest, apierrors.ErrorResponse{
 				Code:    "INVALID_INPUT",
-				Message: "invalid request body",
+				Message: "invalid update request body",
 			})
 		}
 

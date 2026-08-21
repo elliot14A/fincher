@@ -11,7 +11,19 @@ import (
 	"github.com/elliot14A/fincher/pkg/domain/models"
 )
 
-// Update handles PATCH /deliveries/:id.
+// Update handles PATCH /api/deliveries/:id.
+//
+//	@Summary		Partial update of a delivery target
+//	@Description	Updates territory release shipping state (e.g. HOLD, READY_TO_SHIP) or metadata.
+//	@Tags			deliveries
+//	@Accept			json
+//	@Produce		json
+//	@Param			id		path		string						true	"Delivery ID"
+//	@Param			update	body		models.UpdateDeliveryInput	true	"Partial delivery update payload"
+//	@Success		200		{object}	models.Delivery
+//	@Failure		400		{object}	errors.DomainError
+//	@Failure		404		{object}	errors.DomainError
+//	@Router			/deliveries/{id} [patch]
 func Update(client *ent.Client) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		id := c.Param("id")
@@ -19,7 +31,7 @@ func Update(client *ent.Client) echo.HandlerFunc {
 		if err := c.Bind(&req); err != nil {
 			return c.JSON(http.StatusBadRequest, apierrors.ErrorResponse{
 				Code:    "INVALID_INPUT",
-				Message: "invalid request body",
+				Message: "invalid update request body",
 			})
 		}
 

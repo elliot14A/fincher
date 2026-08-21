@@ -11,7 +11,17 @@ import (
 	"github.com/elliot14A/fincher/pkg/domain/models"
 )
 
-// Create handles POST /deliveries.
+// Create handles POST /api/deliveries.
+//
+//	@Summary		Create a territory delivery target
+//	@Description	Schedules a territory release target with status and target premiere date.
+//	@Tags			deliveries
+//	@Accept			json
+//	@Produce		json
+//	@Param			delivery	body		models.Delivery	true	"Delivery target payload"
+//	@Success		201			{object}	models.Delivery
+//	@Failure		400			{object}	errors.DomainError
+//	@Router			/deliveries [post]
 func Create(client *ent.Client) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var req models.Delivery

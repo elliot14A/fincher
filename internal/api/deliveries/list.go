@@ -12,23 +12,38 @@ import (
 	"github.com/elliot14A/fincher/pkg/domain/models"
 )
 
-// List handles GET /deliveries.
+// List handles GET /api/deliveries.
+//
+//	@Summary		List all territory deliveries
+//	@Description	Fetches territory deliveries, optionally filtered by title, country, or status.
+//	@Tags			deliveries
+//	@Produce		json
+//	@Param			title_id	query		string	false	"Title ID filter"
+//	@Param			country		query		string	false	"Country code filter (e.g. US, ES, JP)"
+//	@Param			status		query		string	false	"Status filter (PENDING, READY_TO_SHIP, HOLD, SHIPPED)"
+//	@Success		200			{array}		models.Delivery
+//	@Failure		500			{object}	errors.DomainError
+//	@Router			/deliveries [get]
 func List(client *ent.Client) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		filter := deliveries.ListFilter{
-			TitleID: domainerrors.None[string](),
-			Country: domainerrors.None[string](),
-			Status:  domainerrors.None[models.DeliveryStatus](),
-		}
+		var filter deliveries.ListFilter
 
 		if tID := c.QueryParam("title_id"); tID != "" {
 			filter.TitleID = domainerrors.Some(tID)
+		} else {
+			filter.TitleID = domainerrors.None[string]()
 		}
-		if country := c.QueryParam("country"); country != "" {
-			filter.Country = domainerrors.Some(country)
+
+		if cCode := c.QueryParam("country"); cCode != "" {
+			filter.Country = domainerrors.Some(cCode)
+		} else {
+			filter.Country = domainerrors.None[string]()
 		}
-		if status := c.QueryParam("status"); status != "" {
-			filter.Status = domainerrors.Some(models.DeliveryStatus(status))
+
+		if stat := c.QueryParam("status"); stat != "" {
+			filter.Status = domainerrors.Some(models.DeliveryStatus(stat))
+		} else {
+			filter.Status = domainerrors.None[models.DeliveryStatus]()
 		}
 
 		res := deliveries.List(c.Request().Context(), client, filter)
