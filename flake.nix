@@ -40,8 +40,7 @@
               clickhouse-cli
 
               # Frontend & Utilities
-              nodejs_22
-              pnpm
+              bun
               curl
               jq
             ];
