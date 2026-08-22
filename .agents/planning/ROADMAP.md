@@ -44,7 +44,7 @@ Build one complete feature slice end-to-end at a time:
 * **Deliverables**:
   - `pkg/domain/models/title.go`: Title model, status enums (`ON_TRACK`, `AT_RISK`, `HOLD`, `PROCESSING`, `SHIPPED`), validation, `HoursUntilPremiere`.
   - `internal/turso/titles/`: Create, Get, List (with status filter), Update, Delete.
-  - `internal/api/titles/`: `GET /titles`, `GET /titles/{id}`, `POST /titles`, `PATCH /titles/{id}`, `DELETE /titles/{id}`.
+  - `internal/api/titles/`: `GET /api/titles`, `GET /api/titles/{id}`, `POST /api/titles`, `PATCH /api/titles/{id}`, `DELETE /api/titles/{id}`.
   - `internal/api/server.go`: Base Echo HTTP server setup with JSON middleware.
 * **Verification**: `go test -v ./... -race` verifying title CRUD and HTTP endpoints.
 
@@ -65,7 +65,7 @@ Build one complete feature slice end-to-end at a time:
 * **Deliverables**:
   - `pkg/domain/models/delivery.go`, `dependency.go`.
   - `internal/turso/deliveries/`, `dependencies/` (with cycle prevention and recursive lineage graph builder).
-  - `internal/api/deliveries/`, `dependencies/` (`GET /dependencies/graph/{title_id}`).
+  - `internal/api/deliveries/`, `dependencies/` (`GET /api/dependencies/graph/{title_id}`).
 * **Verification**: Territory delivery hold/release status mutations, dependency graph queries, cycle rejection tests.
 
 ---
@@ -85,7 +85,7 @@ Build one complete feature slice end-to-end at a time:
 * **Deliverables**:
   - `pkg/domain/models/workflow_def.go`: DAG node & edge spec validation.
   - `internal/turso/workflow_defs/`.
-  - `internal/api/workflows/`: `GET /workflows`, `GET /workflows/{id}`, `POST /workflows`, `PATCH /workflows/{id}`, `GET /node-palette`.
+  - `internal/api/workflows/`: `GET /api/workflows`, `GET /api/workflows/{id}`, `POST /api/workflows`, `PATCH /api/workflows/{id}`, `GET /api/node-palette`.
 * **Verification**: Validates DAG topology (acyclic, valid triggers, valid node palette).
 
 ---
@@ -95,7 +95,7 @@ Build one complete feature slice end-to-end at a time:
 * **Deliverables**:
   - `pkg/domain/models/run.go`: `WorkflowRun`, `NodeExecution`, `NodeInputs/Outputs`.
   - `internal/engine/runner.go`: In-memory topological DAG runner.
-  - `internal/api/runs/`: `POST /workflows/{id}/run`, `GET /runs/{id}`, `GET /runs/{id}/stream` (SSE live step execution).
+  - `internal/api/runs/`: `POST /api/workflows/{id}/run`, `GET /api/runs/{id}`, `GET /api/runs/{id}/stream` (SSE live step execution).
 * **Verification**: Runs a minimal DAG (`schedule_trigger` $\rightarrow$ `delta_gate` $\rightarrow$ `event_emitter`) with full execution trail.
 
 ---
@@ -110,12 +110,18 @@ Build one complete feature slice end-to-end at a time:
 ---
 
 ### Feature 08: Operations Console UI & Docent Operator Assistant
-* **Scope**: Cinematic dark Operations Console UI served directly from Go via `embed.FS`, live SSE DAG visualizer, and Docent natural language operator assistant.
+* **Scope**: Preact Operations Console UI with zero-runtime Vanilla Extract styling, co-located camelCase component architecture, live SSE DAG visualizer, and Docent natural language assistant.
 * **Deliverables**:
-  - `web/`: Single-page app (Launch Calendar, Studio Pipeline DAG Visualizer, Disagreement Panel, Stakeholder Notice Preview, Docent Chat Interface).
-  - `internal/assistant/docent.go`: Context assembler and Gemini Pro narrator explaining run decisions with SQL query citations.
-  - `internal/api/query/`: `POST /query`, `GET /query/{session}/stream` (SSE).
-* **Verification**: End-to-end run observed live via the UI with real-time SSE stepping, interactive inspection, and Docent explanations.
+  - `web/`: Preact + Vite + TanStack DB + TanStack Router + Vanilla Extract + Hey API.
+  - `web/src/styles/theme.css.ts`: Dark operations theme tokens.
+  - `web/src/features/calendar/`: Launch Calendar with title countdowns and master cuts.
+  - `web/src/features/lineage/`: Interactive XYFlow Lineage DAG.
+  - `web/src/features/deliveries/`: Territory Delivery Matrix with hold overrides.
+  - `web/src/features/vendors/`: Vendor scorecards and reliability charts.
+  - `web/src/features/runs/`: Live SSE Studio Pipeline run inspector.
+  - `web/src/features/docent/`: Read-first natural language ClickHouse query assistant.
+  - `internal/api/query/`: `POST /api/query`, `GET /api/query/{session}/stream` (SSE).
+* **Verification**: `bun run typecheck`, `bun run lint`, and end-to-end verification of embedded UI in Go server binary.
 
 ---
 

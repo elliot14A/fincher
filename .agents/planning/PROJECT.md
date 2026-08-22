@@ -65,16 +65,22 @@ Every run is legible in ten seconds:
 
 | Component | Standard Technology | Architectural Invariant |
 | :--- | :--- | :--- |
-| **Language** | Go (1.24+) | Standard library idioms, explicit error wrapping, `context.Context` propagation |
+| **Language (Backend)** | Go (1.24+) | Standard library idioms, explicit error wrapping, `context.Context` propagation |
 | **Runtime & Cloud** | Google Cloud Run (**cold / scale-to-zero**) | Stateless single-request DAG execution (~2–4s), $0 idle cost |
 | **Application State Store** | Turso / libSQL (`@libsql/client` / Go driver) | Serverless HTTP SQLite storing titles, packages, runs, node executions, notifications |
 | **Historical Analytics DB** | ClickHouse Cloud / Local Container (`24.3-alpine`) | 250k+ append-only QC/asset events + 4 Materialized Views |
-| **Agent DB Interface** | Official ClickHouse MCP Server (`mcp-clickhouse`) | Remote MCP HTTP transport (`/mcp`). ClickHouse credentials isolated exclusively in MCP service |
+| **Agent DB Interface** | Official ClickHouse MCP Server (`mcp-clickhouse`) | Remote MCP HTTP transport (`/mcp`). ClickHouse credentials isolated exclusively in MCP container |
 | **AI Models** | Google GenAI SDK (`google.golang.org/genai` / ADK Go) | Gemini 2.5 Flash for query agents & draft notifications; Gemini 2.5 Pro for Assessment & Decision nodes |
 | **Decisions** | Hybrid `decision_node` | Combines quantitative MV metrics + agent synthesis into fixed branches (`HOLD`, `RE_QC`, `RELEASE`, `NONE`) |
 | **Operator Assistant** | Read-first Docent Assistant | Answers "What's releasing this weekend?" and explains past run decisions with SQL query citations |
-| **HTTP API & SSE** | `github.com/labstack/echo/v4` | REST endpoints for titles, workflow runs, and SSE for real-time node stepping |
-| **Frontend UI** | Preact Single-Page App | Launch Calendar + Studio Pipeline Visualizer + Disagreement Panel + Stakeholder Dispatch Preview |
+| **HTTP API & SSE** | `github.com/labstack/echo/v4` | REST endpoints under `/api/*`, Swagger JSON spec serving, SSE for real-time node stepping |
+| **Frontend UI Runtime** | **Preact + Vite + TypeScript** | Microscopic ~3kb UI footprint with `@preact/preset-vite` and `preact/compat` |
+| **Frontend Styling** | **Vanilla Extract (`.css.ts`) + Recipes** | Zero-runtime CSS extraction, 100% type-safe design tokens (`theme.css.ts`) |
+| **Frontend State & DB** | **`@tanstack/react-query` + `@tanstack/react-db`** | Reactive client-side database collections (`src/db/`) with live SSE sync and optimistic updates |
+| **Frontend Routing** | **`@tanstack/react-router`** | Type-safe, file-based routing with `@tanstack/router-plugin` |
+| **Frontend Data Grids** | **`@tanstack/react-table` + `@tanstack/react-virtual`** | 60fps virtualized territory matrices and package feeds |
+| **Frontend DAG Canvas** | **`@xyflow/react`** | Interactive node canvas for Title Lineage DAG and Workflow Execution Inspector |
+| **API Codegen & Validation** | **`@hey-api/openapi-ts` + `valibot`** | Auto-generates TypeScript SDK & Valibot validators from backend `openapi/swagger.json` |
 | **Configuration** | `github.com/alecthomas/kong` | Strict `FINCHER_{SERVICE}_{SETTING}` environment variable bindings |
 
 ---
@@ -85,3 +91,4 @@ Every run is legible in ten seconds:
 3. **Delta Gate Cost Protection**: Routine ticks with no new events exit in $< 10\text{ms}$ at $0 LLM cost.
 4. **Mocked Notifications**: Stakeholder emails/dispatches are drafted with realistic LLM content and stored as `drafted` for in-browser review.
 5. **Acyclic Workflow Execution**: A run is a single DAG execution; closed loops (hold $\rightarrow$ re-QC $\rightarrow$ release) occur across successive runs.
+6. **Strict camelCase & Co-located Frontend**: All frontend files and directories are `camelCase`. Every component and feature sub-component is co-located with its `*.css.ts` styling and `index.ts` barrel export.
