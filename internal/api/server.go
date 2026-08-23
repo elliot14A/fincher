@@ -15,6 +15,7 @@ import (
 	"github.com/elliot14A/fincher/internal/turso/ent"
 	"github.com/elliot14A/fincher/openapi"
 	"github.com/elliot14A/fincher/pkg/logger"
+	"github.com/elliot14A/fincher/pkg/web"
 )
 
 // Server holds the HTTP router and database client.
@@ -102,5 +103,6 @@ func (s *Server) registerRoutes() {
 	deliveries.RegisterRoutes(apiGroup.Group("/deliveries"), s.client)
 	dependencies.RegisterRoutes(apiGroup.Group("/dependencies"), s.client)
 
-	logger.Debug("registered all api routes under /api", "routes_count", len(s.echo.Routes()))
+	// Register embedded web MPA frontend and static assets
+	web.RegisterRoutes(s.echo)
 }
