@@ -7,7 +7,7 @@ These rules define strict architectural invariants and coding standards for all 
 ## 1. Naming & Case Invariants
 
 1. **Strict `camelCase` Across the Entire Codebase**:
-   * All file names, directory names, and exported symbols must strictly use **`camelCase`** (e.g. `calendarGrid.tsx`, `calendarGrid.css.ts`, `queryKeys.ts`, `queryOptions.ts`, `holdOverrideModal.tsx`).
+   * All file names, directory names, and exported symbols must strictly use **`camelCase`** (e.g. `calendarGrid.tsx`, `calendarGrid.css.ts`, `queryKeys.ts`, `queryOptions.ts`, `holdOverrideModal.tsx`, `paginationControls.tsx`).
    * **Strictly NO kebab-case** (`calendar-grid.tsx` ❌) and **NO PascalCase files** (`CalendarGrid.tsx` ❌).
    * **The Only Exceptions**:
      - TanStack Router route parameter files dictated by framework conventions (`src/routes/$id.tsx`, `__root.tsx`, `index.tsx`).
@@ -40,22 +40,26 @@ These rules define strict architectural invariants and coding standards for all 
 
 ---
 
-## 3. Query Infrastructure & Separation
+## 3. Query Infrastructure & Universal Pagination
 
 1. **Separated Query Keys & Query Options**:
    * Every feature must maintain:
-     * `queryKeys.ts`: Deterministic query key factory object (e.g. `calendarKeys`).
+     * `queryKeys.ts`: Deterministic query key factory object (e.g. `titlesKeys`, `deliveriesKeys`).
      * `queryOptions.ts`: TanStack Query options consuming the auto-generated Hey API client (`src/lib/api/generated/`).
    * These files sit directly at the feature root and are re-exported through the feature's top-level `index.ts`.
+2. **Unified Pagination Invariant**:
+   * All paginated lists, grids, and catalogs must use `<PaginationControls />` from `#/components/ui/pagination`.
+   * Standard pagination envelope: `items`, `total_items`, `page`, `limit`, `total_pages`, `has_next_page`, `has_prev_page`.
+   * No ad-hoc pagination UI or divergent prop naming.
 
 ---
 
-## 4. Zero-Runtime Styling (Vanilla Extract)
+## 4. Zero Hardcoded CSS Invariant (Vanilla Extract)
 
-1. **`.css.ts` Co-Located Styling**:
-   * All styles must be authored in `*.css.ts` using `@vanilla-extract/css` and `@vanilla-extract/recipes`.
-   * Consume theme variables strictly from `src/styles/theme.css.ts` (`vars.color.*`, `vars.space.*`).
-   * No raw hex strings, inline style attributes, or un-typed CSS strings in component JSX.
+1. **Strictly NO Hardcoded CSS**:
+   * **Never** hardcode raw hex colors (`#ffffff`, `#000000`, `#17181c` ❌), arbitrary `rgba()` strings, hardcoded pixel dimensions, or non-tokenized border styles directly in `*.css.ts` or component JSX.
+   * **Strictly NO inline `style={{ ... }}` in component JSX**: All styling must live in co-located `*.css.ts` using `@vanilla-extract/css` or `@vanilla-extract/recipes`.
+   * **Always Consume Design Tokens**: Every color, margin, padding, border radius, font size, and line height must be referenced strictly from `src/styles/theme.css.ts` (`vars.color.*`, `vars.space.*`, `vars.radii.*`, `vars.fontSize.*`, `vars.lineHeight.*`, `fonts.*`).
 
 ---
 

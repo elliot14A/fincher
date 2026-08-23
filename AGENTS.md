@@ -120,11 +120,16 @@ All engineering milestones, state transitions, and requirements are managed thro
   * `queryKeys.ts`: Deterministic query key factory.
   * `queryOptions.ts`: TanStack Query options consuming the auto-generated Hey API client from `src/lib/api/generated/`.
 
-### 4. Zero-Runtime Styling Rule
-* All styling is authored in `*.css.ts` using `@vanilla-extract/css` and `@vanilla-extract/recipes` consuming tokens from `src/styles/theme.css.ts`.
-* No inline raw hex values or un-typed CSS strings in component JSX.
+### 4. Zero-Runtime Styling & Zero Hardcoded CSS Rule
+* All styling is authored in `*.css.ts` using `@vanilla-extract/css` and `@vanilla-extract/recipes` strictly consuming tokens from `src/styles/theme.css.ts`.
+* **Strictly NO hardcoded CSS**: Never write raw hex values (`#ffffff` ❌), arbitrary `rgba()` strings, or hardcoded sizes directly in `.css.ts` or component JSX.
+* **Strictly NO inline `style={{ ... }}` attributes in JSX**. All presentation logic belongs in co-located `*.css.ts` files or recipe variants.
 
-### 5. Runtime & Dev Integration Invariants
+### 5. Universal Pagination Standard (Gaur Standard)
+* All paginated data grids, catalog lists, and table views must use the unified pagination contract and `<PaginationControls />` primitive from `src/components/ui/pagination/`.
+* Standard envelope: `items`, `total_items`, `page`, `limit`, `total_pages`, `has_next_page`, `has_prev_page` (matching `.agents/rules/pagination.md`).
+
+### 6. Runtime & Dev Integration Invariants
 * **Preact/compat aliasing is mandatory** in `vite.config.ts` for all `@tanstack/react-*`, `@xyflow/react`, and `sonner` packages.
 * **`lucide-preact`** is used directly (eliminating React SVG wrapper overhead).
 * **Dev API Proxying**: `vite.config.ts` proxies `/api` to the Go backend (`http://localhost:8080`).
