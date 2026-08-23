@@ -5,6 +5,9 @@
 # Binaries & build artifacts
 bin/
 dist/
+pkg/web/dist/
+web/dist/
+web/node_modules/
 /fincher
 /seed
 
@@ -17,8 +20,10 @@ dist/
 # Local container volumes
 volumes/
 
-# Agent-generated review reports
+# Agent-generated review reports & testing MCP files
 .agents/reviews/
+.playwright-mcp/
+*.png
 
 # OS & Editor temporary files
 .DS_Store
