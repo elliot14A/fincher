@@ -43,7 +43,6 @@ func main() {
 	logger.Init(cfg.Environment, os.Stdout)
 	logger.Info("starting fincher service", "environment", cfg.Environment, "port", cfg.Port)
 
-	// Initialize Turso database connection
 	dbClient, err := turso.Open(cfg.TursoURL, cfg.TursoToken)
 	if err != nil {
 		logger.Error("failed to open database connection", "error", err)
@@ -51,28 +50,32 @@ func main() {
 	}
 	defer dbClient.Close()
 
-	// Run auto migrations on startup
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	if err := turso.AutoMigrate(ctx, dbClient); err != nil {
 		logger.Error("failed to execute database schema migrations", "error", err)
-		os.Exit(1)
+		return
 	}
 
-	// Initialize API server
 	srv := api.NewServer(dbClient)
+	e := srv.Router()
 
-	// Graceful shutdown handling
+	addr := fmt.Sprintf(":%d", cfg.Port)
+	e.Server = &http.Server{
+		Addr:              addr,
+		ReadHeaderTimeout: 10 * time.Second,
+		IdleTimeout:       120 * time.Second,
+	}
+
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 
-	addr := fmt.Sprintf(":%d", cfg.Port)
 	go func() {
 		logger.Info("api server listening", "address", addr)
-		if err := srv.Router().Start(addr); err != nil && err != http.ErrServerClosed {
+		if err := e.StartServer(e.Server); err != nil && err != http.ErrServerClosed {
 			logger.Error("server stopped unexpectedly", "error", err)
-			os.Exit(1)
+			stop <- syscall.SIGTERM
 		}
 	}()
 
@@ -82,7 +85,7 @@ func main() {
 	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer shutdownCancel()
 
-	if err := srv.Router().Shutdown(shutdownCtx); err != nil {
+	if err := e.Shutdown(shutdownCtx); err != nil {
 		logger.Error("graceful shutdown failed", "error", err)
 	} else {
 		logger.Info("fincher service stopped")

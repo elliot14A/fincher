@@ -15,15 +15,19 @@ import (
 // List handles GET /api/packages.
 //
 //	@Summary		List all media packages
-//	@Description	Fetches media packages with optional filtering by title, vendor, component, or status.
+//	@Description	Fetches media packages with pagination and optional filtering by title, vendor, component, or status.
 //	@Tags			packages
 //	@Produce		json
 //	@Param			title_id	query		string	false	"Title ID filter"
 //	@Param			vendor_id	query		string	false	"Vendor ID filter"
 //	@Param			component	query		string	false	"Component filter (VIDEO, AUDIO, SUBTITLE, METADATA)"
 //	@Param			status		query		string	false	"Status filter (PENDING, VALID, INVALIDATED, RE_QC_PENDING)"
-//	@Success		200			{array}		models.Package
-//	@Failure		500			{object}	errors.DomainError
+//	@Param			page		query		int		false	"Page number (default: 1)"
+//	@Param			limit		query		int		false	"Items per page (default: 10, max: 100)"
+//	@Param			sort_order	query		string	false	"Sort order (asc, desc)"
+//	@Param			search		query		string	false	"Search query"
+//	@Success		200			{object}	models.PackagePaginationResult
+//	@Failure		500			{object}	errors.ErrorResponse
 //	@Router			/packages [get]
 func List(client *ent.Client) echo.HandlerFunc {
 	return func(c echo.Context) error {
@@ -53,7 +57,14 @@ func List(client *ent.Client) echo.HandlerFunc {
 			filter.Status = domainerrors.None[models.PackageStatus]()
 		}
 
-		res := tursopackages.List(c.Request().Context(), client, filter)
+		p := models.ParsePagination(
+			c.QueryParam("page"),
+			c.QueryParam("limit"),
+			c.QueryParam("sort_order"),
+			c.QueryParam("search"),
+		)
+
+		res := tursopackages.List(c.Request().Context(), client, filter, p)
 		if res.IsErr() {
 			return apierrors.Respond(c, res.Error())
 		}

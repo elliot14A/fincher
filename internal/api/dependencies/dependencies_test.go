@@ -106,6 +106,13 @@ func TestDependencies_HTTP_Lifecycle(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("expected status 200, got %d", rec.Code)
 	}
+	var listRes models.PaginationResult[models.Dependency]
+	if err := json.Unmarshal(rec.Body.Bytes(), &listRes); err != nil {
+		t.Fatalf("failed to unmarshal pagination result: %v", err)
+	}
+	if len(listRes.Items) != 1 || listRes.TotalItems != 1 {
+		t.Errorf("expected 1 dep, got %d (total: %d)", len(listRes.Items), listRes.TotalItems)
+	}
 
 	// 3. GET /api/dependencies/graph/title-eclipse
 	req = httptest.NewRequest(http.MethodGet, "/api/dependencies/graph/title-eclipse", nil)

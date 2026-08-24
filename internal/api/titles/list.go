@@ -15,12 +15,16 @@ import (
 // List handles GET /api/titles.
 //
 //	@Summary		List all media titles
-//	@Description	Fetches all releases in the launch calendar, optionally filtered by status.
+//	@Description	Fetches releases in the launch calendar with pagination, optionally filtered by status.
 //	@Tags			titles
 //	@Produce		json
-//	@Param			status	query		string	false	"Status filter (ON_TRACK, AT_RISK, HOLD, PROCESSING, SHIPPED)"
-//	@Success		200		{array}		models.Title
-//	@Failure		500		{object}	errors.DomainError
+//	@Param			status		query		string	false	"Status filter (ON_TRACK, AT_RISK, HOLD, PROCESSING, SHIPPED)"
+//	@Param			page		query		int		false	"Page number (default: 1)"
+//	@Param			limit		query		int		false	"Items per page (default: 10, max: 100)"
+//	@Param			sort_order	query		string	false	"Sort order (asc, desc)"
+//	@Param			search		query		string	false	"Search query"
+//	@Success		200			{object}	models.TitlePaginationResult
+//	@Failure		500			{object}	errors.ErrorResponse
 //	@Router			/titles [get]
 func List(client *ent.Client) echo.HandlerFunc {
 	return func(c echo.Context) error {
@@ -32,7 +36,14 @@ func List(client *ent.Client) echo.HandlerFunc {
 			filter = domainerrors.None[models.TitleStatus]()
 		}
 
-		res := tursotitles.List(c.Request().Context(), client, filter)
+		p := models.ParsePagination(
+			c.QueryParam("page"),
+			c.QueryParam("limit"),
+			c.QueryParam("sort_order"),
+			c.QueryParam("search"),
+		)
+
+		res := tursotitles.List(c.Request().Context(), client, filter, p)
 		if res.IsErr() {
 			return apierrors.Respond(c, res.Error())
 		}

@@ -18,20 +18,18 @@ import (
 	"github.com/elliot14A/fincher/pkg/web"
 )
 
-// Server holds the HTTP router and database client.
 type Server struct {
 	echo   *echo.Echo
 	client *ent.Client
 }
 
-// NewServer initializes the Echo HTTP server and registers routes.
 func NewServer(client *ent.Client) *Server {
 	e := echo.New()
 	e.HideBanner = true
 	e.Use(middleware.Recover())
+	e.Use(middleware.BodyLimit("2M"))
 	e.Use(middleware.CORS())
 
-	// Structured HTTP request logging using pkg/logger
 	e.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
 		LogStatus:   true,
 		LogURI:      true,
@@ -69,12 +67,10 @@ func NewServer(client *ent.Client) *Server {
 	return s
 }
 
-// Router returns the underlying Echo instance.
 func (s *Server) Router() *echo.Echo {
 	return s.echo
 }
 
-// registerRoutes wires all API endpoints under /api via their respective entity route modules.
 func (s *Server) registerRoutes() {
 	s.echo.GET("/health", func(c echo.Context) error {
 		return c.JSON(200, map[string]string{
@@ -83,7 +79,6 @@ func (s *Server) registerRoutes() {
 		})
 	})
 
-	// Serve the code-first generated OpenAPI/Swagger specification
 	s.echo.GET("/openapi.json", func(c echo.Context) error {
 		return c.Blob(200, "application/json", openapi.SpecJSON)
 	})
@@ -103,6 +98,5 @@ func (s *Server) registerRoutes() {
 	deliveries.RegisterRoutes(apiGroup.Group("/deliveries"), s.client)
 	dependencies.RegisterRoutes(apiGroup.Group("/dependencies"), s.client)
 
-	// Register embedded web MPA frontend and static assets
 	web.RegisterRoutes(s.echo)
 }
