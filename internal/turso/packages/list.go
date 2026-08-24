@@ -18,9 +18,9 @@ type ListFilter struct {
 	Status    domainerrors.Option[models.PackageStatus]
 }
 
-// List fetches media packages matching optional filters.
-func List(ctx context.Context, client *ent.Client, filter ListFilter) domainerrors.Result[[]*models.Package] {
-	query := client.MediaPackage.Query().Order(ent.Asc(entmediapackage.FieldCreatedAt))
+// List fetches paginated media packages matching optional filters.
+func List(ctx context.Context, client *ent.Client, filter ListFilter, p models.Pagination) domainerrors.Result[models.PaginationResult[*models.Package]] {
+	query := client.MediaPackage.Query()
 
 	if filter.TitleID.IsSome() {
 		query = query.Where(entmediapackage.TitleIDEQ(filter.TitleID.Unwrap()))
@@ -34,11 +34,20 @@ func List(ctx context.Context, client *ent.Client, filter ListFilter) domainerro
 	if filter.Status.IsSome() {
 		query = query.Where(entmediapackage.StatusEQ(entmediapackage.Status(filter.Status.Unwrap())))
 	}
-
-	packagesList, err := query.All(ctx)
-	if err != nil {
-		return domainerrors.Err[[]*models.Package](turso.NewError("packages.List", domainerrors.CodeInternal, "failed to query packages", err))
+	if p.Search != "" {
+		query = query.Where(entmediapackage.LanguageContainsFold(p.Search))
 	}
 
-	return domainerrors.Ok(toDomainList(packagesList))
+	query = query.Order(turso.OrderBy(p, ent.Asc(entmediapackage.FieldCreatedAt), ent.Desc(entmediapackage.FieldCreatedAt)))
+
+	return turso.Paginate(
+		ctx,
+		"packages.List",
+		p,
+		query.Count,
+		func(ctx context.Context, limit, offset int) ([]*ent.MediaPackage, error) {
+			return query.Limit(limit).Offset(offset).All(ctx)
+		},
+		toDomainList,
+	)
 }
