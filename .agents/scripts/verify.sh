@@ -34,13 +34,15 @@ else
   echo "  -> WARNING: ClickHouse MCP Server (:8000) not reachable. Run: docker compose up -d"
 fi
 
-echo "[4/6] Checking Frontend Quality & Build (web/)..."
+echo "[4/6] Checking Frontend Quality, Tests & Build (web/)..."
 if [ -d "web" ] && [ -f "web/package.json" ]; then
   cd web
   bun run lint
   echo "  -> Frontend Biome lint OK"
   bun run typecheck
   echo "  -> Frontend TypeScript typecheck OK"
+  bun run test
+  echo "  -> Frontend unit tests OK"
   bun run build
   echo "  -> Frontend Vite build OK"
   cd ..
