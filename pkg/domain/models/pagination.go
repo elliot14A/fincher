@@ -1,10 +1,12 @@
 package models
 
+import "strconv"
+
 const (
 	DefaultPage      = 1
 	DefaultLimit     = 10
 	MaxLimit         = 100
-	DefaultSortOrder = "asc"
+	DefaultSortOrder = "desc"
 	MaxSearchLength  = 120
 )
 
@@ -25,7 +27,7 @@ func NewPagination(page, limit int, sortOrder, search string) Pagination {
 	} else if limit > MaxLimit {
 		limit = MaxLimit
 	}
-	if sortOrder != "desc" {
+	if sortOrder != "asc" {
 		sortOrder = DefaultSortOrder
 	}
 	if len(search) > MaxSearchLength {
@@ -37,6 +39,20 @@ func NewPagination(page, limit int, sortOrder, search string) Pagination {
 		SortOrder: sortOrder,
 		Search:    search,
 	}
+}
+
+func ParsePagination(pageStr, limitStr, sortOrder, search string) Pagination {
+	page, _ := strconv.Atoi(pageStr)
+	limit, _ := strconv.Atoi(limitStr)
+	return NewPagination(page, limit, sortOrder, search)
+}
+
+func (p Pagination) IsAsc() bool {
+	return p.SortOrder == "asc"
+}
+
+func (p Pagination) IsDesc() bool {
+	return p.SortOrder == "desc"
 }
 
 func (p Pagination) Offset() int {
@@ -82,3 +98,10 @@ func NewPaginationResult[T any](items []T, totalItems int, p Pagination) Paginat
 		HasPrevPage: p.HasPrevPage(),
 	}
 }
+
+type TitlePaginationResult = PaginationResult[*Title]
+type DeliveryPaginationResult = PaginationResult[*Delivery]
+type MasterPaginationResult = PaginationResult[*Master]
+type PackagePaginationResult = PaginationResult[*Package]
+type VendorPaginationResult = PaginationResult[*Vendor]
+type DependencyPaginationResult = PaginationResult[*Dependency]
