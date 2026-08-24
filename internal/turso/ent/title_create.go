@@ -103,6 +103,14 @@ func (_c *TitleCreate) SetCurrentMasterVersion(v string) *TitleCreate {
 	return _c
 }
 
+// SetNillableCurrentMasterVersion sets the "current_master_version" field if the given value is not nil.
+func (_c *TitleCreate) SetNillableCurrentMasterVersion(v *string) *TitleCreate {
+	if v != nil {
+		_c.SetCurrentMasterVersion(*v)
+	}
+	return _c
+}
+
 // SetOverallStatus sets the "overall_status" field.
 func (_c *TitleCreate) SetOverallStatus(v title.OverallStatus) *TitleCreate {
 	_c.mutation.SetOverallStatus(v)
@@ -219,6 +227,10 @@ func (_c *TitleCreate) defaults() {
 		v := title.DefaultTerritories
 		_c.mutation.SetTerritories(v)
 	}
+	if _, ok := _c.mutation.CurrentMasterVersion(); !ok {
+		v := title.DefaultCurrentMasterVersion
+		_c.mutation.SetCurrentMasterVersion(v)
+	}
 	if _, ok := _c.mutation.OverallStatus(); !ok {
 		v := title.DefaultOverallStatus
 		_c.mutation.SetOverallStatus(v)
@@ -262,11 +274,6 @@ func (_c *TitleCreate) check() error {
 	}
 	if _, ok := _c.mutation.CurrentMasterVersion(); !ok {
 		return &ValidationError{Name: "current_master_version", err: errors.New(`ent: missing required field "Title.current_master_version"`)}
-	}
-	if v, ok := _c.mutation.CurrentMasterVersion(); ok {
-		if err := title.CurrentMasterVersionValidator(v); err != nil {
-			return &ValidationError{Name: "current_master_version", err: fmt.Errorf(`ent: validator failed for field "Title.current_master_version": %w`, err)}
-		}
 	}
 	if _, ok := _c.mutation.OverallStatus(); !ok {
 		return &ValidationError{Name: "overall_status", err: errors.New(`ent: missing required field "Title.overall_status"`)}

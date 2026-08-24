@@ -101,8 +101,8 @@ var (
 	DefaultTerritories int
 	// TerritoriesValidator is a validator for the "territories" field. It is called by the builders before save.
 	TerritoriesValidator func(int) error
-	// CurrentMasterVersionValidator is a validator for the "current_master_version" field. It is called by the builders before save.
-	CurrentMasterVersionValidator func(string) error
+	// DefaultCurrentMasterVersion holds the default value on creation for the "current_master_version" field.
+	DefaultCurrentMasterVersion string
 	// IDValidator is a validator for the "id" field. It is called by the builders before save.
 	IDValidator func(string) error
 )

@@ -306,11 +306,6 @@ func (_u *TitleUpdate) check() error {
 			return &ValidationError{Name: "territories", err: fmt.Errorf(`ent: validator failed for field "Title.territories": %w`, err)}
 		}
 	}
-	if v, ok := _u.mutation.CurrentMasterVersion(); ok {
-		if err := title.CurrentMasterVersionValidator(v); err != nil {
-			return &ValidationError{Name: "current_master_version", err: fmt.Errorf(`ent: validator failed for field "Title.current_master_version": %w`, err)}
-		}
-	}
 	if v, ok := _u.mutation.OverallStatus(); ok {
 		if err := title.OverallStatusValidator(v); err != nil {
 			return &ValidationError{Name: "overall_status", err: fmt.Errorf(`ent: validator failed for field "Title.overall_status": %w`, err)}
@@ -802,11 +797,6 @@ func (_u *TitleUpdateOne) check() error {
 	if v, ok := _u.mutation.Territories(); ok {
 		if err := title.TerritoriesValidator(v); err != nil {
 			return &ValidationError{Name: "territories", err: fmt.Errorf(`ent: validator failed for field "Title.territories": %w`, err)}
-		}
-	}
-	if v, ok := _u.mutation.CurrentMasterVersion(); ok {
-		if err := title.CurrentMasterVersionValidator(v); err != nil {
-			return &ValidationError{Name: "current_master_version", err: fmt.Errorf(`ent: validator failed for field "Title.current_master_version": %w`, err)}
 		}
 	}
 	if v, ok := _u.mutation.OverallStatus(); ok {

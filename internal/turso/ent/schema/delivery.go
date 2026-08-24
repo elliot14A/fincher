@@ -4,21 +4,19 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
+	"entgo.io/ent/schema/index"
 )
 
-// Delivery holds the schema definition for the Delivery entity.
 type Delivery struct {
 	ent.Schema
 }
 
-// Mixin of the Delivery.
 func (Delivery) Mixin() []ent.Mixin {
 	return []ent.Mixin{
 		BaseMixin{},
 	}
 }
 
-// Fields of the Delivery.
 func (Delivery) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("title_id").
@@ -32,7 +30,6 @@ func (Delivery) Fields() []ent.Field {
 	}
 }
 
-// Edges of the Delivery.
 func (Delivery) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("title", Title.Type).
@@ -40,5 +37,13 @@ func (Delivery) Edges() []ent.Edge {
 			Field("title_id").
 			Required().
 			Unique(),
+	}
+}
+
+func (Delivery) Indexes() []ent.Index {
+	return []ent.Index{
+		index.Fields("title_id"),
+		index.Fields("status"),
+		index.Fields("country"),
 	}
 }

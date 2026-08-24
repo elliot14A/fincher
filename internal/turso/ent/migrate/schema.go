@@ -32,6 +32,23 @@ var (
 				OnDelete:   schema.NoAction,
 			},
 		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "delivery_title_id",
+				Unique:  false,
+				Columns: []*schema.Column{DeliveriesColumns[7]},
+			},
+			{
+				Name:    "delivery_status",
+				Unique:  false,
+				Columns: []*schema.Column{DeliveriesColumns[5]},
+			},
+			{
+				Name:    "delivery_country",
+				Unique:  false,
+				Columns: []*schema.Column{DeliveriesColumns[4]},
+			},
+		},
 	}
 	// DependenciesColumns holds the columns for the "dependencies" table.
 	DependenciesColumns = []*schema.Column{
@@ -60,6 +77,23 @@ var (
 				OnDelete:   schema.NoAction,
 			},
 		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "dependency_parent_id_child_id",
+				Unique:  true,
+				Columns: []*schema.Column{DependenciesColumns[3], DependenciesColumns[4]},
+			},
+			{
+				Name:    "dependency_parent_id",
+				Unique:  false,
+				Columns: []*schema.Column{DependenciesColumns[3]},
+			},
+			{
+				Name:    "dependency_child_id",
+				Unique:  false,
+				Columns: []*schema.Column{DependenciesColumns[4]},
+			},
+		},
 	}
 	// MastersColumns holds the columns for the "masters" table.
 	MastersColumns = []*schema.Column{
@@ -80,6 +114,18 @@ var (
 				Columns:    []*schema.Column{MastersColumns[4]},
 				RefColumns: []*schema.Column{TitlesColumns[0]},
 				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "master_title_id",
+				Unique:  false,
+				Columns: []*schema.Column{MastersColumns[4]},
+			},
+			{
+				Name:    "master_title_id_version",
+				Unique:  true,
+				Columns: []*schema.Column{MastersColumns[4], MastersColumns[1]},
 			},
 		},
 	}
@@ -117,6 +163,28 @@ var (
 				OnDelete:   schema.NoAction,
 			},
 		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "mediapackage_title_id",
+				Unique:  false,
+				Columns: []*schema.Column{MediaPackagesColumns[10]},
+			},
+			{
+				Name:    "mediapackage_vendor_id",
+				Unique:  false,
+				Columns: []*schema.Column{MediaPackagesColumns[11]},
+			},
+			{
+				Name:    "mediapackage_status",
+				Unique:  false,
+				Columns: []*schema.Column{MediaPackagesColumns[9]},
+			},
+			{
+				Name:    "mediapackage_component",
+				Unique:  false,
+				Columns: []*schema.Column{MediaPackagesColumns[4]},
+			},
+		},
 	}
 	// TitlesColumns holds the columns for the "titles" table.
 	TitlesColumns = []*schema.Column{
@@ -128,7 +196,7 @@ var (
 		{Name: "type", Type: field.TypeEnum, Enums: []string{"FEATURE", "SERIES", "SPECIAL"}, Default: "FEATURE"},
 		{Name: "premiere_date", Type: field.TypeTime},
 		{Name: "territories", Type: field.TypeInt, Default: 1},
-		{Name: "current_master_version", Type: field.TypeString},
+		{Name: "current_master_version", Type: field.TypeString, Default: ""},
 		{Name: "overall_status", Type: field.TypeEnum, Enums: []string{"ON_TRACK", "AT_RISK", "HOLD", "PROCESSING", "SHIPPED"}, Default: "PROCESSING"},
 	}
 	// TitlesTable holds the schema information for the "titles" table.
@@ -136,6 +204,18 @@ var (
 		Name:       "titles",
 		Columns:    TitlesColumns,
 		PrimaryKey: []*schema.Column{TitlesColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "title_overall_status",
+				Unique:  false,
+				Columns: []*schema.Column{TitlesColumns[9]},
+			},
+			{
+				Name:    "title_type",
+				Unique:  false,
+				Columns: []*schema.Column{TitlesColumns[5]},
+			},
+		},
 	}
 	// VendorsColumns holds the columns for the "vendors" table.
 	VendorsColumns = []*schema.Column{
@@ -151,6 +231,13 @@ var (
 		Name:       "vendors",
 		Columns:    VendorsColumns,
 		PrimaryKey: []*schema.Column{VendorsColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "vendor_specialty",
+				Unique:  false,
+				Columns: []*schema.Column{VendorsColumns[5]},
+			},
+		},
 	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{

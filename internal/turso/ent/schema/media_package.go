@@ -4,21 +4,19 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
+	"entgo.io/ent/schema/index"
 )
 
-// MediaPackage holds the schema definition for the MediaPackage entity.
 type MediaPackage struct {
 	ent.Schema
 }
 
-// Mixin of the MediaPackage.
 func (MediaPackage) Mixin() []ent.Mixin {
 	return []ent.Mixin{
 		BaseMixin{},
 	}
 }
 
-// Fields of the MediaPackage.
 func (MediaPackage) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("title_id").
@@ -42,7 +40,6 @@ func (MediaPackage) Fields() []ent.Field {
 	}
 }
 
-// Edges of the MediaPackage.
 func (MediaPackage) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("title", Title.Type).
@@ -57,5 +54,14 @@ func (MediaPackage) Edges() []ent.Edge {
 			Unique(),
 		edge.To("dependent_children", Dependency.Type),
 		edge.To("parent_dependencies", Dependency.Type),
+	}
+}
+
+func (MediaPackage) Indexes() []ent.Index {
+	return []ent.Index{
+		index.Fields("title_id"),
+		index.Fields("vendor_id"),
+		index.Fields("status"),
+		index.Fields("component"),
 	}
 }

@@ -4,21 +4,19 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
+	"entgo.io/ent/schema/index"
 )
 
-// Vendor holds the schema definition for the Vendor entity.
 type Vendor struct {
 	ent.Schema
 }
 
-// Mixin of the Vendor.
 func (Vendor) Mixin() []ent.Mixin {
 	return []ent.Mixin{
 		BaseMixin{},
 	}
 }
 
-// Fields of the Vendor.
 func (Vendor) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("name").
@@ -28,9 +26,14 @@ func (Vendor) Fields() []ent.Field {
 	}
 }
 
-// Edges of the Vendor.
 func (Vendor) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("packages", MediaPackage.Type),
+	}
+}
+
+func (Vendor) Indexes() []ent.Index {
+	return []ent.Index{
+		index.Fields("specialty"),
 	}
 }

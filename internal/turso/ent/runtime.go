@@ -153,8 +153,8 @@ func init() {
 	title.TerritoriesValidator = titleDescTerritories.Validators[0].(func(int) error)
 	// titleDescCurrentMasterVersion is the schema descriptor for current_master_version field.
 	titleDescCurrentMasterVersion := titleFields[4].Descriptor()
-	// title.CurrentMasterVersionValidator is a validator for the "current_master_version" field. It is called by the builders before save.
-	title.CurrentMasterVersionValidator = titleDescCurrentMasterVersion.Validators[0].(func(string) error)
+	// title.DefaultCurrentMasterVersion holds the default value on creation for the current_master_version field.
+	title.DefaultCurrentMasterVersion = titleDescCurrentMasterVersion.Default.(string)
 	// titleDescID is the schema descriptor for id field.
 	titleDescID := titleMixinFields0[0].Descriptor()
 	// title.IDValidator is a validator for the "id" field. It is called by the builders before save.

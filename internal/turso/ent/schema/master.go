@@ -6,14 +6,13 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
+	"entgo.io/ent/schema/index"
 )
 
-// Master holds the schema definition for the Master entity.
 type Master struct {
 	ent.Schema
 }
 
-// Fields of the Master.
 func (Master) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("id").
@@ -23,16 +22,15 @@ func (Master) Fields() []ent.Field {
 		field.String("title_id").
 			NotEmpty(),
 		field.String("version").
-			NotEmpty(), // e.g. "V13"
+			NotEmpty(),
 		field.String("supersedes_version").
-			Optional(), // e.g. "V12"
+			Optional(),
 		field.Time("created_at").
 			Default(time.Now).
 			Immutable(),
 	}
 }
 
-// Edges of the Master.
 func (Master) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("title", Title.Type).
@@ -40,5 +38,12 @@ func (Master) Edges() []ent.Edge {
 			Field("title_id").
 			Required().
 			Unique(),
+	}
+}
+
+func (Master) Indexes() []ent.Index {
+	return []ent.Index{
+		index.Fields("title_id"),
+		index.Fields("title_id", "version").Unique(),
 	}
 }

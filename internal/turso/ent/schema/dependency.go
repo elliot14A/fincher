@@ -6,14 +6,13 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
+	"entgo.io/ent/schema/index"
 )
 
-// Dependency holds the schema definition for the Dependency entity.
 type Dependency struct {
 	ent.Schema
 }
 
-// Fields of the Dependency.
 func (Dependency) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("id").
@@ -32,7 +31,6 @@ func (Dependency) Fields() []ent.Field {
 	}
 }
 
-// Edges of the Dependency.
 func (Dependency) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("parent_package", MediaPackage.Type).
@@ -45,5 +43,14 @@ func (Dependency) Edges() []ent.Edge {
 			Field("child_id").
 			Required().
 			Unique(),
+	}
+}
+
+func (Dependency) Indexes() []ent.Index {
+	return []ent.Index{
+		index.Fields("parent_id", "child_id").
+			Unique(),
+		index.Fields("parent_id"),
+		index.Fields("child_id"),
 	}
 }
