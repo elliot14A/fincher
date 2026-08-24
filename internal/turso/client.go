@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"net/url"
 	"strings"
 	"time"
 
@@ -30,16 +31,23 @@ func Open(dbURL, authToken string) (*ent.Client, error) {
 	if strings.HasPrefix(dbURL, "libsql://") || strings.HasPrefix(dbURL, "https://") || strings.HasPrefix(dbURL, "http://") {
 		driverName = "libsql"
 		if authToken != "" {
-			dsn = fmt.Sprintf("%s?authToken=%s", dbURL, authToken)
+			u, err := url.Parse(dbURL)
+			if err != nil {
+				return nil, fmt.Errorf("invalid database URL: %w", err)
+			}
+			q := u.Query()
+			q.Set("authToken", authToken)
+			u.RawQuery = q.Encode()
+			dsn = u.String()
 		} else {
 			dsn = dbURL
 		}
 	} else {
 		driverName = "sqlite3"
 		if dbURL == ":memory:" {
-			dsn = "file::memory:?cache=shared&_fk=1"
+			dsn = "file::memory:?cache=shared&_fk=1&_busy_timeout=5000"
 		} else {
-			dsn = fmt.Sprintf("file:%s?_fk=1&_journal=WAL", dbURL)
+			dsn = fmt.Sprintf("file:%s?_fk=1&_journal=WAL&_busy_timeout=5000", dbURL)
 		}
 	}
 
@@ -49,8 +57,12 @@ func Open(dbURL, authToken string) (*ent.Client, error) {
 		return nil, fmt.Errorf("opening database connection: %w", err)
 	}
 
-	db.SetMaxOpenConns(25)
-	db.SetMaxIdleConns(5)
+	if driverName == "sqlite3" {
+		db.SetMaxOpenConns(1)
+	} else {
+		db.SetMaxOpenConns(25)
+		db.SetMaxIdleConns(5)
+	}
 	db.SetConnMaxLifetime(5 * time.Minute)
 
 	if err := db.Ping(); err != nil {
