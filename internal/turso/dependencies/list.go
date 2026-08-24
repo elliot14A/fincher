@@ -16,9 +16,9 @@ type ListFilter struct {
 	ChildID  domainerrors.Option[string]
 }
 
-// List fetches dependencies matching filters.
-func List(ctx context.Context, client *ent.Client, filter ListFilter) domainerrors.Result[[]*models.Dependency] {
-	query := client.Dependency.Query().Order(ent.Asc(entdependency.FieldCreatedAt))
+// List fetches paginated dependencies matching filters.
+func List(ctx context.Context, client *ent.Client, filter ListFilter, p models.Pagination) domainerrors.Result[models.PaginationResult[*models.Dependency]] {
+	query := client.Dependency.Query()
 
 	if filter.ParentID.IsSome() {
 		query = query.Where(entdependency.ParentIDEQ(filter.ParentID.Unwrap()))
@@ -27,10 +27,16 @@ func List(ctx context.Context, client *ent.Client, filter ListFilter) domainerro
 		query = query.Where(entdependency.ChildIDEQ(filter.ChildID.Unwrap()))
 	}
 
-	deps, err := query.All(ctx)
-	if err != nil {
-		return domainerrors.Err[[]*models.Dependency](turso.NewError("dependencies.List", domainerrors.CodeInternal, "failed to query dependencies", err))
-	}
+	query = query.Order(turso.OrderBy(p, ent.Asc(entdependency.FieldCreatedAt), ent.Desc(entdependency.FieldCreatedAt)))
 
-	return domainerrors.Ok(toDomainList(deps))
+	return turso.Paginate(
+		ctx,
+		"dependencies.List",
+		p,
+		query.Count,
+		func(ctx context.Context, limit, offset int) ([]*ent.Dependency, error) {
+			return query.Limit(limit).Offset(offset).All(ctx)
+		},
+		toDomainList,
+	)
 }
