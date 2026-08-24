@@ -17,9 +17,9 @@ type ListFilter struct {
 	Status  domainerrors.Option[models.DeliveryStatus]
 }
 
-// List fetches deliveries matching optional filters.
-func List(ctx context.Context, client *ent.Client, filter ListFilter) domainerrors.Result[[]*models.Delivery] {
-	query := client.Delivery.Query().Order(ent.Asc(entdelivery.FieldTargetDate))
+// List fetches paginated deliveries matching optional filters.
+func List(ctx context.Context, client *ent.Client, filter ListFilter, p models.Pagination) domainerrors.Result[models.PaginationResult[*models.Delivery]] {
+	query := client.Delivery.Query()
 
 	if filter.TitleID.IsSome() {
 		query = query.Where(entdelivery.TitleIDEQ(filter.TitleID.Unwrap()))
@@ -30,11 +30,20 @@ func List(ctx context.Context, client *ent.Client, filter ListFilter) domainerro
 	if filter.Status.IsSome() {
 		query = query.Where(entdelivery.StatusEQ(entdelivery.Status(filter.Status.Unwrap())))
 	}
-
-	deliveriesList, err := query.All(ctx)
-	if err != nil {
-		return domainerrors.Err[[]*models.Delivery](turso.NewError("deliveries.List", domainerrors.CodeInternal, "failed to query deliveries", err))
+	if p.Search != "" {
+		query = query.Where(entdelivery.CountryContainsFold(p.Search))
 	}
 
-	return domainerrors.Ok(toDomainList(deliveriesList))
+	query = query.Order(turso.OrderBy(p, ent.Asc(entdelivery.FieldTargetDate), ent.Desc(entdelivery.FieldTargetDate)))
+
+	return turso.Paginate(
+		ctx,
+		"deliveries.List",
+		p,
+		query.Count,
+		func(ctx context.Context, limit, offset int) ([]*ent.Delivery, error) {
+			return query.Limit(limit).Offset(offset).All(ctx)
+		},
+		toDomainList,
+	)
 }

@@ -24,7 +24,6 @@ func setupTestDB(t *testing.T) *ent.Client {
 		t.Fatalf("failed to automigrate: %v", err)
 	}
 
-	// Seed parent title
 	titleRes := titles.Create(ctx, client, &models.Title{
 		Base:                 models.Base{ID: "title-eclipse"},
 		Name:                 "Eclipse",
@@ -80,16 +79,18 @@ func TestDeliveries_CRUD(t *testing.T) {
 	}
 
 	// 3. List
+	p := models.NewPagination(1, 10, "asc", "")
 	listRes := deliveries.List(ctx, client, deliveries.ListFilter{
 		TitleID: domainerrors.Some("title-eclipse"),
 		Country: domainerrors.None[string](),
 		Status:  domainerrors.None[models.DeliveryStatus](),
-	})
+	}, p)
 	if listRes.IsErr() {
 		t.Fatalf("failed to list deliveries: %v", listRes.Error())
 	}
-	if len(listRes.Unwrap()) != 1 {
-		t.Errorf("expected 1 delivery, got %d", len(listRes.Unwrap()))
+	res := listRes.Unwrap()
+	if len(res.Items) != 1 || res.TotalItems != 1 {
+		t.Errorf("expected 1 delivery, got %d (total: %d)", len(res.Items), res.TotalItems)
 	}
 
 	// 4. Update
