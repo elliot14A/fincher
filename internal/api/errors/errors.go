@@ -1,6 +1,7 @@
 package errors
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
@@ -18,8 +19,8 @@ type ErrorResponse struct {
 
 // Respond maps a domain error to an HTTP JSON response and logs the event.
 func Respond(c echo.Context, err error) error {
-	domErr, ok := err.(*domainerrors.DomainError)
-	if !ok {
+	var domErr *domainerrors.DomainError
+	if !errors.As(err, &domErr) || domErr == nil {
 		logger.Error("internal unhandled error", "path", c.Path(), "error", err)
 		return c.JSON(http.StatusInternalServerError, ErrorResponse{
 			Code:    string(domainerrors.CodeInternal),
