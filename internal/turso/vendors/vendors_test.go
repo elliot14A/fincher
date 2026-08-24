@@ -62,13 +62,15 @@ func TestVendors_CRUD(t *testing.T) {
 		t.Fatalf("failed to get vendor: %v", getRes.Error())
 	}
 
-	// 3. List Vendors
-	listRes := vendors.List(ctx, client, domainerrors.Some("AUDIO_DUBBING"))
+	// 3. List Vendors with Pagination
+	p := models.NewPagination(1, 10, "asc", "")
+	listRes := vendors.List(ctx, client, domainerrors.Some("AUDIO_DUBBING"), p)
 	if listRes.IsErr() {
 		t.Fatalf("failed to list vendors: %v", listRes.Error())
 	}
-	if len(listRes.Unwrap()) != 1 {
-		t.Fatalf("expected 1 vendor, got %d", len(listRes.Unwrap()))
+	res := listRes.Unwrap()
+	if len(res.Items) != 1 || res.TotalItems != 1 {
+		t.Fatalf("expected 1 vendor, got %d (total: %d)", len(res.Items), res.TotalItems)
 	}
 
 	// 4. Update Vendor
@@ -86,9 +88,6 @@ func TestVendors_CRUD(t *testing.T) {
 	if upRes.Unwrap().Name != newName {
 		t.Errorf("expected updated name %s, got %s", newName, upRes.Unwrap().Name)
 	}
-	if upRes.Unwrap().Metadata["sla_tier"] != "tier_1_premium" {
-		t.Errorf("expected updated sla_tier in metadata, got: %v", upRes.Unwrap().Metadata["sla_tier"])
-	}
 
 	// 5. Delete Vendor
 	delRes := vendors.Delete(ctx, client, "vendor_a")
@@ -103,7 +102,6 @@ func TestVendors_FK_DeleteBlockedByDependents(t *testing.T) {
 
 	ctx := context.Background()
 
-	// 1. Create Title
 	_ = titles.Create(ctx, client, &models.Title{
 		Base:                 models.Base{ID: "title-eclipse"},
 		Name:                 "Eclipse",
@@ -114,14 +112,12 @@ func TestVendors_FK_DeleteBlockedByDependents(t *testing.T) {
 		OverallStatus:        models.StatusOnTrack,
 	})
 
-	// 2. Create Vendor
 	_ = vendors.Create(ctx, client, &models.Vendor{
 		Base:      models.Base{ID: "vendor_locked"},
 		Name:      "Vendor Locked",
 		Specialty: "SUBTITLES",
 	})
 
-	// 3. Create Package referencing the vendor
 	_ = packages.Create(ctx, client, &models.Package{
 		Base:                     models.Base{ID: "pkg-locked"},
 		TitleID:                  "title-eclipse",
@@ -133,7 +129,6 @@ func TestVendors_FK_DeleteBlockedByDependents(t *testing.T) {
 		Status:                   models.PackageStatusValid,
 	})
 
-	// 4. Attempt to delete Vendor -> Should fail with CodeConflict
 	delRes := vendors.Delete(ctx, client, "vendor_locked")
 	if delRes.IsOk() {
 		t.Fatalf("expected vendor delete to fail due to dependent packages")

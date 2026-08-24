@@ -10,18 +10,27 @@ import (
 	"github.com/elliot14A/fincher/pkg/domain/models"
 )
 
-// List fetches all vendors, optionally filtered by specialty.
-func List(ctx context.Context, client *ent.Client, specialtyFilter domainerrors.Option[string]) domainerrors.Result[[]*models.Vendor] {
-	query := client.Vendor.Query().Order(ent.Asc(entvendor.FieldName))
+// List fetches paginated vendors, optionally filtered by specialty and search term.
+func List(ctx context.Context, client *ent.Client, specialtyFilter domainerrors.Option[string], p models.Pagination) domainerrors.Result[models.PaginationResult[*models.Vendor]] {
+	query := client.Vendor.Query()
 
 	if specialtyFilter.IsSome() {
 		query = query.Where(entvendor.SpecialtyEQ(specialtyFilter.Unwrap()))
 	}
-
-	vendorsList, err := query.All(ctx)
-	if err != nil {
-		return domainerrors.Err[[]*models.Vendor](turso.NewError("vendors.List", domainerrors.CodeInternal, "failed to query vendors", err))
+	if p.Search != "" {
+		query = query.Where(entvendor.NameContainsFold(p.Search))
 	}
 
-	return domainerrors.Ok(toDomainList(vendorsList))
+	query = query.Order(turso.OrderBy(p, ent.Asc(entvendor.FieldName), ent.Desc(entvendor.FieldName)))
+
+	return turso.Paginate(
+		ctx,
+		"vendors.List",
+		p,
+		query.Count,
+		func(ctx context.Context, limit, offset int) ([]*ent.Vendor, error) {
+			return query.Limit(limit).Offset(offset).All(ctx)
+		},
+		toDomainList,
+	)
 }
