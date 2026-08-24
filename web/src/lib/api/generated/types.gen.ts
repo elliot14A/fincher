@@ -12,6 +12,12 @@ export type ErrorsDomainError = {
 
 export type ErrorsErrorCode = 'NOT_FOUND' | 'ALREADY_EXISTS' | 'INVALID_INPUT' | 'CONFLICT' | 'INTERNAL' | 'BUDGET_EXCEEDED' | 'GATE_TERMINATED' | 'UNAUTHENTICATED' | 'UNAUTHORIZED';
 
+export type ErrorsErrorResponse = {
+    code?: string;
+    message?: string;
+    op?: string;
+};
+
 export type ModelsComponentType = 'VIDEO' | 'AUDIO' | 'SUBTITLE' | 'METADATA';
 
 export type ModelsDelivery = {
@@ -27,6 +33,16 @@ export type ModelsDelivery = {
     updated_at?: string;
 };
 
+export type ModelsDeliveryPaginationResult = {
+    has_next_page?: boolean;
+    has_prev_page?: boolean;
+    items?: Array<ModelsDelivery>;
+    limit?: number;
+    page?: number;
+    total_items?: number;
+    total_pages?: number;
+};
+
 export type ModelsDeliveryStatus = 'PENDING' | 'READY_TO_SHIP' | 'HOLD' | 'SHIPPED';
 
 export type ModelsDependency = {
@@ -35,6 +51,16 @@ export type ModelsDependency = {
     dependency_type: 'AUDIO_SYNC' | 'SUBTITLE_ALIGNMENT' | 'MASTER_DERIVATION';
     id: string;
     parent_id: string;
+};
+
+export type ModelsDependencyPaginationResult = {
+    has_next_page?: boolean;
+    has_prev_page?: boolean;
+    items?: Array<ModelsDependency>;
+    limit?: number;
+    page?: number;
+    total_items?: number;
+    total_pages?: number;
 };
 
 export type ModelsDependencyType = 'AUDIO_SYNC' | 'SUBTITLE_ALIGNMENT' | 'MASTER_DERIVATION';
@@ -62,6 +88,16 @@ export type ModelsMaster = {
     version: string;
 };
 
+export type ModelsMasterPaginationResult = {
+    has_next_page?: boolean;
+    has_prev_page?: boolean;
+    items?: Array<ModelsMaster>;
+    limit?: number;
+    page?: number;
+    total_items?: number;
+    total_pages?: number;
+};
+
 export type ModelsPackage = {
     component: 'VIDEO' | 'AUDIO' | 'SUBTITLE' | 'METADATA';
     created_at?: string;
@@ -79,6 +115,16 @@ export type ModelsPackage = {
     version: string;
 };
 
+export type ModelsPackagePaginationResult = {
+    has_next_page?: boolean;
+    has_prev_page?: boolean;
+    items?: Array<ModelsPackage>;
+    limit?: number;
+    page?: number;
+    total_items?: number;
+    total_pages?: number;
+};
+
 export type ModelsPackageStatus = 'PENDING' | 'VALID' | 'INVALIDATED' | 'RE_QC_PENDING';
 
 export type ModelsTitle = {
@@ -94,6 +140,16 @@ export type ModelsTitle = {
     territories: number;
     type: 'FEATURE' | 'SERIES' | 'SPECIAL';
     updated_at?: string;
+};
+
+export type ModelsTitlePaginationResult = {
+    has_next_page?: boolean;
+    has_prev_page?: boolean;
+    items?: Array<ModelsTitle>;
+    limit?: number;
+    page?: number;
+    total_items?: number;
+    total_pages?: number;
 };
 
 export type ModelsTitleStatus = 'ON_TRACK' | 'AT_RISK' | 'HOLD' | 'PROCESSING' | 'SHIPPED';
@@ -153,6 +209,16 @@ export type ModelsVendor = {
     updated_at?: string;
 };
 
+export type ModelsVendorPaginationResult = {
+    has_next_page?: boolean;
+    has_prev_page?: boolean;
+    items?: Array<ModelsVendor>;
+    limit?: number;
+    page?: number;
+    total_items?: number;
+    total_pages?: number;
+};
+
 export type GetDeliveriesData = {
     body?: never;
     path?: never;
@@ -169,6 +235,22 @@ export type GetDeliveriesData = {
          * Status filter (PENDING, READY_TO_SHIP, HOLD, SHIPPED)
          */
         status?: string;
+        /**
+         * Page number (default: 1)
+         */
+        page?: number;
+        /**
+         * Items per page (default: 10, max: 100)
+         */
+        limit?: number;
+        /**
+         * Sort order (asc, desc)
+         */
+        sort_order?: string;
+        /**
+         * Search query
+         */
+        search?: string;
     };
     url: '/deliveries';
 };
@@ -177,7 +259,7 @@ export type GetDeliveriesErrors = {
     /**
      * Internal Server Error
      */
-    500: ErrorsDomainError;
+    500: ErrorsErrorResponse;
 };
 
 export type GetDeliveriesError = GetDeliveriesErrors[keyof GetDeliveriesErrors];
@@ -186,7 +268,7 @@ export type GetDeliveriesResponses = {
     /**
      * OK
      */
-    200: Array<ModelsDelivery>;
+    200: ModelsDeliveryPaginationResult;
 };
 
 export type GetDeliveriesResponse = GetDeliveriesResponses[keyof GetDeliveriesResponses];
@@ -326,6 +408,22 @@ export type GetDependenciesData = {
          * Child package ID
          */
         child_id?: string;
+        /**
+         * Page number (default: 1)
+         */
+        page?: number;
+        /**
+         * Items per page (default: 10, max: 100)
+         */
+        limit?: number;
+        /**
+         * Sort order (asc, desc)
+         */
+        sort_order?: string;
+        /**
+         * Search query
+         */
+        search?: string;
     };
     url: '/dependencies';
 };
@@ -334,7 +432,7 @@ export type GetDependenciesErrors = {
     /**
      * Internal Server Error
      */
-    500: ErrorsDomainError;
+    500: ErrorsErrorResponse;
 };
 
 export type GetDependenciesError = GetDependenciesErrors[keyof GetDependenciesErrors];
@@ -343,7 +441,7 @@ export type GetDependenciesResponses = {
     /**
      * OK
      */
-    200: Array<ModelsDependency>;
+    200: ModelsDependencyPaginationResult;
 };
 
 export type GetDependenciesResponse = GetDependenciesResponses[keyof GetDependenciesResponses];
@@ -446,6 +544,22 @@ export type GetMastersData = {
          * Title ID filter
          */
         title_id?: string;
+        /**
+         * Page number (default: 1)
+         */
+        page?: number;
+        /**
+         * Items per page (default: 10, max: 100)
+         */
+        limit?: number;
+        /**
+         * Sort order (asc, desc)
+         */
+        sort_order?: string;
+        /**
+         * Search query
+         */
+        search?: string;
     };
     url: '/masters';
 };
@@ -454,7 +568,7 @@ export type GetMastersErrors = {
     /**
      * Internal Server Error
      */
-    500: ErrorsDomainError;
+    500: ErrorsErrorResponse;
 };
 
 export type GetMastersError = GetMastersErrors[keyof GetMastersErrors];
@@ -463,7 +577,7 @@ export type GetMastersResponses = {
     /**
      * OK
      */
-    200: Array<ModelsMaster>;
+    200: ModelsMasterPaginationResult;
 };
 
 export type GetMastersResponse = GetMastersResponses[keyof GetMastersResponses];
@@ -574,6 +688,22 @@ export type GetPackagesData = {
          * Status filter (PENDING, VALID, INVALIDATED, RE_QC_PENDING)
          */
         status?: string;
+        /**
+         * Page number (default: 1)
+         */
+        page?: number;
+        /**
+         * Items per page (default: 10, max: 100)
+         */
+        limit?: number;
+        /**
+         * Sort order (asc, desc)
+         */
+        sort_order?: string;
+        /**
+         * Search query
+         */
+        search?: string;
     };
     url: '/packages';
 };
@@ -582,7 +712,7 @@ export type GetPackagesErrors = {
     /**
      * Internal Server Error
      */
-    500: ErrorsDomainError;
+    500: ErrorsErrorResponse;
 };
 
 export type GetPackagesError = GetPackagesErrors[keyof GetPackagesErrors];
@@ -591,7 +721,7 @@ export type GetPackagesResponses = {
     /**
      * OK
      */
-    200: Array<ModelsPackage>;
+    200: ModelsPackagePaginationResult;
 };
 
 export type GetPackagesResponse = GetPackagesResponses[keyof GetPackagesResponses];
@@ -731,6 +861,22 @@ export type GetTitlesData = {
          * Status filter (ON_TRACK, AT_RISK, HOLD, PROCESSING, SHIPPED)
          */
         status?: string;
+        /**
+         * Page number (default: 1)
+         */
+        page?: number;
+        /**
+         * Items per page (default: 10, max: 100)
+         */
+        limit?: number;
+        /**
+         * Sort order (asc, desc)
+         */
+        sort_order?: string;
+        /**
+         * Search query
+         */
+        search?: string;
     };
     url: '/titles';
 };
@@ -739,7 +885,7 @@ export type GetTitlesErrors = {
     /**
      * Internal Server Error
      */
-    500: ErrorsDomainError;
+    500: ErrorsErrorResponse;
 };
 
 export type GetTitlesError = GetTitlesErrors[keyof GetTitlesErrors];
@@ -748,7 +894,7 @@ export type GetTitlesResponses = {
     /**
      * OK
      */
-    200: Array<ModelsTitle>;
+    200: ModelsTitlePaginationResult;
 };
 
 export type GetTitlesResponse = GetTitlesResponses[keyof GetTitlesResponses];
@@ -888,6 +1034,22 @@ export type GetVendorsData = {
          * Specialty filter (e.g. AUDIO_DUBBING, SUBTITLES)
          */
         specialty?: string;
+        /**
+         * Page number (default: 1)
+         */
+        page?: number;
+        /**
+         * Items per page (default: 10, max: 100)
+         */
+        limit?: number;
+        /**
+         * Sort order (asc, desc)
+         */
+        sort_order?: string;
+        /**
+         * Search query
+         */
+        search?: string;
     };
     url: '/vendors';
 };
@@ -896,7 +1058,7 @@ export type GetVendorsErrors = {
     /**
      * Internal Server Error
      */
-    500: ErrorsDomainError;
+    500: ErrorsErrorResponse;
 };
 
 export type GetVendorsError = GetVendorsErrors[keyof GetVendorsErrors];
@@ -905,7 +1067,7 @@ export type GetVendorsResponses = {
     /**
      * OK
      */
-    200: Array<ModelsVendor>;
+    200: ModelsVendorPaginationResult;
 };
 
 export type GetVendorsResponse = GetVendorsResponses[keyof GetVendorsResponses];

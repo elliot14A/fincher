@@ -21,7 +21,7 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
 /**
  * List all territory deliveries
  *
- * Fetches territory deliveries, optionally filtered by title, country, or status.
+ * Fetches territory deliveries with pagination, optionally filtered by title, country, or status.
  */
 export const getDeliveries = <ThrowOnError extends boolean = false>(options?: Options<GetDeliveriesData, ThrowOnError>): RequestResult<GetDeliveriesResponses, GetDeliveriesErrors, ThrowOnError> => (options?.client ?? client).get<GetDeliveriesResponses, GetDeliveriesErrors, ThrowOnError>({ url: '/deliveries', ...options });
 
@@ -70,7 +70,7 @@ export const patchDeliveriesById = <ThrowOnError extends boolean = false>(option
 /**
  * List all dependency edges
  *
- * Fetches dependency edges, optionally filtered by parent or child package ID.
+ * Fetches dependency edges with pagination, optionally filtered by parent or child package ID.
  */
 export const getDependencies = <ThrowOnError extends boolean = false>(options?: Options<GetDependenciesData, ThrowOnError>): RequestResult<GetDependenciesResponses, GetDependenciesErrors, ThrowOnError> => (options?.client ?? client).get<GetDependenciesResponses, GetDependenciesErrors, ThrowOnError>({ url: '/dependencies', ...options });
 
@@ -105,7 +105,7 @@ export const deleteDependenciesById = <ThrowOnError extends boolean = false>(opt
 /**
  * List all master cuts
  *
- * Fetches master cut versions, optionally filtered by title_id.
+ * Fetches master cut versions with pagination, optionally filtered by title_id.
  */
 export const getMasters = <ThrowOnError extends boolean = false>(options?: Options<GetMastersData, ThrowOnError>): RequestResult<GetMastersResponses, GetMastersErrors, ThrowOnError> => (options?.client ?? client).get<GetMastersResponses, GetMastersErrors, ThrowOnError>({ url: '/masters', ...options });
 
@@ -140,7 +140,7 @@ export const getMastersById = <ThrowOnError extends boolean = false>(options: Op
 /**
  * List all media packages
  *
- * Fetches media packages with optional filtering by title, vendor, component, or status.
+ * Fetches media packages with pagination and optional filtering by title, vendor, component, or status.
  */
 export const getPackages = <ThrowOnError extends boolean = false>(options?: Options<GetPackagesData, ThrowOnError>): RequestResult<GetPackagesResponses, GetPackagesErrors, ThrowOnError> => (options?.client ?? client).get<GetPackagesResponses, GetPackagesErrors, ThrowOnError>({ url: '/packages', ...options });
 
@@ -189,7 +189,7 @@ export const patchPackagesById = <ThrowOnError extends boolean = false>(options:
 /**
  * List all media titles
  *
- * Fetches all releases in the launch calendar, optionally filtered by status.
+ * Fetches releases in the launch calendar with pagination, optionally filtered by status.
  */
 export const getTitles = <ThrowOnError extends boolean = false>(options?: Options<GetTitlesData, ThrowOnError>): RequestResult<GetTitlesResponses, GetTitlesErrors, ThrowOnError> => (options?.client ?? client).get<GetTitlesResponses, GetTitlesErrors, ThrowOnError>({ url: '/titles', ...options });
 
@@ -238,7 +238,7 @@ export const patchTitlesById = <ThrowOnError extends boolean = false>(options: O
 /**
  * List all vendors
  *
- * Fetches registered vendors, optionally filtered by specialty.
+ * Fetches registered vendors with pagination, optionally filtered by specialty.
  */
 export const getVendors = <ThrowOnError extends boolean = false>(options?: Options<GetVendorsData, ThrowOnError>): RequestResult<GetVendorsResponses, GetVendorsErrors, ThrowOnError> => (options?.client ?? client).get<GetVendorsResponses, GetVendorsErrors, ThrowOnError>({ url: '/vendors', ...options });
 

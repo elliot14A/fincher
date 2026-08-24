@@ -20,6 +20,12 @@ export const vErrorsDomainError = v.object({
     op: v.optional(v.string())
 });
 
+export const vErrorsErrorResponse = v.object({
+    code: v.optional(v.string()),
+    message: v.optional(v.string()),
+    op: v.optional(v.string())
+});
+
 export const vModelsComponentType = v.picklist([
     'VIDEO',
     'AUDIO',
@@ -43,6 +49,16 @@ export const vModelsDelivery = v.object({
     updated_at: v.optional(v.string())
 });
 
+export const vModelsDeliveryPaginationResult = v.object({
+    has_next_page: v.optional(v.boolean()),
+    has_prev_page: v.optional(v.boolean()),
+    items: v.optional(v.array(vModelsDelivery)),
+    limit: v.optional(v.pipe(v.number(), v.integer())),
+    page: v.optional(v.pipe(v.number(), v.integer())),
+    total_items: v.optional(v.pipe(v.number(), v.integer())),
+    total_pages: v.optional(v.pipe(v.number(), v.integer()))
+});
+
 export const vModelsDeliveryStatus = v.picklist([
     'PENDING',
     'READY_TO_SHIP',
@@ -62,6 +78,16 @@ export const vModelsDependency = v.object({
     parent_id: v.string()
 });
 
+export const vModelsDependencyPaginationResult = v.object({
+    has_next_page: v.optional(v.boolean()),
+    has_prev_page: v.optional(v.boolean()),
+    items: v.optional(v.array(vModelsDependency)),
+    limit: v.optional(v.pipe(v.number(), v.integer())),
+    page: v.optional(v.pipe(v.number(), v.integer())),
+    total_items: v.optional(v.pipe(v.number(), v.integer())),
+    total_pages: v.optional(v.pipe(v.number(), v.integer()))
+});
+
 export const vModelsDependencyType = v.picklist([
     'AUDIO_SYNC',
     'SUBTITLE_ALIGNMENT',
@@ -74,6 +100,16 @@ export const vModelsMaster = v.object({
     supersedes_version: v.optional(v.string()),
     title_id: v.string(),
     version: v.string()
+});
+
+export const vModelsMasterPaginationResult = v.object({
+    has_next_page: v.optional(v.boolean()),
+    has_prev_page: v.optional(v.boolean()),
+    items: v.optional(v.array(vModelsMaster)),
+    limit: v.optional(v.pipe(v.number(), v.integer())),
+    page: v.optional(v.pipe(v.number(), v.integer())),
+    total_items: v.optional(v.pipe(v.number(), v.integer())),
+    total_pages: v.optional(v.pipe(v.number(), v.integer()))
 });
 
 export const vModelsPackage = v.object({
@@ -99,6 +135,16 @@ export const vModelsPackage = v.object({
     updated_at: v.optional(v.string()),
     vendor_id: v.string(),
     version: v.string()
+});
+
+export const vModelsPackagePaginationResult = v.object({
+    has_next_page: v.optional(v.boolean()),
+    has_prev_page: v.optional(v.boolean()),
+    items: v.optional(v.array(vModelsPackage)),
+    limit: v.optional(v.pipe(v.number(), v.integer())),
+    page: v.optional(v.pipe(v.number(), v.integer())),
+    total_items: v.optional(v.pipe(v.number(), v.integer())),
+    total_pages: v.optional(v.pipe(v.number(), v.integer()))
 });
 
 export const vModelsPackageStatus = v.picklist([
@@ -144,6 +190,16 @@ export const vModelsTitle = v.object({
         'SPECIAL'
     ]),
     updated_at: v.optional(v.string())
+});
+
+export const vModelsTitlePaginationResult = v.object({
+    has_next_page: v.optional(v.boolean()),
+    has_prev_page: v.optional(v.boolean()),
+    items: v.optional(v.array(vModelsTitle)),
+    limit: v.optional(v.pipe(v.number(), v.integer())),
+    page: v.optional(v.pipe(v.number(), v.integer())),
+    total_items: v.optional(v.pipe(v.number(), v.integer())),
+    total_pages: v.optional(v.pipe(v.number(), v.integer()))
 });
 
 export const vModelsTitleStatus = v.picklist([
@@ -228,16 +284,30 @@ export const vModelsVendor = v.object({
     updated_at: v.optional(v.string())
 });
 
+export const vModelsVendorPaginationResult = v.object({
+    has_next_page: v.optional(v.boolean()),
+    has_prev_page: v.optional(v.boolean()),
+    items: v.optional(v.array(vModelsVendor)),
+    limit: v.optional(v.pipe(v.number(), v.integer())),
+    page: v.optional(v.pipe(v.number(), v.integer())),
+    total_items: v.optional(v.pipe(v.number(), v.integer())),
+    total_pages: v.optional(v.pipe(v.number(), v.integer()))
+});
+
 export const vGetDeliveriesQuery = v.object({
     title_id: v.optional(v.string()),
     country: v.optional(v.string()),
-    status: v.optional(v.string())
+    status: v.optional(v.string()),
+    page: v.optional(v.pipe(v.number(), v.integer())),
+    limit: v.optional(v.pipe(v.number(), v.integer())),
+    sort_order: v.optional(v.string()),
+    search: v.optional(v.string())
 });
 
 /**
  * OK
  */
-export const vGetDeliveriesResponse = v.array(vModelsDelivery);
+export const vGetDeliveriesResponse = vModelsDeliveryPaginationResult;
 
 /**
  * Delivery target payload
@@ -278,13 +348,17 @@ export const vPatchDeliveriesByIdResponse = vModelsDelivery;
 
 export const vGetDependenciesQuery = v.object({
     parent_id: v.optional(v.string()),
-    child_id: v.optional(v.string())
+    child_id: v.optional(v.string()),
+    page: v.optional(v.pipe(v.number(), v.integer())),
+    limit: v.optional(v.pipe(v.number(), v.integer())),
+    sort_order: v.optional(v.string()),
+    search: v.optional(v.string())
 });
 
 /**
  * OK
  */
-export const vGetDependenciesResponse = v.array(vModelsDependency);
+export const vGetDependenciesResponse = vModelsDependencyPaginationResult;
 
 /**
  * Dependency payload
@@ -310,13 +384,17 @@ export const vDeleteDependenciesByIdPath = v.object({
 });
 
 export const vGetMastersQuery = v.object({
-    title_id: v.optional(v.string())
+    title_id: v.optional(v.string()),
+    page: v.optional(v.pipe(v.number(), v.integer())),
+    limit: v.optional(v.pipe(v.number(), v.integer())),
+    sort_order: v.optional(v.string()),
+    search: v.optional(v.string())
 });
 
 /**
  * OK
  */
-export const vGetMastersResponse = v.array(vModelsMaster);
+export const vGetMastersResponse = vModelsMasterPaginationResult;
 
 /**
  * Master payload
@@ -345,13 +423,17 @@ export const vGetPackagesQuery = v.object({
     title_id: v.optional(v.string()),
     vendor_id: v.optional(v.string()),
     component: v.optional(v.string()),
-    status: v.optional(v.string())
+    status: v.optional(v.string()),
+    page: v.optional(v.pipe(v.number(), v.integer())),
+    limit: v.optional(v.pipe(v.number(), v.integer())),
+    sort_order: v.optional(v.string()),
+    search: v.optional(v.string())
 });
 
 /**
  * OK
  */
-export const vGetPackagesResponse = v.array(vModelsPackage);
+export const vGetPackagesResponse = vModelsPackagePaginationResult;
 
 /**
  * Package payload
@@ -391,13 +473,17 @@ export const vPatchPackagesByIdPath = v.object({
 export const vPatchPackagesByIdResponse = vModelsPackage;
 
 export const vGetTitlesQuery = v.object({
-    status: v.optional(v.string())
+    status: v.optional(v.string()),
+    page: v.optional(v.pipe(v.number(), v.integer())),
+    limit: v.optional(v.pipe(v.number(), v.integer())),
+    sort_order: v.optional(v.string()),
+    search: v.optional(v.string())
 });
 
 /**
  * OK
  */
-export const vGetTitlesResponse = v.array(vModelsTitle);
+export const vGetTitlesResponse = vModelsTitlePaginationResult;
 
 /**
  * Title payload
@@ -437,13 +523,17 @@ export const vPatchTitlesByIdPath = v.object({
 export const vPatchTitlesByIdResponse = vModelsTitle;
 
 export const vGetVendorsQuery = v.object({
-    specialty: v.optional(v.string())
+    specialty: v.optional(v.string()),
+    page: v.optional(v.pipe(v.number(), v.integer())),
+    limit: v.optional(v.pipe(v.number(), v.integer())),
+    sort_order: v.optional(v.string()),
+    search: v.optional(v.string())
 });
 
 /**
  * OK
  */
-export const vGetVendorsResponse = v.array(vModelsVendor);
+export const vGetVendorsResponse = vModelsVendorPaginationResult;
 
 /**
  * Vendor payload
