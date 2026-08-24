@@ -15,14 +15,6 @@ import (
 //go:embed all:dist
 var distFS embed.FS
 
-func DistFS() http.FileSystem {
-	sub, err := fs.Sub(distFS, "dist")
-	if err != nil {
-		panic(err)
-	}
-	return http.FS(sub)
-}
-
 func FS() fs.FS {
 	sub, err := fs.Sub(distFS, "dist")
 	if err != nil {
@@ -48,6 +40,12 @@ func RegisterRoutes(e *echo.Echo) {
 
 		if stat.IsDir() {
 			return fs.ErrInvalid
+		}
+
+		if strings.HasPrefix(filePath, "assets/") {
+			c.Response().Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+		} else if strings.HasSuffix(filePath, ".html") || filePath == "index.html" {
+			c.Response().Header().Set("Cache-Control", "no-cache")
 		}
 
 		var rs io.ReadSeeker
