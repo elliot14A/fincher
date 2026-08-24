@@ -5,6 +5,7 @@ import (
 
 	"github.com/elliot14A/fincher/internal/turso"
 	"github.com/elliot14A/fincher/internal/turso/ent"
+	entdependency "github.com/elliot14A/fincher/internal/turso/ent/dependency"
 	entmediapackage "github.com/elliot14A/fincher/internal/turso/ent/mediapackage"
 	domainerrors "github.com/elliot14A/fincher/pkg/domain/errors"
 	"github.com/elliot14A/fincher/pkg/domain/models"
@@ -26,12 +27,19 @@ func GetLineageGraph(ctx context.Context, client *ent.Client, titleID string) do
 		})
 	}
 
-	pkgMap := make(map[string]*ent.MediaPackage)
-	for _, p := range packages {
+	pkgIDs := make([]string, len(packages))
+	pkgMap := make(map[string]*ent.MediaPackage, len(packages))
+	for i, p := range packages {
+		pkgIDs[i] = p.ID
 		pkgMap[p.ID] = p
 	}
 
-	allDeps, err := client.Dependency.Query().All(ctx)
+	allDeps, err := client.Dependency.Query().
+		Where(entdependency.Or(
+			entdependency.ParentIDIn(pkgIDs...),
+			entdependency.ChildIDIn(pkgIDs...),
+		)).
+		All(ctx)
 	if err != nil {
 		return domainerrors.Err[*models.LineageGraph](turso.NewError("dependencies.GetLineageGraph", domainerrors.CodeInternal, "failed to query dependencies", err))
 	}
@@ -57,9 +65,18 @@ func GetLineageGraph(ctx context.Context, client *ent.Client, titleID string) do
 		}
 	}
 
-	var buildNode func(pkgID string, depType models.DependencyType) *models.LineageNode
-	buildNode = func(pkgID string, depType models.DependencyType) *models.LineageNode {
-		p := pkgMap[pkgID]
+	var buildNode func(pkgID string, depType models.DependencyType, visited map[string]bool) *models.LineageNode
+	buildNode = func(pkgID string, depType models.DependencyType, visited map[string]bool) *models.LineageNode {
+		if visited[pkgID] {
+			return nil
+		}
+		visited[pkgID] = true
+
+		p, ok := pkgMap[pkgID]
+		if !ok {
+			return nil
+		}
+
 		node := &models.LineageNode{
 			PackageID:      p.ID,
 			TitleID:        p.TitleID,
@@ -71,15 +88,23 @@ func GetLineageGraph(ctx context.Context, client *ent.Client, titleID string) do
 		}
 
 		for _, edge := range parentToChildren[pkgID] {
-			node.Children = append(node.Children, buildNode(edge.ChildID, edge.DepType))
+			childVisited := make(map[string]bool, len(visited))
+			for k, v := range visited {
+				childVisited[k] = v
+			}
+			if childNode := buildNode(edge.ChildID, edge.DepType, childVisited); childNode != nil {
+				node.Children = append(node.Children, childNode)
+			}
 		}
 		return node
 	}
 
-	var roots []*models.LineageNode
+	roots := make([]*models.LineageNode, 0)
 	for _, p := range packages {
 		if !childHasParent[p.ID] {
-			roots = append(roots, buildNode(p.ID, ""))
+			if rootNode := buildNode(p.ID, "", make(map[string]bool)); rootNode != nil {
+				roots = append(roots, rootNode)
+			}
 		}
 	}
 

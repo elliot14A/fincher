@@ -120,16 +120,18 @@ func TestDependencies_CRUD_And_LineageGraph(t *testing.T) {
 		t.Errorf("unexpected dep type: %s", getRes.Unwrap().DependencyType)
 	}
 
-	// 4. List
+	// 4. List with Pagination
+	p := models.NewPagination(1, 10, "asc", "")
 	listRes := dependencies.List(ctx, client, dependencies.ListFilter{
 		ParentID: domainerrors.Some("pkg-video-ov"),
 		ChildID:  domainerrors.None[string](),
-	})
+	}, p)
 	if listRes.IsErr() {
 		t.Fatalf("failed to list deps: %v", listRes.Error())
 	}
-	if len(listRes.Unwrap()) != 1 {
-		t.Errorf("expected 1 child of video, got %d", len(listRes.Unwrap()))
+	res := listRes.Unwrap()
+	if len(res.Items) != 1 || res.TotalItems != 1 {
+		t.Errorf("expected 1 child of video, got %d (total: %d)", len(res.Items), res.TotalItems)
 	}
 
 	// 5. Lineage Graph Traversal
@@ -226,7 +228,7 @@ func TestDependencies_CrossTitleRejection(t *testing.T) {
 		Status:                   models.PackageStatusValid,
 	})
 
-	// Attempt cross-title dependency: pkg-video-ov (title-eclipse) -> pkg-atlas-video (title-atlas)
+	// Attempt cross-title dependency
 	crossDep := &models.Dependency{
 		ID:             "dep-cross-title",
 		ParentID:       "pkg-video-ov",

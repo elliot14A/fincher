@@ -56,13 +56,21 @@ func Create(ctx context.Context, client *ent.Client, d *models.Dependency) domai
 		return domainerrors.Err[*models.Dependency](turso.NewError("dependencies.Create", domainerrors.CodeInvalidInput, "invalid dependency data", err))
 	}
 
+	tx, err := client.Tx(ctx)
+	if err != nil {
+		return domainerrors.Err[*models.Dependency](turso.NewError("dependencies.Create", domainerrors.CodeInternal, "failed to start transaction", err))
+	}
+	defer tx.Rollback()
+
+	txClient := tx.Client()
+
 	// Verify both parent and child exist and belong to the same Title
-	parentPkg, err := client.MediaPackage.Get(ctx, d.ParentID)
+	parentPkg, err := txClient.MediaPackage.Get(ctx, d.ParentID)
 	if err != nil {
 		return domainerrors.Err[*models.Dependency](turso.MapEntError("dependencies.Create", "parent_package", d.ParentID, err))
 	}
 
-	childPkg, err := client.MediaPackage.Get(ctx, d.ChildID)
+	childPkg, err := txClient.MediaPackage.Get(ctx, d.ChildID)
 	if err != nil {
 		return domainerrors.Err[*models.Dependency](turso.MapEntError("dependencies.Create", "child_package", d.ChildID, err))
 	}
@@ -77,7 +85,7 @@ func Create(ctx context.Context, client *ent.Client, d *models.Dependency) domai
 		))
 	}
 
-	isCycle, err := wouldCreateCycle(ctx, client, d.ParentID, d.ChildID)
+	isCycle, err := wouldCreateCycle(ctx, txClient, d.ParentID, d.ChildID)
 	if err != nil {
 		return domainerrors.Err[*models.Dependency](turso.NewError("dependencies.Create", domainerrors.CodeInternal, "failed cycle detection check", err))
 	}
@@ -90,7 +98,7 @@ func Create(ctx context.Context, client *ent.Client, d *models.Dependency) domai
 		))
 	}
 
-	created, err := client.Dependency.Create().
+	created, err := txClient.Dependency.Create().
 		SetID(d.ID).
 		SetParentID(d.ParentID).
 		SetChildID(d.ChildID).
@@ -99,6 +107,10 @@ func Create(ctx context.Context, client *ent.Client, d *models.Dependency) domai
 
 	if err != nil {
 		return domainerrors.Err[*models.Dependency](turso.MapEntError("dependencies.Create", "dependency", d.ID, err))
+	}
+
+	if err := tx.Commit(); err != nil {
+		return domainerrors.Err[*models.Dependency](turso.NewError("dependencies.Create", domainerrors.CodeInternal, "failed to commit dependency edge", err))
 	}
 
 	return domainerrors.Ok(toDomain(created))
