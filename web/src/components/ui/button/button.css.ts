@@ -10,7 +10,10 @@ export const buttonRecipe = recipe({
     fontWeight: 500,
     borderRadius: vars.radii.sm,
     transition: 'background-color 0.12s ease, border-color 0.12s ease, color 0.12s ease',
-    outline: 'none',
+    ':focus-visible': {
+      outline: `2px solid ${vars.color.primary}`,
+      outlineOffset: '2px',
+    },
     ':disabled': {
       opacity: 0.5,
       cursor: 'not-allowed',

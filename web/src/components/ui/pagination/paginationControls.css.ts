@@ -26,6 +26,10 @@ export const pageButton = style({
     borderColor: vars.color.borderStrong,
     backgroundColor: vars.color.surfaceHover,
   },
+  ':focus-visible': {
+    outline: `2px solid ${vars.color.primary}`,
+    outlineOffset: '2px',
+  },
   ':disabled': {
     opacity: 0.45,
     cursor: 'not-allowed',

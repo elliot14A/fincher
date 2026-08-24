@@ -7,7 +7,7 @@ import { Button } from '#/components/ui/button'
 import { PaginationControls } from '#/components/ui/pagination'
 import { deliveriesQueryOptions } from '#/features/deliveries'
 import type { ModelsDelivery } from '#/lib/api'
-import { usePaginatedList } from '#/lib/hooks'
+import { DEFAULT_PAGE, DEFAULT_PAGE_LIMIT, DEFAULT_SORT_ORDER } from '#/lib/constants'
 import {
   actionLink,
   actions,
@@ -43,24 +43,24 @@ export const Route = createFileRoute('/deliveries')({
 
 const TABS = [
   { id: 'ALL', label: 'All' },
+  { id: 'READY_TO_SHIP', label: 'Ready to Ship' },
   { id: 'HOLD', label: 'Holds' },
-  { id: 'READY_TO_SHIP', label: 'Ready' },
   { id: 'SHIPPED', label: 'Shipped' },
 ] as const
 
 type TabId = (typeof TABS)[number]['id']
 
-function mapDeliveryStatus(status: ModelsDelivery['status'] | undefined): {
+function mapDeliveryStatus(status: ModelsDelivery['status']): {
   label: string
   variant: BadgeProps['variant']
 } {
   switch (status) {
     case 'HOLD':
-      return { label: 'Hold', variant: 'danger' }
+      return { label: 'Hold Active', variant: 'danger' }
     case 'READY_TO_SHIP':
-      return { label: 'Ready to ship', variant: 'success' }
+      return { label: 'Ready to Ship', variant: 'success' }
     case 'SHIPPED':
-      return { label: 'Shipped', variant: 'success' }
+      return { label: 'Shipped', variant: 'neutral' }
     case 'PENDING':
       return { label: 'Pending QC', variant: 'warning' }
     default:
@@ -71,23 +71,26 @@ function mapDeliveryStatus(status: ModelsDelivery['status'] | undefined): {
 function DeliveriesPage() {
   const [activeTab, setActiveTab] = useState<TabId>('ALL')
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [page, setPage] = useState(DEFAULT_PAGE)
 
   const {
-    data: deliveries = [],
+    data: deliveriesResult,
     isLoading,
     isError,
     error,
-  } = useQuery(deliveriesQueryOptions(activeTab === 'ALL' ? undefined : { status: activeTab }))
+  } = useQuery(
+    deliveriesQueryOptions({
+      status: activeTab === 'ALL' ? undefined : activeTab,
+      page,
+      limit: DEFAULT_PAGE_LIMIT,
+      sort_order: DEFAULT_SORT_ORDER,
+    }),
+  )
 
-  const {
-    page,
-    totalPages,
-    paginatedItems: paginatedDeliveries,
-    hasNextPage,
-    hasPrevPage,
-    onPrevPage,
-    onNextPage,
-  } = usePaginatedList(deliveries, { limit: 10 })
+  const deliveries = deliveriesResult?.items ?? []
+  const totalPages = deliveriesResult?.total_pages ?? 1
+  const hasNextPage = deliveriesResult?.has_next_page ?? false
+  const hasPrevPage = deliveriesResult?.has_prev_page ?? false
 
   const isSelectedPresent = deliveries.some((d) => d.id === selectedId)
   const currentSelectedId = isSelectedPresent ? selectedId : (deliveries[0]?.id ?? null)
@@ -118,6 +121,7 @@ function DeliveriesPage() {
               onClick={() => {
                 setActiveTab(tab.id)
                 setSelectedId(null)
+                setPage(DEFAULT_PAGE)
               }}
             >
               {tab.label}
@@ -147,7 +151,7 @@ function DeliveriesPage() {
         </div>
       ) : (
         <div class={list}>
-          {paginatedDeliveries.map((delivery) => {
+          {deliveries.map((delivery) => {
             const statusInfo = mapDeliveryStatus(delivery.status)
             const isSelected = delivery.id === currentSelectedId
             const formattedDate = delivery.target_date
@@ -216,12 +220,12 @@ function DeliveriesPage() {
       )}
 
       <PaginationControls
-        page={page}
+        page={deliveriesResult?.page ?? page}
         totalPages={totalPages}
         hasNextPage={hasNextPage}
         hasPrevPage={hasPrevPage}
-        onPrevPage={onPrevPage}
-        onNextPage={onNextPage}
+        onPrevPage={() => setPage((p) => Math.max(1, p - 1))}
+        onNextPage={() => setPage((p) => Math.min(totalPages, p + 1))}
       />
     </div>
   )

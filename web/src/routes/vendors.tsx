@@ -6,7 +6,7 @@ import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
 import { PaginationControls } from '#/components/ui/pagination'
 import { vendorsQueryOptions } from '#/features/vendors'
-import { usePaginatedList } from '#/lib/hooks'
+import { DEFAULT_PAGE, DEFAULT_PAGE_LIMIT, DEFAULT_SORT_ORDER } from '#/lib/constants'
 import {
   actionLink,
   actions,
@@ -42,9 +42,9 @@ export const Route = createFileRoute('/vendors')({
 
 const TABS = [
   { id: 'ALL', label: 'All' },
-  { id: 'DUBBING', label: 'Dubbing' },
+  { id: 'AUDIO_DUBBING', label: 'Audio Dubbing' },
   { id: 'SUBTITLES', label: 'Subtitles' },
-  { id: 'LOCALIZATION', label: 'Localization' },
+  { id: 'QC_LAB', label: 'QC Lab' },
 ] as const
 
 type TabId = (typeof TABS)[number]['id']
@@ -52,23 +52,26 @@ type TabId = (typeof TABS)[number]['id']
 function VendorsPage() {
   const [activeTab, setActiveTab] = useState<TabId>('ALL')
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [page, setPage] = useState(DEFAULT_PAGE)
 
   const {
-    data: vendors = [],
+    data: vendorsResult,
     isLoading,
     isError,
     error,
-  } = useQuery(vendorsQueryOptions(activeTab === 'ALL' ? undefined : activeTab))
+  } = useQuery(
+    vendorsQueryOptions({
+      specialty: activeTab === 'ALL' ? undefined : activeTab,
+      page,
+      limit: DEFAULT_PAGE_LIMIT,
+      sort_order: DEFAULT_SORT_ORDER,
+    }),
+  )
 
-  const {
-    page,
-    totalPages,
-    paginatedItems: paginatedVendors,
-    hasNextPage,
-    hasPrevPage,
-    onPrevPage,
-    onNextPage,
-  } = usePaginatedList(vendors, { limit: 10 })
+  const vendors = vendorsResult?.items ?? []
+  const totalPages = vendorsResult?.total_pages ?? 1
+  const hasNextPage = vendorsResult?.has_next_page ?? false
+  const hasPrevPage = vendorsResult?.has_prev_page ?? false
 
   const isSelectedPresent = vendors.some((v) => v.id === selectedId)
   const currentSelectedId = isSelectedPresent ? selectedId : (vendors[0]?.id ?? null)
@@ -99,6 +102,7 @@ function VendorsPage() {
               onClick={() => {
                 setActiveTab(tab.id)
                 setSelectedId(null)
+                setPage(DEFAULT_PAGE)
               }}
             >
               {tab.label}
@@ -128,7 +132,7 @@ function VendorsPage() {
         </div>
       ) : (
         <div class={list}>
-          {paginatedVendors.map((vendor) => {
+          {vendors.map((vendor) => {
             const isSelected = vendor.id === currentSelectedId
             const formattedDate = vendor.created_at
               ? new Date(vendor.created_at).toLocaleDateString(undefined, {
@@ -198,12 +202,12 @@ function VendorsPage() {
       )}
 
       <PaginationControls
-        page={page}
+        page={vendorsResult?.page ?? page}
         totalPages={totalPages}
         hasNextPage={hasNextPage}
         hasPrevPage={hasPrevPage}
-        onPrevPage={onPrevPage}
-        onNextPage={onNextPage}
+        onPrevPage={() => setPage((p) => Math.max(1, p - 1))}
+        onNextPage={() => setPage((p) => Math.min(totalPages, p + 1))}
       />
     </div>
   )

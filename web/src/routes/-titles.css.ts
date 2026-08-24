@@ -221,7 +221,7 @@ export const actions = style({
   transition: 'opacity 0.15s ease',
 })
 
-globalStyle(`${row}:hover ${actions}`, {
+globalStyle(`${row}:hover ${actions}, ${row}:focus-within ${actions}`, {
   opacity: 1,
 })
 
@@ -237,6 +237,11 @@ export const actionLink = style({
   transition: 'color 0.15s ease',
   ':hover': {
     color: vars.color.textPrimary,
+  },
+  ':focus-visible': {
+    color: vars.color.textPrimary,
+    outline: `2px solid ${vars.color.primary}`,
+    outlineOffset: '2px',
   },
 })
 

@@ -7,7 +7,7 @@ import { Button } from '#/components/ui/button'
 import { PaginationControls } from '#/components/ui/pagination'
 import { titlesQueryOptions } from '#/features/titles'
 import type { ModelsTitle } from '#/lib/api'
-import { usePaginatedList } from '#/lib/hooks'
+import { DEFAULT_PAGE, DEFAULT_PAGE_LIMIT, DEFAULT_SORT_ORDER } from '#/lib/constants'
 import {
   actionLink,
   actions,
@@ -126,23 +126,26 @@ function formatPremiereCountdown(premiereDateStr: string | undefined): {
 function TitlesPage() {
   const [activeTab, setActiveTab] = useState<TabId>('ALL')
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [page, setPage] = useState(DEFAULT_PAGE)
 
   const {
-    data: titles = [],
+    data: titlesResult,
     isLoading,
     isError,
     error,
-  } = useQuery(titlesQueryOptions(activeTab === 'ALL' ? undefined : activeTab))
+  } = useQuery(
+    titlesQueryOptions({
+      status: activeTab === 'ALL' ? undefined : activeTab,
+      page,
+      limit: DEFAULT_PAGE_LIMIT,
+      sort_order: DEFAULT_SORT_ORDER,
+    }),
+  )
 
-  const {
-    page,
-    totalPages,
-    paginatedItems: paginatedTitles,
-    hasNextPage,
-    hasPrevPage,
-    onPrevPage,
-    onNextPage,
-  } = usePaginatedList(titles, { limit: 10 })
+  const titles = titlesResult?.items ?? []
+  const totalPages = titlesResult?.total_pages ?? 1
+  const hasNextPage = titlesResult?.has_next_page ?? false
+  const hasPrevPage = titlesResult?.has_prev_page ?? false
 
   const isSelectedPresent = titles.some((t) => t.id === selectedId)
   const currentSelectedId = isSelectedPresent ? selectedId : (titles[0]?.id ?? null)
@@ -173,6 +176,7 @@ function TitlesPage() {
               onClick={() => {
                 setActiveTab(tab.id)
                 setSelectedId(null)
+                setPage(DEFAULT_PAGE)
               }}
             >
               {tab.label}
@@ -202,7 +206,7 @@ function TitlesPage() {
         </div>
       ) : (
         <div class={list}>
-          {paginatedTitles.map((titleItem) => {
+          {titles.map((titleItem) => {
             const statusInfo = mapTitleStatus(titleItem.overall_status)
             const schedule = formatPremiereCountdown(titleItem.premiere_date)
             const territoriesText = `${titleItem.territories || 0} ${
@@ -286,12 +290,12 @@ function TitlesPage() {
       )}
 
       <PaginationControls
-        page={page}
+        page={titlesResult?.page ?? page}
         totalPages={totalPages}
         hasNextPage={hasNextPage}
         hasPrevPage={hasPrevPage}
-        onPrevPage={onPrevPage}
-        onNextPage={onNextPage}
+        onPrevPage={() => setPage((p) => Math.max(1, p - 1))}
+        onNextPage={() => setPage((p) => Math.min(totalPages, p + 1))}
       />
     </div>
   )

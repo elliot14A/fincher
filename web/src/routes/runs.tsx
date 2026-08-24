@@ -7,7 +7,7 @@ import { Button } from '#/components/ui/button'
 import { PaginationControls } from '#/components/ui/pagination'
 import { packagesQueryOptions } from '#/features/packages'
 import type { ModelsPackage } from '#/lib/api'
-import { usePaginatedList } from '#/lib/hooks'
+import { DEFAULT_PAGE, DEFAULT_PAGE_LIMIT, DEFAULT_SORT_ORDER } from '#/lib/constants'
 import {
   actionLink,
   actions,
@@ -44,7 +44,7 @@ export const Route = createFileRoute('/runs')({
 })
 
 const TABS = [
-  { id: 'ALL', label: 'All' },
+  { id: 'ALL', label: 'All Packages' },
   { id: 'VIDEO', label: 'Video' },
   { id: 'AUDIO', label: 'Audio' },
   { id: 'SUBTITLE', label: 'Subtitles' },
@@ -52,7 +52,7 @@ const TABS = [
 
 type TabId = (typeof TABS)[number]['id']
 
-function mapPackageStatus(status: ModelsPackage['status'] | undefined): {
+function mapPackageStatus(status: ModelsPackage['status']): {
   label: string
   variant: BadgeProps['variant']
 } {
@@ -86,27 +86,26 @@ function getComponentIcon(component: ModelsPackage['component']) {
 function RunsPage() {
   const [activeTab, setActiveTab] = useState<TabId>('ALL')
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [page, setPage] = useState(DEFAULT_PAGE)
 
   const {
-    data: packages = [],
+    data: packagesResult,
     isLoading,
     isError,
     error,
   } = useQuery(
-    packagesQueryOptions(
-      activeTab === 'ALL' ? undefined : { component: activeTab as ModelsPackage['component'] },
-    ),
+    packagesQueryOptions({
+      component: activeTab === 'ALL' ? undefined : (activeTab as ModelsPackage['component']),
+      page,
+      limit: DEFAULT_PAGE_LIMIT,
+      sort_order: DEFAULT_SORT_ORDER,
+    }),
   )
 
-  const {
-    page,
-    totalPages,
-    paginatedItems: paginatedPackages,
-    hasNextPage,
-    hasPrevPage,
-    onPrevPage,
-    onNextPage,
-  } = usePaginatedList(packages, { limit: 10 })
+  const packages = packagesResult?.items ?? []
+  const totalPages = packagesResult?.total_pages ?? 1
+  const hasNextPage = packagesResult?.has_next_page ?? false
+  const hasPrevPage = packagesResult?.has_prev_page ?? false
 
   const isSelectedPresent = packages.some((pkg) => pkg.id === selectedId)
   const currentSelectedId = isSelectedPresent ? selectedId : (packages[0]?.id ?? null)
@@ -137,6 +136,7 @@ function RunsPage() {
               onClick={() => {
                 setActiveTab(tab.id)
                 setSelectedId(null)
+                setPage(DEFAULT_PAGE)
               }}
             >
               {tab.label}
@@ -166,7 +166,7 @@ function RunsPage() {
         </div>
       ) : (
         <div class={list}>
-          {paginatedPackages.map((pkg) => {
+          {packages.map((pkg) => {
             const statusInfo = mapPackageStatus(pkg.status)
             const Icon = getComponentIcon(pkg.component)
             const isSelected = pkg.id === currentSelectedId
@@ -245,12 +245,12 @@ function RunsPage() {
       )}
 
       <PaginationControls
-        page={page}
+        page={packagesResult?.page ?? page}
         totalPages={totalPages}
         hasNextPage={hasNextPage}
         hasPrevPage={hasPrevPage}
-        onPrevPage={onPrevPage}
-        onNextPage={onNextPage}
+        onPrevPage={() => setPage((p) => Math.max(1, p - 1))}
+        onNextPage={() => setPage((p) => Math.min(totalPages, p + 1))}
       />
     </div>
   )
