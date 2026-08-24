@@ -13,7 +13,8 @@
     "generate:api": "openapi-ts",
     "lint": "biome check src",
     "lint:fix": "biome check src --write",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "bun test"
   },
   "dependencies": {
     "@hey-api/client-fetch": "^0.13.1",
@@ -38,6 +39,7 @@
   "devDependencies": {
     "@biomejs/biome": "^2.5.10",
     "@hey-api/openapi-ts": "^0.99.0",
+    "@types/bun": "^1.4.0",
     "@vanilla-extract/vite-plugin": "^5.2.6",
     "typescript": "^6.0.3",
     "vite": "^8.2.2"

@@ -28,7 +28,8 @@ export default defineConfig({
       onwarn(warning, warn) {
         if (
           warning.code === 'IMPORT_IS_UNDEFINED' &&
-          warning.id?.includes('@tanstack/react-router')
+          (warning.message?.includes('preact/compat') ||
+            warning.id?.includes('@tanstack/react-router'))
         ) {
           return
         }
