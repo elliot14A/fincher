@@ -22,7 +22,6 @@ import {
   navItem,
   navItemActive,
   navItemLabel,
-  newChatLink,
   searchLabel,
   searchRow,
   sectionTitle,
@@ -48,7 +47,8 @@ type RecentThreadItem = {
 }
 
 export function NavigationSidebar() {
-  const { data: titles = [] } = useQuery(titlesQueryOptions())
+  const { data: titlesResult } = useQuery(titlesQueryOptions({ limit: 4 }))
+  const titles = titlesResult?.items ?? []
 
   const recentItems: RecentThreadItem[] =
     titles.length > 0
@@ -72,11 +72,9 @@ export function NavigationSidebar() {
         </div>
       </div>
 
-      <Link to="/" className={newChatLink}>
-        <button type="button" class={composeButton}>
-          <Plus size={14} />
-          <span>New chat</span>
-        </button>
+      <Link to="/" className={composeButton}>
+        <Plus size={14} />
+        <span>New chat</span>
       </Link>
 
       <div class={searchRow}>

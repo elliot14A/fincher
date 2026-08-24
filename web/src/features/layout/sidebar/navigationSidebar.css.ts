@@ -28,11 +28,6 @@ export const brandSubtitle = style({
   fontSize: vars.fontSize.xs,
 })
 
-export const newChatLink = style({
-  textDecoration: 'none',
-  display: 'block',
-})
-
 export const composeButton = style({
   display: 'flex',
   alignItems: 'center',
@@ -46,11 +41,16 @@ export const composeButton = style({
   color: vars.color.textInverse,
   fontSize: vars.fontSize.sm,
   fontWeight: 500,
+  textDecoration: 'none',
   cursor: 'pointer',
   marginBottom: vars.space.sm,
   transition: 'background-color 0.1s ease',
   ':hover': {
     backgroundColor: vars.color.primaryHover,
+  },
+  ':focus-visible': {
+    outline: `2px solid ${vars.color.primary}`,
+    outlineOffset: '2px',
   },
 })
 
