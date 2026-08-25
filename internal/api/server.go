@@ -11,6 +11,7 @@ import (
 	"github.com/elliot14A/fincher/internal/api/masters"
 	"github.com/elliot14A/fincher/internal/api/packages"
 	"github.com/elliot14A/fincher/internal/api/titles"
+	"github.com/elliot14A/fincher/internal/api/uploads"
 	"github.com/elliot14A/fincher/internal/api/vendors"
 	"github.com/elliot14A/fincher/internal/turso/ent"
 	"github.com/elliot14A/fincher/openapi"
@@ -97,6 +98,7 @@ func (s *Server) registerRoutes() {
 	packages.RegisterRoutes(apiGroup.Group("/packages"), s.client)
 	deliveries.RegisterRoutes(apiGroup.Group("/deliveries"), s.client)
 	dependencies.RegisterRoutes(apiGroup.Group("/dependencies"), s.client)
+	uploads.RegisterRoutes(apiGroup.Group("/uploads"), s.client)
 
 	web.RegisterRoutes(s.echo)
 }

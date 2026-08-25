@@ -29,10 +29,11 @@
         {
           default = pkgs.mkShell {
             packages = with pkgs; [
-              # Go Toolchain
+              # Go Toolchain & Live Reload
               go
               gopls
               golangci-lint
+              air
 
               # Data & SQLite CLIs
               sqlite

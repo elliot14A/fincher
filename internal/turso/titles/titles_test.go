@@ -9,6 +9,7 @@ import (
 	"github.com/elliot14A/fincher/internal/turso/ent"
 	"github.com/elliot14A/fincher/internal/turso/masters"
 	"github.com/elliot14A/fincher/internal/turso/titles"
+	"github.com/elliot14A/fincher/internal/turso/uploads"
 	domainerrors "github.com/elliot14A/fincher/pkg/domain/errors"
 	"github.com/elliot14A/fincher/pkg/domain/models"
 )
@@ -141,5 +142,55 @@ func TestTitles_FK_DeleteBlockedByDependents(t *testing.T) {
 	delRes := titles.Delete(ctx, client, "title-active")
 	if delRes.IsOk() {
 		t.Fatalf("expected title delete to fail due to foreign key dependents")
+	}
+}
+
+func TestTitles_CascadeUploadDelete(t *testing.T) {
+	client := setupTestDB(t)
+	defer client.Close()
+
+	ctx := context.Background()
+
+	// 1. Create upload blob
+	upRes := uploads.Create(ctx, client, &models.Upload{
+		ID:        "upload-poster-123",
+		Filename:  "poster.png",
+		MimeType:  "image/png",
+		SizeBytes: 4,
+		Data:      []byte{0x89, 0x50, 0x4E, 0x47},
+	})
+	if upRes.IsErr() {
+		t.Fatalf("failed to create upload: %v", upRes.Error())
+	}
+
+	// 2. Create title referencing this upload
+	titleRes := titles.Create(ctx, client, &models.Title{
+		Base: models.Base{
+			ID: "title-with-avatar",
+			Metadata: map[string]any{
+				"avatar_url": "/api/uploads/upload-poster-123",
+			},
+		},
+		Name:                 "Avatar Movie",
+		Type:                 models.TitleTypeFeature,
+		PremiereDate:         time.Now().Add(48 * time.Hour),
+		Territories:          1,
+		CurrentMasterVersion: "V01",
+		OverallStatus:        models.StatusOnTrack,
+	})
+	if titleRes.IsErr() {
+		t.Fatalf("failed to create title: %v", titleRes.Error())
+	}
+
+	// 3. Delete title
+	delRes := titles.Delete(ctx, client, "title-with-avatar")
+	if delRes.IsErr() {
+		t.Fatalf("failed to delete title: %v", delRes.Error())
+	}
+
+	// 4. Verify that upload was cascaded and deleted
+	getUpRes := uploads.Get(ctx, client, "upload-poster-123")
+	if getUpRes.IsOk() {
+		t.Fatalf("expected upload blob to be deleted along with title, but it still exists")
 	}
 }

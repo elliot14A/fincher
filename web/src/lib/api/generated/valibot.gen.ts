@@ -275,6 +275,15 @@ export const vModelsUpdateVendorInput = v.object({
     specialty: v.optional(v.pipe(v.string(), v.minLength(1)))
 });
 
+export const vModelsUploadResponse = v.object({
+    created_at: v.optional(v.string()),
+    filename: v.optional(v.string()),
+    id: v.optional(v.string()),
+    mime_type: v.optional(v.string()),
+    size_bytes: v.optional(v.pipe(v.number(), v.integer())),
+    url: v.optional(v.string())
+});
+
 export const vModelsVendor = v.object({
     created_at: v.optional(v.string()),
     id: v.string(),
@@ -521,6 +530,28 @@ export const vPatchTitlesByIdPath = v.object({
  * OK
  */
 export const vPatchTitlesByIdResponse = vModelsTitle;
+
+export const vPostUploadsBody = v.object({
+    file: v.string()
+});
+
+/**
+ * Created
+ */
+export const vPostUploadsResponse = vModelsUploadResponse;
+
+export const vDeleteUploadsByIdPath = v.object({
+    id: v.string()
+});
+
+/**
+ * OK
+ */
+export const vDeleteUploadsByIdResponse = v.record(v.string(), v.boolean());
+
+export const vGetUploadsByIdPath = v.object({
+    id: v.string()
+});
 
 export const vGetVendorsQuery = v.object({
     specialty: v.optional(v.string()),

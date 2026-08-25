@@ -9,6 +9,7 @@ import (
 	"github.com/elliot14A/fincher/internal/turso/ent"
 	"github.com/elliot14A/fincher/internal/turso/packages"
 	"github.com/elliot14A/fincher/internal/turso/titles"
+	"github.com/elliot14A/fincher/internal/turso/uploads"
 	"github.com/elliot14A/fincher/internal/turso/vendors"
 	domainerrors "github.com/elliot14A/fincher/pkg/domain/errors"
 	"github.com/elliot14A/fincher/pkg/domain/models"
@@ -137,5 +138,51 @@ func TestVendors_FK_DeleteBlockedByDependents(t *testing.T) {
 	domErr, ok := delRes.Error().(*domainerrors.DomainError)
 	if !ok || domErr.Code != domainerrors.CodeConflict {
 		t.Fatalf("expected CodeConflict (409) for delete blocked by dependent packages, got: %v", delRes.Error())
+	}
+}
+
+func TestVendors_CascadeUploadDelete(t *testing.T) {
+	client := setupTestDB(t)
+	defer client.Close()
+
+	ctx := context.Background()
+
+	// 1. Create upload blob
+	upRes := uploads.Create(ctx, client, &models.Upload{
+		ID:        "upload-logo-456",
+		Filename:  "logo.png",
+		MimeType:  "image/png",
+		SizeBytes: 4,
+		Data:      []byte{0x89, 0x50, 0x4E, 0x47},
+	})
+	if upRes.IsErr() {
+		t.Fatalf("failed to create upload: %v", upRes.Error())
+	}
+
+	// 2. Create vendor referencing this upload
+	vRes := vendors.Create(ctx, client, &models.Vendor{
+		Base: models.Base{
+			ID: "vendor-with-avatar",
+			Metadata: map[string]any{
+				"avatar_url": "/api/uploads/upload-logo-456",
+			},
+		},
+		Name:      "Logo Studio",
+		Specialty: "AUDIO_DUBBING",
+	})
+	if vRes.IsErr() {
+		t.Fatalf("failed to create vendor: %v", vRes.Error())
+	}
+
+	// 3. Delete vendor
+	delRes := vendors.Delete(ctx, client, "vendor-with-avatar")
+	if delRes.IsErr() {
+		t.Fatalf("failed to delete vendor: %v", delRes.Error())
+	}
+
+	// 4. Verify that upload was cascaded and deleted
+	getUpRes := uploads.Get(ctx, client, "upload-logo-456")
+	if getUpRes.IsOk() {
+		t.Fatalf("expected upload blob to be deleted along with vendor, but it still exists")
 	}
 }

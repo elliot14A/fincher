@@ -17,6 +17,7 @@ import (
 	"github.com/elliot14A/fincher/internal/turso/ent/master"
 	"github.com/elliot14A/fincher/internal/turso/ent/mediapackage"
 	"github.com/elliot14A/fincher/internal/turso/ent/title"
+	"github.com/elliot14A/fincher/internal/turso/ent/upload"
 	"github.com/elliot14A/fincher/internal/turso/ent/vendor"
 )
 
@@ -83,6 +84,7 @@ func checkColumn(t, c string) error {
 			master.Table:       master.ValidColumn,
 			mediapackage.Table: mediapackage.ValidColumn,
 			title.Table:        title.ValidColumn,
+			upload.Table:       upload.ValidColumn,
 			vendor.Table:       vendor.ValidColumn,
 		})
 	})

@@ -1,15 +1,19 @@
-import { useQuery } from '@tanstack/react-query'
-import { createFileRoute } from '@tanstack/react-router'
-import { Film, Plus } from 'lucide-preact'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { Film, Layers, MessageSquare, Plus, Trash2 } from 'lucide-preact'
 import { useState } from 'preact/hooks'
+import { toast } from 'sonner'
 import { Badge, type BadgeProps } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
+import { ActionMenu } from '#/components/ui/dropdown'
+import { DeleteModal } from '#/components/ui/modal'
 import { PaginationControls } from '#/components/ui/pagination'
-import { titlesQueryOptions } from '#/features/titles'
-import type { ModelsTitle } from '#/lib/api'
-import { DEFAULT_PAGE, DEFAULT_PAGE_LIMIT, DEFAULT_SORT_ORDER } from '#/lib/constants'
+import { CreateTitleModal } from '#/features/titles/components/modals'
+import { titlesKeys } from '#/features/titles/queryKeys'
+import { titlesQueryOptions } from '#/features/titles/queryOptions'
+import { deleteTitlesById, type ModelsTitle } from '#/lib/api'
+import { useCountdown, useDisclosure, useSelectableRow, useTabbedQueryList } from '#/lib/hooks'
 import {
-  actionLink,
   actions,
   cardName,
   countdownEmpty,
@@ -41,7 +45,7 @@ import {
   toolbarGroup,
   toolbarTab,
   toolbarTabActive,
-} from './-titles.css'
+} from '#/styles/routes/titles.css'
 
 export const Route = createFileRoute('/titles')({
   component: TitlesPage,
@@ -93,62 +97,165 @@ function getTitleStatusNote(status: ModelsTitle['overall_status'] | undefined): 
   }
 }
 
-function formatPremiereCountdown(premiereDateStr: string | undefined): {
-  label: string
-  timecode: string
-  scheduled: boolean
-} {
-  if (!premiereDateStr) {
-    return { label: 'Not scheduled', timecode: '-', scheduled: false }
+function TitleCountdown({ premiereDate }: { premiereDate: string | undefined }) {
+  const schedule = useCountdown(premiereDate)
+
+  if (!schedule.scheduled) {
+    return (
+      <div class={scheduleStack}>
+        <span class={scheduleLabelMuted}>Not scheduled</span>
+        <span class={countdownEmpty}>-</span>
+      </div>
+    )
   }
-  const target = new Date(premiereDateStr).getTime()
-  if (Number.isNaN(target)) {
-    return { label: 'Not scheduled', timecode: '-', scheduled: false }
-  }
-  const now = Date.now()
-  const diffMs = target - now
-  if (diffMs <= 0) {
-    return { label: 'Released', timecode: '00:00:00:00', scheduled: true }
-  }
-  const totalSeconds = Math.floor(diffMs / 1000)
-  const hours = Math.floor(totalSeconds / 3600)
-  const minutes = Math.floor((totalSeconds % 3600) / 60)
-  const seconds = totalSeconds % 60
-  const frames = Math.floor((diffMs % 1000) / 40)
-  const pad = (n: number) => n.toString().padStart(2, '0')
-  return {
-    label: `${hours}h left`,
-    timecode: `${pad(hours)}:${pad(minutes)}:${pad(seconds)}:${pad(frames)}`,
-    scheduled: true,
-  }
+
+  return (
+    <div class={scheduleStack}>
+      <span class={scheduleLabel}>{schedule.label}</span>
+      <span class={countdownValue}>{schedule.timecode}</span>
+    </div>
+  )
+}
+
+function TitleRow({
+  titleItem,
+  isSelected,
+  onSelect,
+  onDelete,
+}: {
+  titleItem: ModelsTitle
+  isSelected: boolean
+  onSelect: () => void
+  onDelete: () => void
+}) {
+  const navigate = useNavigate()
+  const { rowProps } = useSelectableRow({
+    isSelected,
+    onSelect,
+    baseClassName: row,
+    activeClassName: rowActive,
+  })
+
+  const statusInfo = mapTitleStatus(titleItem.overall_status)
+  const territoriesText = `${titleItem.territories || 0} ${
+    titleItem.territories === 1 ? 'market' : 'markets'
+  }`
+  const masterText = `Master ${titleItem.current_master_version || 'V01'}`
+  const noteText = getTitleStatusNote(titleItem.overall_status)
+  const avatarUrl = (titleItem.metadata as Record<string, string> | undefined)?.avatar_url
+
+  return (
+    <div {...rowProps}>
+      {avatarUrl ? (
+        <img src={avatarUrl} alt={titleItem.name} class={posterThumb} />
+      ) : (
+        <div class={posterThumb}>
+          <Film size={18} />
+        </div>
+      )}
+
+      <div class={nameStack}>
+        <span class={cardName}>{titleItem.name}</span>
+        <span class={metaRow}>
+          <span class={metaVersion}>{masterText}</span>
+          <span class={metaDivider}>·</span>
+          <span class={metaTerritories}>{territoriesText}</span>
+        </span>
+      </div>
+
+      <div class={statusStack}>
+        <Badge variant={statusInfo.variant} class={statusBadge}>
+          {statusInfo.label}
+        </Badge>
+        <span class={statusNote}>{noteText}</span>
+      </div>
+
+      <TitleCountdown premiereDate={titleItem.premiere_date} />
+
+      <div class={actions}>
+        <ActionMenu
+          ariaLabel={`Actions for ${titleItem.name}`}
+          items={[
+            {
+              type: 'action',
+              key: 'chat',
+              label: 'Ask Assistant',
+              icon: MessageSquare,
+              onClick: () => navigate({ to: '/' }),
+            },
+            {
+              type: 'action',
+              key: 'packages',
+              label: 'View Packages',
+              icon: Layers,
+              onClick: () => navigate({ to: '/runs' }),
+            },
+            {
+              type: 'divider',
+              key: 'div-1',
+            },
+            {
+              type: 'action',
+              key: 'delete',
+              label: 'Delete Title',
+              icon: Trash2,
+              danger: true,
+              onClick: onDelete,
+            },
+          ]}
+        />
+      </div>
+    </div>
+  )
 }
 
 function TitlesPage() {
-  const [activeTab, setActiveTab] = useState<TabId>('ALL')
-  const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [page, setPage] = useState(DEFAULT_PAGE)
+  const queryClient = useQueryClient()
+  const createModal = useDisclosure()
+  const deleteModal = useDisclosure()
+  const [deletingTitle, setDeletingTitle] = useState<ModelsTitle | null>(null)
 
   const {
-    data: titlesResult,
+    activeTab,
+    onTabChange,
+    setSelectedId,
+    currentSelectedId,
+    page,
+    onPrevPage,
+    onNextPage,
+    items: titles,
+    totalPages,
+    hasNextPage,
+    hasPrevPage,
     isLoading,
     isError,
     error,
-  } = useQuery(
-    titlesQueryOptions({
-      status: activeTab === 'ALL' ? undefined : activeTab,
-      page,
-      limit: DEFAULT_PAGE_LIMIT,
-      sort_order: DEFAULT_SORT_ORDER,
-    }),
-  )
+  } = useTabbedQueryList<ModelsTitle, TabId>({
+    tabs: TABS,
+    buildQueryOptions: ({ filter, page, limit, sort_order }) =>
+      titlesQueryOptions({
+        status: filter,
+        page,
+        limit,
+        sort_order,
+      }),
+  })
 
-  const titles = titlesResult?.items ?? []
-  const totalPages = titlesResult?.total_pages ?? 1
-  const hasNextPage = titlesResult?.has_next_page ?? false
-  const hasPrevPage = titlesResult?.has_prev_page ?? false
-
-  const isSelectedPresent = titles.some((t) => t.id === selectedId)
-  const currentSelectedId = isSelectedPresent ? selectedId : (titles[0]?.id ?? null)
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await deleteTitlesById({ path: { id } })
+      if (error) throw new Error(error.message || 'Failed to delete title')
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: titlesKeys.all })
+      toast.success(`Title "${deletingTitle?.name ?? ''}" deleted`)
+      setDeletingTitle(null)
+      deleteModal.close()
+    },
+    onError: (err) => {
+      toast.error(err instanceof Error ? err.message : 'Failed to delete title')
+    },
+  })
 
   return (
     <div class={pageClass}>
@@ -160,7 +267,7 @@ function TitlesPage() {
           </span>
         </div>
 
-        <Button variant="primary" size="sm">
+        <Button variant="primary" size="sm" onClick={createModal.open}>
           <Plus size={14} />
           <span>New Title</span>
         </Button>
@@ -173,11 +280,7 @@ function TitlesPage() {
               key={tab.id}
               type="button"
               class={activeTab === tab.id ? `${toolbarTab} ${toolbarTabActive}` : toolbarTab}
-              onClick={() => {
-                setActiveTab(tab.id)
-                setSelectedId(null)
-                setPage(DEFAULT_PAGE)
-              }}
+              onClick={() => onTabChange(tab.id)}
             >
               {tab.label}
             </button>
@@ -206,97 +309,47 @@ function TitlesPage() {
         </div>
       ) : (
         <div class={list}>
-          {titles.map((titleItem) => {
-            const statusInfo = mapTitleStatus(titleItem.overall_status)
-            const schedule = formatPremiereCountdown(titleItem.premiere_date)
-            const territoriesText = `${titleItem.territories || 0} ${
-              titleItem.territories === 1 ? 'territory' : 'territories'
-            }`
-            const masterText = `Master ${titleItem.current_master_version || 'V01'}`
-            const noteText = getTitleStatusNote(titleItem.overall_status)
-            const isSelected = titleItem.id === currentSelectedId
-
-            return (
-              // biome-ignore lint/a11y/useSemanticElements: row contains nested action buttons, so it cannot itself be a <button>
-              <div
-                key={titleItem.id}
-                role="button"
-                tabIndex={0}
-                class={isSelected ? `${row} ${rowActive}` : row}
-                onClick={() => setSelectedId(titleItem.id)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter' || event.key === ' ') {
-                    event.preventDefault()
-                    setSelectedId(titleItem.id)
-                  }
-                }}
-              >
-                <div class={posterThumb}>
-                  <Film size={18} />
-                </div>
-
-                <div class={nameStack}>
-                  <span class={cardName}>{titleItem.name}</span>
-                  <span class={metaRow}>
-                    <span class={metaVersion}>{masterText}</span>
-                    <span class={metaDivider}>·</span>
-                    <span class={metaTerritories}>{territoriesText}</span>
-                  </span>
-                </div>
-
-                <span />
-
-                <div class={statusStack}>
-                  <Badge variant={statusInfo.variant} class={statusBadge}>
-                    {statusInfo.label}
-                  </Badge>
-                  <span class={statusNote}>{noteText}</span>
-                </div>
-
-                <div class={scheduleStack}>
-                  {schedule.scheduled ? (
-                    <>
-                      <span class={scheduleLabel}>{schedule.label}</span>
-                      <span class={countdownValue}>{schedule.timecode}</span>
-                    </>
-                  ) : (
-                    <>
-                      <span class={scheduleLabelMuted}>Not scheduled</span>
-                      <span class={countdownEmpty}>-</span>
-                    </>
-                  )}
-                </div>
-
-                <div class={actions}>
-                  <button
-                    type="button"
-                    class={actionLink}
-                    onClick={(event) => event.stopPropagation()}
-                  >
-                    Inspect
-                  </button>
-                  <button
-                    type="button"
-                    class={actionLink}
-                    onClick={(event) => event.stopPropagation()}
-                  >
-                    More
-                  </button>
-                </div>
-              </div>
-            )
-          })}
+          {titles.map((titleItem) => (
+            <TitleRow
+              key={titleItem.id}
+              titleItem={titleItem}
+              isSelected={titleItem.id === currentSelectedId}
+              onSelect={() => setSelectedId(titleItem.id)}
+              onDelete={() => {
+                setDeletingTitle(titleItem)
+                deleteModal.open()
+              }}
+            />
+          ))}
         </div>
       )}
 
       <PaginationControls
-        page={titlesResult?.page ?? page}
+        page={page}
         totalPages={totalPages}
         hasNextPage={hasNextPage}
         hasPrevPage={hasPrevPage}
-        onPrevPage={() => setPage((p) => Math.max(1, p - 1))}
-        onNextPage={() => setPage((p) => Math.min(totalPages, p + 1))}
+        onPrevPage={onPrevPage}
+        onNextPage={onNextPage}
       />
+
+      <CreateTitleModal isOpen={createModal.isOpen} onClose={createModal.close} />
+
+      {deletingTitle ? (
+        <DeleteModal
+          isOpen={deleteModal.isOpen}
+          onClose={() => {
+            deleteModal.close()
+            setDeletingTitle(null)
+          }}
+          onConfirm={() => deleteMutation.mutate(deletingTitle.id)}
+          entityType="Title"
+          entityName={deletingTitle.name}
+          entityId={deletingTitle.id}
+          warningMessage="Deleting this title will remove its master cut records, territory deliveries, and packages."
+          isDeleting={deleteMutation.isPending}
+        />
+      ) : null}
     </div>
   )
 }

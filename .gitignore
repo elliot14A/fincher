@@ -10,6 +10,8 @@ web/dist/
 web/node_modules/
 /fincher
 /seed
+tmp/
+build-errors.log
 
 # SQLite databases & runtime locks
 *.db

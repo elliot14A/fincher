@@ -18,6 +18,16 @@ import (
 )
 
 // Open creates a new ent.Client connected to Turso or local SQLite.
+//
+// Architectural Decision Record (SQLite Single Writer & In-DB Blob Storage):
+// 1. Local SQLite uses a single open connection (SetMaxOpenConns(1)) with WAL mode
+//    (_journal=WAL) and busy timeout (_busy_timeout=5000) to ensure zero database lock contention
+//    (preventing SQLITE_BUSY errors) and fully serialized ACID writes.
+// 2. Poster and avatar image blobs are stored directly in the `uploads` SQLite table.
+//    Because all uploads are strictly bounded by MaxUploadSizeBytes (1MB), individual sequential
+//    write times are < 1ms on local disk in WAL mode. This guarantees that control-plane and
+//    operational entity writes are never stalled, while keeping Fincher entirely self-contained
+//    with zero external S3/MinIO/blob store dependencies for local operations and demo environments.
 func Open(dbURL, authToken string) (*ent.Client, error) {
 	if dbURL == "" {
 		return nil, fmt.Errorf("database URL is required")

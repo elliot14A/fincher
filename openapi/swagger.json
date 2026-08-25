@@ -1010,6 +1010,119 @@
                 }
             }
         },
+        "/uploads": {
+            "post": {
+                "description": "Uploads a raster image (PNG, JPEG, WebP, GIF \u003c= 1MB) stored directly in SQLite as binary BLOB.",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "uploads"
+                ],
+                "summary": "Upload an image asset",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "Image binary file",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/models.UploadResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.DomainError"
+                        }
+                    }
+                }
+            }
+        },
+        "/uploads/{id}": {
+            "get": {
+                "description": "Streams the raw binary image BLOB with caching and security headers.",
+                "produces": [
+                    "image/png",
+                    "image/jpeg",
+                    "image/webp",
+                    "image/gif",
+                    "application/octet-stream"
+                ],
+                "tags": [
+                    "uploads"
+                ],
+                "summary": "Stream uploaded image",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Upload ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "file"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.DomainError"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Removes an uploaded binary image from SQLite.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "uploads"
+                ],
+                "summary": "Delete an upload",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Upload ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "boolean"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.DomainError"
+                        }
+                    }
+                }
+            }
+        },
         "/vendors": {
             "get": {
                 "description": "Fetches registered vendors with pagination, optionally filtered by specialty.",
@@ -1950,6 +2063,29 @@
                 "specialty": {
                     "type": "string",
                     "minLength": 1
+                }
+            }
+        },
+        "models.UploadResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "filename": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "mime_type": {
+                    "type": "string"
+                },
+                "size_bytes": {
+                    "type": "integer"
+                },
+                "url": {
+                    "type": "string"
                 }
             }
         },

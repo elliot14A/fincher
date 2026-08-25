@@ -1,7 +1,7 @@
 # Fincher — Feature-Wise Project Roadmap
 
 Build one complete feature slice end-to-end at a time:
-**Domain Entity Models + SQL Migrations + Store / DB Ops + REST API + Verification Tests**
+**Domain Entity Models + Store / DB Ops + REST API + Preact UI + Verification Tests**
 
 ---
 
@@ -17,22 +17,16 @@ Build one complete feature slice end-to-end at a time:
 [ Feature 03: Deliveries & Dependencies ]         (Completed - Backend)
                  │
                  ▼
-[ Feature 04: UI Scaffolding & Initial Console ]  (In-Flight: Setup web/, Calendar, Vendors, Matrix, Lineage)
+[ Feature 04: UI Scaffolding & Operations Console ] (Completed - Preact UI + Modals + Uploads)
                  │
                  ▼
-[ Feature 05: ClickHouse History & MCP Client ]
+[ Feature 05: ClickHouse MCP & Multi-Agent Engine ] (Active - Historian, Lineage, Vendor Optimizer)
                  │
                  ▼
-[ Feature 06: Workflow Definitions & DAG Spec ]
+[ Feature 06: Docent Conversational Assistant ]   (Gemini Chat + Live Database & MCP Tools)
                  │
                  ▼
-[ Feature 07: Execution Engine & SSE Runs ]       (Backend + Live UI Run Inspector)
-                 │
-                 ▼
-[ Feature 08: 17-Node Palette & Multi-Agent Investigation ] (Backend + Disagreement Panel)
-                 │
-                 ▼
-[ Feature 09: Docent NLQ Assistant & Causal Media Seeder ]   (Backend + Docent Drawer + Polish)
+[ Feature 07: Smart Simulator & Comms Hub ]       (Dynamic Event Generator + Protected Seed Data + Dispatches)
 ```
 
 ---
@@ -43,10 +37,10 @@ Build one complete feature slice end-to-end at a time:
 * **Scope**: LUME title catalog management, premiere date countdowns, status tracking.
 * **Deliverables**:
   - `pkg/domain/models/title.go`: Title model, status enums (`ON_TRACK`, `AT_RISK`, `HOLD`, `PROCESSING`, `SHIPPED`), validation, `HoursUntilPremiere`.
-  - `internal/turso/titles/`: Create, Get, List (with status filter), Update, Delete.
+  - `internal/turso/titles/`: Create, Get, List (with status filter and server-side pagination), Update, Delete.
   - `internal/api/titles/`: `GET /api/titles`, `GET /api/titles/{id}`, `POST /api/titles`, `PATCH /api/titles/{id}`, `DELETE /api/titles/{id}`.
   - `internal/api/server.go`: Base Echo HTTP server setup with JSON middleware.
-* **Verification**: `go test -v ./... -race` verifying title CRUD and HTTP endpoints.
+* **Verification**: Unit tests and HTTP tests verifying title CRUD and pagination.
 
 ---
 
@@ -70,63 +64,46 @@ Build one complete feature slice end-to-end at a time:
 
 ---
 
-### Feature 04: UI Scaffolding & Initial Operations Console
-* **Scope**: Setup `web/` workspace with Bun, Vite, Preact, TanStack DB, TanStack Router, Vanilla Extract design system, Hey API codegen, and build the UI views for the completed backend entities.
+### Feature 04: UI Scaffolding & Initial Operations Console (Completed)
+* **Scope**: Setup `web/` workspace with Bun, Vite, Preact, TanStack Router, TanStack Query, Vanilla Extract design system, Hey API codegen, dedicated feature modals, SQLite BLOB image uploads (1MB limit), and centered layouts.
 * **Deliverables**:
-  - `web/`: Scaffolding with Preact, Bun, Vite, `@vanilla-extract/css`, `@vanilla-extract/recipes`, `@tanstack/react-router`, `@tanstack/react-db`.
+  - `web/`: Scaffolding with Preact, Bun, Vite, `@vanilla-extract/css`, `@tanstack/react-router`, `@tanstack/react-query`.
   - `web/src/styles/theme.css.ts`: Dark operations theme tokens.
   - `web/src/lib/api/generated/`: Auto-generated SDK from `openapi/swagger.json`.
-  - `web/src/components/ui/`: Co-located UI primitives (`button/`, `badge/`, `modal/`, `table/`, `input/`, `drawer/`).
-  - `web/src/features/layout/`: `appShell/`, `navigationSidebar/`, `operationsTopbar/`.
-  - `web/src/features/calendar/` & `web/src/routes/index.tsx`: Launch Calendar with title countdowns.
-  - `web/src/features/vendors/` & `web/src/routes/vendors.tsx`: Vendor scorecard registry.
-  - `web/src/features/deliveries/` & `web/src/routes/deliveries.tsx`: Territory Delivery Matrix with hold overrides.
-  - `web/src/features/lineage/` & `web/src/routes/lineage/$id.tsx`: Interactive XYFlow Lineage DAG.
-* **Verification**: `bun run typecheck`, `bun run lint`, and full navigation across Calendar, Vendors, Deliveries, and Lineage.
+  - `web/src/components/ui/`: `button/`, `badge/`, `modal/` (`Modal`, `DeleteModal`), `input/` (`FormField`, `TextInput`, `SelectInput`, `ImageUpload`).
+  - `web/src/features/*/components/modals/`: Dedicated creation modals for Titles, Vendors, Deliveries, and Packages.
+  - `internal/turso/uploads/` & `internal/api/uploads/`: SQLite BLOB storage with server-side MIME sniffing, strict 1MB cap, `nosniff` headers, and `DELETE`.
+  - `web/src/routes/`: Centered empty states on X/Y axes across Titles, Vendors, Deliveries, and Runs.
+* **Verification**: `bun run typecheck`, `biome check src`, `bun test`, and full browser navigation.
 
 ---
 
-### Feature 05: ClickHouse History & MCP Client
-* **Scope**: ClickHouse schema migrations, 4 Materialized Views, and official MCP HTTP client.
+### Feature 05: ClickHouse MCP & Multi-Agent Investigation Engine (Next Up)
+* **Scope**: ClickHouse schema migrations, MCP HTTP client integration, Historian Sub-Agent, Lineage Sub-Agent, and Multi-Factor Vendor Optimizer balancing Speed, Quality, and Rates.
 * **Deliverables**:
-  - `data/clickhouse/001_qc_events.sql` through `009_mv_recent_master_changes.sql`.
   - `pkg/mcp/client.go`: MCP JSON-RPC 2.0 HTTP transport client (`run_query`, `list_tables`).
-  - `internal/turso/query_log/`: Query logging and provenance tracking.
-* **Verification**: Live MCP connection test against `mcp-clickhouse` executing analytical queries against views.
+  - `internal/agent/historian.go`: Queries ClickHouse for vendor defect rates, audio sync drift telemetry, and past turnarounds.
+  - `internal/agent/lineage.go`: Traces SQLite dependency trees for affected market deliveries.
+  - `internal/agent/optimizer.go`: Evaluates trade-offs (Speed vs Quality vs Cost) to recommend optimal vendor re-routing.
+  - `internal/agent/orchestrator.go`: Coordinates multi-agent parallel execution with Google GenAI / Gemini.
+* **Verification**: Live MCP connection test against `mcp-clickhouse` and automated multi-agent run with mock/real incident triggers.
 
 ---
 
-### Feature 06: Workflow Definitions & DAG Spec
-* **Scope**: GraphSpec models, workflow template catalog, and definition authoring.
+### Feature 06: Docent Conversational Assistant (Gemini Chat)
+* **Scope**: Natural language operator assistant with tool access to ClickHouse MCP and SQLite live state.
 * **Deliverables**:
-  - `pkg/domain/models/workflow_def.go`: DAG node & edge spec validation.
-  - `internal/turso/workflow_defs/`.
-  - `internal/api/workflows/`: `GET /api/workflows`, `GET /api/workflows/{id}`, `POST /api/workflows`, `PATCH /api/workflows/{id}`, `GET /api/node-palette`.
-* **Verification**: Validates DAG topology (acyclic, valid triggers, valid node palette).
+  - `internal/api/assistant/`: Chat endpoint streaming Gemini reasoning and citations via SSE.
+  - `web/src/routes/index.tsx`: Interactive chat workspace with suggested prompts, ClickHouse query citations, and instant context awareness.
+* **Verification**: Interactive query verification asserting ClickHouse analytical citations and accurate operational state responses.
 
 ---
 
-### Feature 07: Execution Engine & SSE Runs (Backend + UI)
-* **Scope**: Single-request DAG runner, execution recording, live SSE streaming, and live Run Inspector UI.
+### Feature 07: Smart Simulator, Protected Seed Data & Communications Hub
+* **Scope**: Context-aware dynamic event simulator tab (`/simulator`), protected baseline reference seed data, and automated multi-channel stakeholder dispatches.
 * **Deliverables**:
-  - **Backend**: `pkg/domain/models/run.go`, `internal/engine/runner.go`, `internal/api/runs/` (`POST /api/workflows/{id}/run`, `GET /api/runs/{id}/stream`).
-  - **Frontend**: `web/src/features/runs/`, `web/src/routes/runs/index.tsx`, `web/src/routes/runs/$id.tsx` (Live Studio Pipeline run inspector with real-time SSE stepping).
-* **Verification**: Minimal DAG execution trail streamed via SSE and visualized live in browser.
-
----
-
-### Feature 08: 17-Node Palette & Multi-Agent Investigation (Backend + UI)
-* **Scope**: All 17 node types, parallel Gemini Flash agents, Pro Decision Node (disagreement logic), actions, and drafted notices.
-* **Deliverables**:
-  - **Backend**: `internal/engine/nodes/`, `internal/turso/{decisions,notifications,executed_actions}/`.
-  - **Frontend**: Disagreement Panel inside `web/src/features/runs/` + Stakeholder Dispatch drafted notice modal.
-* **Verification**: Hero scenario (*Eclipse* V13 + Vendor A audio drift $\rightarrow$ HOLD decision + drafted notice) observed live in UI.
-
----
-
-### Feature 09: Docent NLQ Assistant & Causal Media Seeder (Backend + UI)
-* **Scope**: Read-first natural language operator assistant, budget counters, causal media seeder, and single-binary Go embed.
-* **Deliverables**:
-  - **Backend**: `internal/assistant/docent.go`, `internal/turso/budget/`, `cmd/seed/main.go`, `cmd/fincher/main.go`.
-  - **Frontend**: `web/src/features/docent/` (interactive natural language query drawer with ClickHouse citations).
-* **Verification**: Full unattended demo cold start, Docent query verification, and single-binary distribution test.
+  - `cmd/seed/main.go`: Seed protected system titles (*Eclipse*, *Atlas*) and top vendors into ClickHouse & SQLite.
+  - `web/src/routes/simulator.tsx`: Dynamic event generator allowing operators to trigger master revisions, QC failures on audio drift, or vendor re-conform deliveries.
+  - `internal/agent/comms.go`: Autonomous generation of Vendor SLA notices, Public Social broadcasts (X/Twitter), and Executive Briefings.
+  - `web/src/features/runs/`: Live workflow activity stream and communications view.
+* **Verification**: Unattended demo cold start, dynamic event generation, and full closed-loop recovery.

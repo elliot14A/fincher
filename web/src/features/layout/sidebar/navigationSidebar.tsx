@@ -50,18 +50,11 @@ export function NavigationSidebar() {
   const { data: titlesResult } = useQuery(titlesQueryOptions({ limit: 4 }))
   const titles = titlesResult?.items ?? []
 
-  const recentItems: RecentThreadItem[] =
-    titles.length > 0
-      ? titles.slice(0, 4).map((t: ModelsTitle, idx: number) => ({
-          label: `${t.name} release integrity`,
-          active: idx === 0,
-          hasHold: t.overall_status === 'HOLD' || t.overall_status === 'AT_RISK',
-        }))
-      : [
-          { label: 'Release integrity audit', active: true, hasHold: false },
-          { label: 'Vendor drift analysis', active: false, hasHold: false },
-          { label: 'Audio sync inspection', active: false, hasHold: false },
-        ]
+  const recentItems: RecentThreadItem[] = titles.slice(0, 4).map((t: ModelsTitle, idx: number) => ({
+    label: `${t.name} release integrity`,
+    active: idx === 0,
+    hasHold: t.overall_status === 'HOLD' || t.overall_status === 'AT_RISK',
+  }))
 
   return (
     <aside class={sidebarContainer}>
@@ -95,22 +88,26 @@ export function NavigationSidebar() {
         </Link>
       ))}
 
-      <div class={sectionTitle}>Recent</div>
+      {recentItems.length > 0 ? (
+        <>
+          <div class={sectionTitle}>Recent</div>
 
-      {recentItems.map((thread: RecentThreadItem) => (
-        <div
-          key={thread.label}
-          class={thread.active ? `${threadItem} ${threadItemActive}` : threadItem}
-        >
-          <span class={threadItemLabel}>{thread.label}</span>
-          {(thread.active || thread.hasHold) && <span class={activeDot} />}
-        </div>
-      ))}
+          {recentItems.map((thread: RecentThreadItem) => (
+            <div
+              key={thread.label}
+              class={thread.active ? `${threadItem} ${threadItemActive}` : threadItem}
+            >
+              <span class={threadItemLabel}>{thread.label}</span>
+              {(thread.active || thread.hasHold) && <span class={activeDot} />}
+            </div>
+          ))}
 
-      <div class={viewAllRow}>
-        <span>View all</span>
-        <ChevronRight size={14} />
-      </div>
+          <div class={viewAllRow}>
+            <span>View all</span>
+            <ChevronRight size={14} />
+          </div>
+        </>
+      ) : null}
     </aside>
   )
 }

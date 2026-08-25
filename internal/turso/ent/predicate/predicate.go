@@ -21,5 +21,8 @@ type MediaPackage func(*sql.Selector)
 // Title is the predicate function for title builders.
 type Title func(*sql.Selector)
 
+// Upload is the predicate function for upload builders.
+type Upload func(*sql.Selector)
+
 // Vendor is the predicate function for vendor builders.
 type Vendor func(*sql.Selector)

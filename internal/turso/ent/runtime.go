@@ -11,6 +11,7 @@ import (
 	"github.com/elliot14A/fincher/internal/turso/ent/mediapackage"
 	"github.com/elliot14A/fincher/internal/turso/ent/schema"
 	"github.com/elliot14A/fincher/internal/turso/ent/title"
+	"github.com/elliot14A/fincher/internal/turso/ent/upload"
 	"github.com/elliot14A/fincher/internal/turso/ent/vendor"
 )
 
@@ -159,6 +160,28 @@ func init() {
 	titleDescID := titleMixinFields0[0].Descriptor()
 	// title.IDValidator is a validator for the "id" field. It is called by the builders before save.
 	title.IDValidator = titleDescID.Validators[0].(func(string) error)
+	uploadFields := schema.Upload{}.Fields()
+	_ = uploadFields
+	// uploadDescFilename is the schema descriptor for filename field.
+	uploadDescFilename := uploadFields[1].Descriptor()
+	// upload.FilenameValidator is a validator for the "filename" field. It is called by the builders before save.
+	upload.FilenameValidator = uploadDescFilename.Validators[0].(func(string) error)
+	// uploadDescMimeType is the schema descriptor for mime_type field.
+	uploadDescMimeType := uploadFields[2].Descriptor()
+	// upload.MimeTypeValidator is a validator for the "mime_type" field. It is called by the builders before save.
+	upload.MimeTypeValidator = uploadDescMimeType.Validators[0].(func(string) error)
+	// uploadDescData is the schema descriptor for data field.
+	uploadDescData := uploadFields[3].Descriptor()
+	// upload.DataValidator is a validator for the "data" field. It is called by the builders before save.
+	upload.DataValidator = uploadDescData.Validators[0].(func([]byte) error)
+	// uploadDescSizeBytes is the schema descriptor for size_bytes field.
+	uploadDescSizeBytes := uploadFields[4].Descriptor()
+	// upload.SizeBytesValidator is a validator for the "size_bytes" field. It is called by the builders before save.
+	upload.SizeBytesValidator = uploadDescSizeBytes.Validators[0].(func(int64) error)
+	// uploadDescCreatedAt is the schema descriptor for created_at field.
+	uploadDescCreatedAt := uploadFields[5].Descriptor()
+	// upload.DefaultCreatedAt holds the default value on creation for the created_at field.
+	upload.DefaultCreatedAt = uploadDescCreatedAt.Default.(func() time.Time)
 	vendorMixin := schema.Vendor{}.Mixin()
 	vendorMixinFields0 := vendorMixin[0].Fields()
 	_ = vendorMixinFields0

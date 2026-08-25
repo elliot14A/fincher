@@ -217,6 +217,21 @@ var (
 			},
 		},
 	}
+	// UploadsColumns holds the columns for the "uploads" table.
+	UploadsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeString, Unique: true},
+		{Name: "filename", Type: field.TypeString},
+		{Name: "mime_type", Type: field.TypeString},
+		{Name: "data", Type: field.TypeBytes},
+		{Name: "size_bytes", Type: field.TypeInt64},
+		{Name: "created_at", Type: field.TypeTime},
+	}
+	// UploadsTable holds the schema information for the "uploads" table.
+	UploadsTable = &schema.Table{
+		Name:       "uploads",
+		Columns:    UploadsColumns,
+		PrimaryKey: []*schema.Column{UploadsColumns[0]},
+	}
 	// VendorsColumns holds the columns for the "vendors" table.
 	VendorsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeString, Unique: true},
@@ -246,6 +261,7 @@ var (
 		MastersTable,
 		MediaPackagesTable,
 		TitlesTable,
+		UploadsTable,
 		VendorsTable,
 	}
 )

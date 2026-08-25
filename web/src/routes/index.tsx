@@ -19,7 +19,7 @@ import {
   sendButton,
   subtitle,
   title,
-} from './-index.css'
+} from '#/styles/routes/index.css'
 
 export const Route = createFileRoute('/')({
   component: OperationsChatPage,
@@ -80,7 +80,7 @@ function OperationsChatPage() {
               type="text"
               value={prompt}
               onInput={(e) => setPrompt((e.target as HTMLInputElement).value)}
-              placeholder="Ask anything about titles, vendor drift, or DAG runs..."
+              placeholder="Ask anything about titles, vendor drift, or package runs..."
               class={composerInput}
             />
             <button type="submit" class={sendButton} aria-label="Send">

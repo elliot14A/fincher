@@ -1,15 +1,20 @@
-import { useQuery } from '@tanstack/react-query'
-import { createFileRoute } from '@tanstack/react-router'
-import { Globe, Plus } from 'lucide-preact'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { Globe, Layers, MessageSquare, Plus, Trash2 } from 'lucide-preact'
 import { useState } from 'preact/hooks'
+import { toast } from 'sonner'
 import { Badge, type BadgeProps } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
+import { ActionMenu } from '#/components/ui/dropdown'
+import { DeleteModal } from '#/components/ui/modal'
 import { PaginationControls } from '#/components/ui/pagination'
-import { deliveriesQueryOptions } from '#/features/deliveries'
-import type { ModelsDelivery } from '#/lib/api'
-import { DEFAULT_PAGE, DEFAULT_PAGE_LIMIT, DEFAULT_SORT_ORDER } from '#/lib/constants'
+import { CreateDeliveryModal } from '#/features/deliveries/components/modals'
+import { deliveriesKeys } from '#/features/deliveries/queryKeys'
+import { deliveriesQueryOptions } from '#/features/deliveries/queryOptions'
+import { deleteDeliveriesById, type ModelsDelivery } from '#/lib/api'
+import { useDisclosure, useSelectableRow, useTabbedQueryList } from '#/lib/hooks'
+import { formatDate } from '#/lib/utils'
 import {
-  actionLink,
   actions,
   cardName,
   countdownValue,
@@ -35,7 +40,7 @@ import {
   toolbarGroup,
   toolbarTab,
   toolbarTabActive,
-} from './-deliveries.css'
+} from '#/styles/routes/deliveries.css'
 
 export const Route = createFileRoute('/deliveries')({
   component: DeliveriesPage,
@@ -68,44 +73,144 @@ function mapDeliveryStatus(status: ModelsDelivery['status']): {
   }
 }
 
+function DeliveryRow({
+  delivery,
+  isSelected,
+  onSelect,
+  onDelete,
+}: {
+  delivery: ModelsDelivery
+  isSelected: boolean
+  onSelect: () => void
+  onDelete: () => void
+}) {
+  const navigate = useNavigate()
+  const { rowProps } = useSelectableRow({
+    isSelected,
+    onSelect,
+    baseClassName: row,
+    activeClassName: rowActive,
+  })
+
+  const statusInfo = mapDeliveryStatus(delivery.status)
+  const formattedDate = formatDate(delivery.target_date, undefined, 'Unscheduled')
+
+  return (
+    <div {...rowProps}>
+      <div class={countryBadge}>{delivery.country}</div>
+
+      <div class={nameStack}>
+        <span class={cardName}>{delivery.id}</span>
+        <div class={metaRow}>
+          <span class={metaText}>Title: {delivery.title_id}</span>
+        </div>
+      </div>
+
+      <div class={statusStack}>
+        <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>
+      </div>
+
+      <div class={scheduleStack}>
+        <span class={scheduleLabel}>Target date</span>
+        <span class={countdownValue}>{formattedDate}</span>
+      </div>
+
+      <div class={actions}>
+        <ActionMenu
+          ariaLabel={`Actions for ${delivery.id}`}
+          items={[
+            {
+              type: 'action',
+              key: 'chat',
+              label: 'Ask Assistant',
+              icon: MessageSquare,
+              onClick: () => navigate({ to: '/' }),
+            },
+            {
+              type: 'action',
+              key: 'packages',
+              label: 'View Packages',
+              icon: Layers,
+              onClick: () => navigate({ to: '/runs' }),
+            },
+            {
+              type: 'divider',
+              key: 'div-1',
+            },
+            {
+              type: 'action',
+              key: 'delete',
+              label: 'Delete Delivery',
+              icon: Trash2,
+              danger: true,
+              onClick: onDelete,
+            },
+          ]}
+        />
+      </div>
+    </div>
+  )
+}
+
 function DeliveriesPage() {
-  const [activeTab, setActiveTab] = useState<TabId>('ALL')
-  const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [page, setPage] = useState(DEFAULT_PAGE)
+  const queryClient = useQueryClient()
+  const createModal = useDisclosure()
+  const deleteModal = useDisclosure()
+  const [deletingDelivery, setDeletingDelivery] = useState<ModelsDelivery | null>(null)
 
   const {
-    data: deliveriesResult,
+    activeTab,
+    onTabChange,
+    setSelectedId,
+    currentSelectedId,
+    page,
+    onPrevPage,
+    onNextPage,
+    items: deliveries,
+    totalPages,
+    hasNextPage,
+    hasPrevPage,
     isLoading,
     isError,
     error,
-  } = useQuery(
-    deliveriesQueryOptions({
-      status: activeTab === 'ALL' ? undefined : activeTab,
-      page,
-      limit: DEFAULT_PAGE_LIMIT,
-      sort_order: DEFAULT_SORT_ORDER,
-    }),
-  )
+  } = useTabbedQueryList<ModelsDelivery, TabId>({
+    tabs: TABS,
+    buildQueryOptions: ({ filter, page, limit, sort_order }) =>
+      deliveriesQueryOptions({
+        status: filter,
+        page,
+        limit,
+        sort_order,
+      }),
+  })
 
-  const deliveries = deliveriesResult?.items ?? []
-  const totalPages = deliveriesResult?.total_pages ?? 1
-  const hasNextPage = deliveriesResult?.has_next_page ?? false
-  const hasPrevPage = deliveriesResult?.has_prev_page ?? false
-
-  const isSelectedPresent = deliveries.some((d) => d.id === selectedId)
-  const currentSelectedId = isSelectedPresent ? selectedId : (deliveries[0]?.id ?? null)
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await deleteDeliveriesById({ path: { id } })
+      if (error) throw new Error(error.message || 'Failed to delete delivery')
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: deliveriesKeys.all })
+      toast.success(`Delivery "${deletingDelivery?.id ?? ''}" deleted`)
+      setDeletingDelivery(null)
+      deleteModal.close()
+    },
+    onError: (err) => {
+      toast.error(err instanceof Error ? err.message : 'Failed to delete delivery')
+    },
+  })
 
   return (
     <div class={pageClass}>
       <div class={header}>
         <div>
-          <h1 class={pageTitle}>Territory Deliveries</h1>
+          <h1 class={pageTitle}>Market Deliveries</h1>
           <span class={pageSubtitle}>
-            Global territory shipping targets, package readiness, and carrier dispatches.
+            Global release shipping targets, package readiness, and carrier dispatches.
           </span>
         </div>
 
-        <Button variant="primary" size="sm">
+        <Button variant="primary" size="sm" onClick={createModal.open}>
           <Plus size={14} />
           <span>New Delivery</span>
         </Button>
@@ -118,11 +223,7 @@ function DeliveriesPage() {
               key={tab.id}
               type="button"
               class={activeTab === tab.id ? `${toolbarTab} ${toolbarTabActive}` : toolbarTab}
-              onClick={() => {
-                setActiveTab(tab.id)
-                setSelectedId(null)
-                setPage(DEFAULT_PAGE)
-              }}
+              onClick={() => onTabChange(tab.id)}
             >
               {tab.label}
             </button>
@@ -145,88 +246,53 @@ function DeliveriesPage() {
           <div class={emptyTitle}>No deliveries found</div>
           <div class={emptyText}>
             {activeTab === 'ALL'
-              ? 'No territory deliveries scheduled yet.'
+              ? 'No market deliveries scheduled yet.'
               : `No deliveries matching filter '${activeTab}'.`}
           </div>
         </div>
       ) : (
         <div class={list}>
-          {deliveries.map((delivery) => {
-            const statusInfo = mapDeliveryStatus(delivery.status)
-            const isSelected = delivery.id === currentSelectedId
-            const formattedDate = delivery.target_date
-              ? new Date(delivery.target_date).toLocaleDateString(undefined, {
-                  month: 'short',
-                  day: 'numeric',
-                  year: 'numeric',
-                })
-              : 'Unscheduled'
-
-            return (
-              // biome-ignore lint/a11y/useSemanticElements: row contains nested actions
-              <div
-                key={delivery.id}
-                role="button"
-                tabIndex={0}
-                class={isSelected ? `${row} ${rowActive}` : row}
-                onClick={() => setSelectedId(delivery.id)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter' || event.key === ' ') {
-                    event.preventDefault()
-                    setSelectedId(delivery.id)
-                  }
-                }}
-              >
-                <div class={countryBadge}>{delivery.country}</div>
-
-                <div class={nameStack}>
-                  <span class={cardName}>{delivery.id}</span>
-                  <div class={metaRow}>
-                    <span class={metaText}>Title: {delivery.title_id}</span>
-                  </div>
-                </div>
-
-                <div class={statusStack}>
-                  <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>
-                </div>
-
-                <span />
-
-                <div class={scheduleStack}>
-                  <span class={scheduleLabel}>Target date</span>
-                  <span class={countdownValue}>{formattedDate}</span>
-                </div>
-
-                <div class={actions}>
-                  <button
-                    type="button"
-                    class={actionLink}
-                    onClick={(event) => event.stopPropagation()}
-                  >
-                    Inspect
-                  </button>
-                  <button
-                    type="button"
-                    class={actionLink}
-                    onClick={(event) => event.stopPropagation()}
-                  >
-                    Hold
-                  </button>
-                </div>
-              </div>
-            )
-          })}
+          {deliveries.map((delivery) => (
+            <DeliveryRow
+              key={delivery.id}
+              delivery={delivery}
+              isSelected={delivery.id === currentSelectedId}
+              onSelect={() => setSelectedId(delivery.id)}
+              onDelete={() => {
+                setDeletingDelivery(delivery)
+                deleteModal.open()
+              }}
+            />
+          ))}
         </div>
       )}
 
       <PaginationControls
-        page={deliveriesResult?.page ?? page}
+        page={page}
         totalPages={totalPages}
         hasNextPage={hasNextPage}
         hasPrevPage={hasPrevPage}
-        onPrevPage={() => setPage((p) => Math.max(1, p - 1))}
-        onNextPage={() => setPage((p) => Math.min(totalPages, p + 1))}
+        onPrevPage={onPrevPage}
+        onNextPage={onNextPage}
       />
+
+      <CreateDeliveryModal isOpen={createModal.isOpen} onClose={createModal.close} />
+
+      {deletingDelivery ? (
+        <DeleteModal
+          isOpen={deleteModal.isOpen}
+          onClose={() => {
+            deleteModal.close()
+            setDeletingDelivery(null)
+          }}
+          onConfirm={() => deleteMutation.mutate(deletingDelivery.id)}
+          entityType="Delivery"
+          entityName={`Market ${deletingDelivery.country}`}
+          entityId={deletingDelivery.id}
+          warningMessage="Deleting this delivery will cancel this territory shipping commitment."
+          isDeleting={deleteMutation.isPending}
+        />
+      ) : null}
     </div>
   )
 }

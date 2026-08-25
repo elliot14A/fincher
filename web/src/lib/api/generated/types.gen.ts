@@ -198,6 +198,15 @@ export type ModelsUpdateVendorInput = {
     specialty?: string;
 };
 
+export type ModelsUploadResponse = {
+    created_at?: string;
+    filename?: string;
+    id?: string;
+    mime_type?: string;
+    size_bytes?: number;
+    url?: string;
+};
+
 export type ModelsVendor = {
     created_at?: string;
     id: string;
@@ -1025,6 +1034,96 @@ export type PatchTitlesByIdResponses = {
 };
 
 export type PatchTitlesByIdResponse = PatchTitlesByIdResponses[keyof PatchTitlesByIdResponses];
+
+export type PostUploadsData = {
+    body: {
+        /**
+         * Image binary file
+         */
+        file: Blob | File;
+    };
+    path?: never;
+    query?: never;
+    url: '/uploads';
+};
+
+export type PostUploadsErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorsDomainError;
+};
+
+export type PostUploadsError = PostUploadsErrors[keyof PostUploadsErrors];
+
+export type PostUploadsResponses = {
+    /**
+     * Created
+     */
+    201: ModelsUploadResponse;
+};
+
+export type PostUploadsResponse = PostUploadsResponses[keyof PostUploadsResponses];
+
+export type DeleteUploadsByIdData = {
+    body?: never;
+    path: {
+        /**
+         * Upload ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/uploads/{id}';
+};
+
+export type DeleteUploadsByIdErrors = {
+    /**
+     * Not Found
+     */
+    404: ErrorsDomainError;
+};
+
+export type DeleteUploadsByIdError = DeleteUploadsByIdErrors[keyof DeleteUploadsByIdErrors];
+
+export type DeleteUploadsByIdResponses = {
+    /**
+     * OK
+     */
+    200: {
+        [key: string]: boolean;
+    };
+};
+
+export type DeleteUploadsByIdResponse = DeleteUploadsByIdResponses[keyof DeleteUploadsByIdResponses];
+
+export type GetUploadsByIdData = {
+    body?: never;
+    path: {
+        /**
+         * Upload ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/uploads/{id}';
+};
+
+export type GetUploadsByIdErrors = {
+    /**
+     * Not Found
+     */
+    404: ErrorsDomainError;
+};
+
+export type GetUploadsByIdError = GetUploadsByIdErrors[keyof GetUploadsByIdErrors];
+
+export type GetUploadsByIdResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
 
 export type GetVendorsData = {
     body?: never;

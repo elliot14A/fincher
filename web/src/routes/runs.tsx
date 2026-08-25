@@ -1,15 +1,18 @@
-import { useQuery } from '@tanstack/react-query'
-import { createFileRoute } from '@tanstack/react-router'
-import { FileCode, Film, Headphones, Play, Plus, Subtitles } from 'lucide-preact'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { FileCode, Film, Headphones, MessageSquare, Play, Subtitles, Trash2 } from 'lucide-preact'
 import { useState } from 'preact/hooks'
+import { toast } from 'sonner'
 import { Badge, type BadgeProps } from '#/components/ui/badge'
-import { Button } from '#/components/ui/button'
+import { ActionMenu } from '#/components/ui/dropdown'
+import { DeleteModal } from '#/components/ui/modal'
 import { PaginationControls } from '#/components/ui/pagination'
-import { packagesQueryOptions } from '#/features/packages'
-import type { ModelsPackage } from '#/lib/api'
-import { DEFAULT_PAGE, DEFAULT_PAGE_LIMIT, DEFAULT_SORT_ORDER } from '#/lib/constants'
+import { packagesKeys } from '#/features/packages/queryKeys'
+import { packagesQueryOptions } from '#/features/packages/queryOptions'
+import { deletePackagesById, type ModelsPackage } from '#/lib/api'
+import { useDisclosure, useSelectableRow, useTabbedQueryList } from '#/lib/hooks'
+import { formatDateTime } from '#/lib/utils'
 import {
-  actionLink,
   actions,
   cardName,
   componentIcon,
@@ -37,7 +40,7 @@ import {
   toolbarGroup,
   toolbarTab,
   toolbarTabActive,
-} from './-runs.css'
+} from '#/styles/routes/runs.css'
 
 export const Route = createFileRoute('/runs')({
   component: RunsPage,
@@ -83,47 +86,148 @@ function getComponentIcon(component: ModelsPackage['component']) {
   }
 }
 
+function PackageRow({
+  pkg,
+  isSelected,
+  onSelect,
+  onDelete,
+}: {
+  pkg: ModelsPackage
+  isSelected: boolean
+  onSelect: () => void
+  onDelete: () => void
+}) {
+  const navigate = useNavigate()
+  const { rowProps } = useSelectableRow({
+    isSelected,
+    onSelect,
+    baseClassName: row,
+    activeClassName: rowActive,
+  })
+
+  const statusInfo = mapPackageStatus(pkg.status)
+  const Icon = getComponentIcon(pkg.component)
+  const formattedDate = formatDateTime(pkg.updated_at, 'Registered')
+
+  return (
+    <div {...rowProps}>
+      <div class={componentIcon}>
+        <Icon size={18} />
+      </div>
+
+      <div class={nameStack}>
+        <span class={cardName}>{pkg.id}</span>
+        <div class={metaRow}>
+          <span class={metaVersion}>Master {pkg.derived_from_master_version || 'V01'}</span>
+          <span class={metaDivider}>·</span>
+          <span class={metaVendor}>Lang: {pkg.language || 'en'}</span>
+          <span class={metaDivider}>·</span>
+          <span class={metaVendor}>Vendor: {pkg.vendor_id}</span>
+        </div>
+      </div>
+
+      <div class={statusStack}>
+        <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>
+      </div>
+
+      <div class={scheduleStack}>
+        <span class={scheduleLabel}>Last evaluated</span>
+        <span class={countdownValue}>{formattedDate}</span>
+      </div>
+
+      <div class={actions}>
+        <ActionMenu
+          ariaLabel={`Actions for ${pkg.id}`}
+          items={[
+            {
+              type: 'action',
+              key: 'chat',
+              label: 'Ask Assistant',
+              icon: MessageSquare,
+              onClick: () => navigate({ to: '/' }),
+            },
+            {
+              type: 'action',
+              key: 'titles',
+              label: 'View Title',
+              icon: Film,
+              onClick: () => navigate({ to: '/titles' }),
+            },
+            {
+              type: 'divider',
+              key: 'div-1',
+            },
+            {
+              type: 'action',
+              key: 'delete',
+              label: 'Delete Package',
+              icon: Trash2,
+              danger: true,
+              onClick: onDelete,
+            },
+          ]}
+        />
+      </div>
+    </div>
+  )
+}
+
 function RunsPage() {
-  const [activeTab, setActiveTab] = useState<TabId>('ALL')
-  const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [page, setPage] = useState(DEFAULT_PAGE)
+  const queryClient = useQueryClient()
+  const deleteModal = useDisclosure()
+  const [deletingPackage, setDeletingPackage] = useState<ModelsPackage | null>(null)
 
   const {
-    data: packagesResult,
+    activeTab,
+    onTabChange,
+    setSelectedId,
+    currentSelectedId,
+    page,
+    onPrevPage,
+    onNextPage,
+    items: packages,
+    totalPages,
+    hasNextPage,
+    hasPrevPage,
     isLoading,
     isError,
     error,
-  } = useQuery(
-    packagesQueryOptions({
-      component: activeTab === 'ALL' ? undefined : (activeTab as ModelsPackage['component']),
-      page,
-      limit: DEFAULT_PAGE_LIMIT,
-      sort_order: DEFAULT_SORT_ORDER,
-    }),
-  )
+  } = useTabbedQueryList<ModelsPackage, TabId>({
+    tabs: TABS,
+    buildQueryOptions: ({ filter, page, limit, sort_order }) =>
+      packagesQueryOptions({
+        component: filter as ModelsPackage['component'],
+        page,
+        limit,
+        sort_order,
+      }),
+  })
 
-  const packages = packagesResult?.items ?? []
-  const totalPages = packagesResult?.total_pages ?? 1
-  const hasNextPage = packagesResult?.has_next_page ?? false
-  const hasPrevPage = packagesResult?.has_prev_page ?? false
-
-  const isSelectedPresent = packages.some((pkg) => pkg.id === selectedId)
-  const currentSelectedId = isSelectedPresent ? selectedId : (packages[0]?.id ?? null)
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await deletePackagesById({ path: { id } })
+      if (error) throw new Error(error.message || 'Failed to delete package')
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: packagesKeys.all })
+      toast.success(`Package "${deletingPackage?.id ?? ''}" deleted`)
+      setDeletingPackage(null)
+      deleteModal.close()
+    },
+    onError: (err) => {
+      toast.error(err instanceof Error ? err.message : 'Failed to delete package')
+    },
+  })
 
   return (
     <div class={pageClass}>
       <div class={header}>
         <div>
-          <h1 class={pageTitle}>Autonomous DAG Runs &amp; Media Packages</h1>
+          <h1 class={pageTitle}>Media Packages &amp; Component Runs</h1>
           <span class={pageSubtitle}>
             Derived video, dubbing, and subtitle package lineage states across master cuts.
           </span>
         </div>
-
-        <Button variant="primary" size="sm">
-          <Plus size={14} />
-          <span>New Package</span>
-        </Button>
       </div>
 
       <div class={toolbar}>
@@ -133,11 +237,7 @@ function RunsPage() {
               key={tab.id}
               type="button"
               class={activeTab === tab.id ? `${toolbarTab} ${toolbarTabActive}` : toolbarTab}
-              onClick={() => {
-                setActiveTab(tab.id)
-                setSelectedId(null)
-                setPage(DEFAULT_PAGE)
-              }}
+              onClick={() => onTabChange(tab.id)}
             >
               {tab.label}
             </button>
@@ -166,92 +266,45 @@ function RunsPage() {
         </div>
       ) : (
         <div class={list}>
-          {packages.map((pkg) => {
-            const statusInfo = mapPackageStatus(pkg.status)
-            const Icon = getComponentIcon(pkg.component)
-            const isSelected = pkg.id === currentSelectedId
-            const formattedDate = pkg.updated_at
-              ? new Date(pkg.updated_at).toLocaleDateString(undefined, {
-                  month: 'short',
-                  day: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })
-              : 'Registered'
-
-            return (
-              // biome-ignore lint/a11y/useSemanticElements: row contains nested actions
-              <div
-                key={pkg.id}
-                role="button"
-                tabIndex={0}
-                class={isSelected ? `${row} ${rowActive}` : row}
-                onClick={() => setSelectedId(pkg.id)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter' || event.key === ' ') {
-                    event.preventDefault()
-                    setSelectedId(pkg.id)
-                  }
-                }}
-              >
-                <div class={componentIcon}>
-                  <Icon size={18} />
-                </div>
-
-                <div class={nameStack}>
-                  <span class={cardName}>{pkg.id}</span>
-                  <div class={metaRow}>
-                    <span class={metaVersion}>
-                      Master {pkg.derived_from_master_version || 'V01'}
-                    </span>
-                    <span class={metaDivider}>·</span>
-                    <span class={metaVendor}>Lang: {pkg.language || 'en'}</span>
-                    <span class={metaDivider}>·</span>
-                    <span class={metaVendor}>Vendor: {pkg.vendor_id}</span>
-                  </div>
-                </div>
-
-                <div class={statusStack}>
-                  <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>
-                </div>
-
-                <span />
-
-                <div class={scheduleStack}>
-                  <span class={scheduleLabel}>Last evaluated</span>
-                  <span class={countdownValue}>{formattedDate}</span>
-                </div>
-
-                <div class={actions}>
-                  <button
-                    type="button"
-                    class={actionLink}
-                    onClick={(event) => event.stopPropagation()}
-                  >
-                    Inspect DAG
-                  </button>
-                  <button
-                    type="button"
-                    class={actionLink}
-                    onClick={(event) => event.stopPropagation()}
-                  >
-                    Re-QC
-                  </button>
-                </div>
-              </div>
-            )
-          })}
+          {packages.map((pkg) => (
+            <PackageRow
+              key={pkg.id}
+              pkg={pkg}
+              isSelected={pkg.id === currentSelectedId}
+              onSelect={() => setSelectedId(pkg.id)}
+              onDelete={() => {
+                setDeletingPackage(pkg)
+                deleteModal.open()
+              }}
+            />
+          ))}
         </div>
       )}
 
       <PaginationControls
-        page={packagesResult?.page ?? page}
+        page={page}
         totalPages={totalPages}
         hasNextPage={hasNextPage}
         hasPrevPage={hasPrevPage}
-        onPrevPage={() => setPage((p) => Math.max(1, p - 1))}
-        onNextPage={() => setPage((p) => Math.min(totalPages, p + 1))}
+        onPrevPage={onPrevPage}
+        onNextPage={onNextPage}
       />
+
+      {deletingPackage ? (
+        <DeleteModal
+          isOpen={deleteModal.isOpen}
+          onClose={() => {
+            deleteModal.close()
+            setDeletingPackage(null)
+          }}
+          onConfirm={() => deleteMutation.mutate(deletingPackage.id)}
+          entityType="Package"
+          entityName={deletingPackage.id}
+          entityId={deletingPackage.id}
+          warningMessage="Deleting this package will remove its QC validation history and lineage links."
+          isDeleting={deleteMutation.isPending}
+        />
+      ) : null}
     </div>
   )
 }

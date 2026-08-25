@@ -69,6 +69,18 @@ func (f TitleFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.TitleMutation", m)
 }
 
+// The UploadFunc type is an adapter to allow the use of ordinary
+// function as Upload mutator.
+type UploadFunc func(context.Context, *ent.UploadMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f UploadFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.UploadMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.UploadMutation", m)
+}
+
 // The VendorFunc type is an adapter to allow the use of ordinary
 // function as Vendor mutator.
 type VendorFunc func(context.Context, *ent.VendorMutation) (ent.Value, error)

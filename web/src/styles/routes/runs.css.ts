@@ -1,4 +1,4 @@
-import { globalStyle, style } from '@vanilla-extract/css'
+import { style } from '@vanilla-extract/css'
 import { vars } from '#/styles/theme.css'
 import { fonts } from '#/styles/tokens'
 
@@ -76,7 +76,7 @@ export const list = style({
 export const row = style({
   position: 'relative',
   display: 'grid',
-  gridTemplateColumns: '40px minmax(0, 320px) 1fr 150px 130px 84px',
+  gridTemplateColumns: '40px minmax(0, 1fr) 130px minmax(180px, auto) 36px',
   alignItems: 'center',
   columnGap: vars.space.lg,
   padding: `${vars.space.md} ${vars.space.sm}`,
@@ -101,17 +101,16 @@ export const rowActive = style({
   },
 })
 
-export const posterThumb = style({
-  width: '40px',
-  height: '56px',
+export const componentIcon = style({
+  width: '36px',
+  height: '36px',
   borderRadius: vars.radii.xs,
-  objectFit: 'cover',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
   backgroundColor: vars.color.surfaceElevated,
   border: `1px solid ${vars.color.border}`,
-  color: vars.color.textTertiary,
+  color: vars.color.textSecondary,
   flexShrink: 0,
 })
 
@@ -152,7 +151,7 @@ export const metaDivider = style({
   flexShrink: 0,
 })
 
-export const metaTerritories = style({
+export const metaVendor = style({
   fontSize: vars.fontSize.xs,
   color: vars.color.textTertiary,
   overflow: 'hidden',
@@ -162,28 +161,15 @@ export const metaTerritories = style({
 
 export const statusStack = style({
   display: 'flex',
-  flexDirection: 'column',
-  gap: '6px',
-  minWidth: 0,
-})
-
-export const statusBadge = style({
-  alignSelf: 'flex-start',
-})
-
-export const statusNote = style({
-  fontSize: vars.fontSize.xs,
-  color: vars.color.textTertiary,
-  overflow: 'hidden',
-  whiteSpace: 'nowrap',
-  textOverflow: 'ellipsis',
+  alignItems: 'center',
 })
 
 export const scheduleStack = style({
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'flex-end',
-  gap: '4px',
+  whiteSpace: 'nowrap',
+  gap: '3px',
 })
 
 export const scheduleLabel = style({
@@ -191,58 +177,20 @@ export const scheduleLabel = style({
   color: vars.color.textTertiary,
 })
 
-export const scheduleLabelMuted = style({
-  fontSize: vars.fontSize['2xs'],
-  color: vars.color.textTertiary,
-  textTransform: 'uppercase',
-  letterSpacing: '0.06em',
-})
-
 export const countdownValue = style({
   fontFamily: fonts.mono,
-  fontSize: vars.fontSize.lg,
+  fontSize: vars.fontSize.sm,
   fontWeight: 500,
   fontVariantNumeric: 'tabular-nums',
   color: vars.color.textPrimary,
   letterSpacing: '0.01em',
-})
-
-export const countdownEmpty = style({
-  fontFamily: fonts.mono,
-  fontSize: vars.fontSize.sm,
-  color: vars.color.textTertiary,
+  whiteSpace: 'nowrap',
 })
 
 export const actions = style({
   display: 'flex',
-  justifyContent: 'flex-end',
-  gap: vars.space.sm,
-  opacity: 0,
-  transition: 'opacity 0.15s ease',
-})
-
-globalStyle(`${row}:hover ${actions}, ${row}:focus-within ${actions}`, {
-  opacity: 1,
-})
-
-export const actionLink = style({
-  appearance: 'none',
-  background: 'none',
-  border: 'none',
-  padding: 0,
-  fontFamily: fonts.sans,
-  fontSize: vars.fontSize['2xs'],
-  color: vars.color.textTertiary,
-  cursor: 'pointer',
-  transition: 'color 0.15s ease',
-  ':hover': {
-    color: vars.color.textPrimary,
-  },
-  ':focus-visible': {
-    color: vars.color.textPrimary,
-    outline: `2px solid ${vars.color.primary}`,
-    outlineOffset: '2px',
-  },
+  alignItems: 'center',
+  justifyContent: 'center',
 })
 
 export const emptyState = style({
@@ -254,6 +202,8 @@ export const emptyState = style({
   textAlign: 'center',
   color: vars.color.textTertiary,
   gap: vars.space.sm,
+  minHeight: '380px',
+  flex: 1,
 })
 
 export const emptyTitle = style({
@@ -275,4 +225,6 @@ export const loadingState = style({
   padding: `${vars.space['3xl']} ${vars.space['2xl']}`,
   color: vars.color.textTertiary,
   fontSize: vars.fontSize.sm,
+  minHeight: '380px',
+  flex: 1,
 })

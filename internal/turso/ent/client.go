@@ -20,6 +20,7 @@ import (
 	"github.com/elliot14A/fincher/internal/turso/ent/master"
 	"github.com/elliot14A/fincher/internal/turso/ent/mediapackage"
 	"github.com/elliot14A/fincher/internal/turso/ent/title"
+	"github.com/elliot14A/fincher/internal/turso/ent/upload"
 	"github.com/elliot14A/fincher/internal/turso/ent/vendor"
 )
 
@@ -38,6 +39,8 @@ type Client struct {
 	MediaPackage *MediaPackageClient
 	// Title is the client for interacting with the Title builders.
 	Title *TitleClient
+	// Upload is the client for interacting with the Upload builders.
+	Upload *UploadClient
 	// Vendor is the client for interacting with the Vendor builders.
 	Vendor *VendorClient
 }
@@ -56,6 +59,7 @@ func (c *Client) init() {
 	c.Master = NewMasterClient(c.config)
 	c.MediaPackage = NewMediaPackageClient(c.config)
 	c.Title = NewTitleClient(c.config)
+	c.Upload = NewUploadClient(c.config)
 	c.Vendor = NewVendorClient(c.config)
 }
 
@@ -154,6 +158,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		Master:       NewMasterClient(cfg),
 		MediaPackage: NewMediaPackageClient(cfg),
 		Title:        NewTitleClient(cfg),
+		Upload:       NewUploadClient(cfg),
 		Vendor:       NewVendorClient(cfg),
 	}, nil
 }
@@ -179,6 +184,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		Master:       NewMasterClient(cfg),
 		MediaPackage: NewMediaPackageClient(cfg),
 		Title:        NewTitleClient(cfg),
+		Upload:       NewUploadClient(cfg),
 		Vendor:       NewVendorClient(cfg),
 	}, nil
 }
@@ -209,7 +215,7 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
-		c.Delivery, c.Dependency, c.Master, c.MediaPackage, c.Title, c.Vendor,
+		c.Delivery, c.Dependency, c.Master, c.MediaPackage, c.Title, c.Upload, c.Vendor,
 	} {
 		n.Use(hooks...)
 	}
@@ -219,7 +225,7 @@ func (c *Client) Use(hooks ...Hook) {
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
-		c.Delivery, c.Dependency, c.Master, c.MediaPackage, c.Title, c.Vendor,
+		c.Delivery, c.Dependency, c.Master, c.MediaPackage, c.Title, c.Upload, c.Vendor,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -238,6 +244,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.MediaPackage.mutate(ctx, m)
 	case *TitleMutation:
 		return c.Title.mutate(ctx, m)
+	case *UploadMutation:
+		return c.Upload.mutate(ctx, m)
 	case *VendorMutation:
 		return c.Vendor.mutate(ctx, m)
 	default:
@@ -1086,6 +1094,139 @@ func (c *TitleClient) mutate(ctx context.Context, m *TitleMutation) (Value, erro
 	}
 }
 
+// UploadClient is a client for the Upload schema.
+type UploadClient struct {
+	config
+}
+
+// NewUploadClient returns a client for the Upload from the given config.
+func NewUploadClient(c config) *UploadClient {
+	return &UploadClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `upload.Hooks(f(g(h())))`.
+func (c *UploadClient) Use(hooks ...Hook) {
+	c.hooks.Upload = append(c.hooks.Upload, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `upload.Intercept(f(g(h())))`.
+func (c *UploadClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Upload = append(c.inters.Upload, interceptors...)
+}
+
+// Create returns a builder for creating a Upload entity.
+func (c *UploadClient) Create() *UploadCreate {
+	mutation := newUploadMutation(c.config, OpCreate)
+	return &UploadCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Upload entities.
+func (c *UploadClient) CreateBulk(builders ...*UploadCreate) *UploadCreateBulk {
+	return &UploadCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *UploadClient) MapCreateBulk(slice any, setFunc func(*UploadCreate, int)) *UploadCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &UploadCreateBulk{err: fmt.Errorf("calling to UploadClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*UploadCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &UploadCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Upload.
+func (c *UploadClient) Update() *UploadUpdate {
+	mutation := newUploadMutation(c.config, OpUpdate)
+	return &UploadUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *UploadClient) UpdateOne(_m *Upload) *UploadUpdateOne {
+	mutation := newUploadMutation(c.config, OpUpdateOne, withUpload(_m))
+	return &UploadUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *UploadClient) UpdateOneID(id string) *UploadUpdateOne {
+	mutation := newUploadMutation(c.config, OpUpdateOne, withUploadID(id))
+	return &UploadUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Upload.
+func (c *UploadClient) Delete() *UploadDelete {
+	mutation := newUploadMutation(c.config, OpDelete)
+	return &UploadDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *UploadClient) DeleteOne(_m *Upload) *UploadDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *UploadClient) DeleteOneID(id string) *UploadDeleteOne {
+	builder := c.Delete().Where(upload.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &UploadDeleteOne{builder}
+}
+
+// Query returns a query builder for Upload.
+func (c *UploadClient) Query() *UploadQuery {
+	return &UploadQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeUpload},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Upload entity by its id.
+func (c *UploadClient) Get(ctx context.Context, id string) (*Upload, error) {
+	return c.Query().Where(upload.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *UploadClient) GetX(ctx context.Context, id string) *Upload {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *UploadClient) Hooks() []Hook {
+	return c.hooks.Upload
+}
+
+// Interceptors returns the client interceptors.
+func (c *UploadClient) Interceptors() []Interceptor {
+	return c.inters.Upload
+}
+
+func (c *UploadClient) mutate(ctx context.Context, m *UploadMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&UploadCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&UploadUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&UploadUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&UploadDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Upload mutation op: %q", m.Op())
+	}
+}
+
 // VendorClient is a client for the Vendor schema.
 type VendorClient struct {
 	config
@@ -1238,9 +1379,10 @@ func (c *VendorClient) mutate(ctx context.Context, m *VendorMutation) (Value, er
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		Delivery, Dependency, Master, MediaPackage, Title, Vendor []ent.Hook
+		Delivery, Dependency, Master, MediaPackage, Title, Upload, Vendor []ent.Hook
 	}
 	inters struct {
-		Delivery, Dependency, Master, MediaPackage, Title, Vendor []ent.Interceptor
+		Delivery, Dependency, Master, MediaPackage, Title, Upload,
+		Vendor []ent.Interceptor
 	}
 )

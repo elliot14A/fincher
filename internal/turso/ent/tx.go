@@ -22,6 +22,8 @@ type Tx struct {
 	MediaPackage *MediaPackageClient
 	// Title is the client for interacting with the Title builders.
 	Title *TitleClient
+	// Upload is the client for interacting with the Upload builders.
+	Upload *UploadClient
 	// Vendor is the client for interacting with the Vendor builders.
 	Vendor *VendorClient
 
@@ -160,6 +162,7 @@ func (tx *Tx) init() {
 	tx.Master = NewMasterClient(tx.config)
 	tx.MediaPackage = NewMediaPackageClient(tx.config)
 	tx.Title = NewTitleClient(tx.config)
+	tx.Upload = NewUploadClient(tx.config)
 	tx.Vendor = NewVendorClient(tx.config)
 }
 
