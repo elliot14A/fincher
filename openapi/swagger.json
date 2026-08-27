@@ -404,6 +404,49 @@
                 }
             }
         },
+        "/events": {
+            "post": {
+                "description": "Ingests an array of CloudEvents directly into ClickHouse.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "events"
+                ],
+                "summary": "Ingest event batch",
+                "parameters": [
+                    {
+                        "description": "CloudEvents array",
+                        "name": "events",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.Event"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/models.EventBatchResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.DomainError"
+                        }
+                    }
+                }
+            }
+        },
         "/masters": {
             "get": {
                 "description": "Fetches master cut versions with pagination, optionally filtered by title_id.",
@@ -1574,6 +1617,79 @@
                 "DependencyAudioSync",
                 "DependencySubtitleAlignment",
                 "DependencyMasterDerivation"
+            ]
+        },
+        "models.Event": {
+            "type": "object",
+            "required": [
+                "severity",
+                "source",
+                "type"
+            ],
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "data": {
+                    "type": "object",
+                    "additionalProperties": {}
+                },
+                "datacontenttype": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "severity": {
+                    "enum": [
+                        "INFO",
+                        "WARN",
+                        "CRITICAL"
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.EventSeverity"
+                        }
+                    ]
+                },
+                "source": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "subject": {
+                    "type": "string"
+                },
+                "time": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string",
+                    "minLength": 1
+                }
+            }
+        },
+        "models.EventBatchResponse": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.EventSeverity": {
+            "type": "string",
+            "enum": [
+                "INFO",
+                "WARN",
+                "CRITICAL"
+            ],
+            "x-enum-varnames": [
+                "SeverityInfo",
+                "SeverityWarn",
+                "SeverityCritical"
             ]
         },
         "models.LineageGraph": {
