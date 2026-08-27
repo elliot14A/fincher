@@ -20,14 +20,21 @@ Build one complete feature slice end-to-end at a time:
 [ Feature 04: UI Scaffolding & Operations Console ] (Completed - Preact UI + Modals + Uploads)
                  │
                  ▼
-[ Feature 05: ClickHouse MCP & Multi-Agent Engine ] (Active - Historian, Lineage, Vendor Optimizer)
+[ Feature 05: ClickHouse Ingestion Pipeline ]     (Active - Schema, MCP client, taxonomy, batch insert endpoint. Zero LLM cost.)
                  │
                  ▼
-[ Feature 06: Docent Conversational Assistant ]   (Gemini Chat + Live Database & MCP Tools)
+[ Feature 06: Dedicated Agents ]                  (ADK Go v2 graph: judges, historian, lineage, optimizer, executor, live SSE + xyflow viz)
                  │
                  ▼
-[ Feature 07: Smart Simulator & Comms Hub ]       (Dynamic Event Generator + Protected Seed Data + Dispatches)
+[ Feature 07: Docent Conversational Assistant ]   (Gemini Chat + Live Database & MCP Tools)
+                 │
+                 ▼
+[ Feature 08: Smart Simulator & Comms Hub ]       (Dynamic Event Generator + Protected Seed Data + Dispatches)
 ```
+
+> Feature 05 and 06 replace the earlier single "ClickHouse MCP & Multi-Agent Engine" milestone —
+> split so the zero-LLM ingestion substrate (05) is a clean, independently testable phase before
+> any agent/graph code (06) is written on top of it.
 
 ---
 
@@ -78,19 +85,32 @@ Build one complete feature slice end-to-end at a time:
 
 ---
 
-### Feature 05: ClickHouse MCP & Multi-Agent Investigation Engine (Next Up)
-* **Scope**: ClickHouse schema migrations, MCP HTTP client integration, Historian Sub-Agent, Lineage Sub-Agent, and Multi-Factor Vendor Optimizer balancing Speed, Quality, and Rates.
+### Feature 05: ClickHouse Ingestion Pipeline (Active — zero LLM cost)
+* **Scope**: The substrate every agent depends on but which itself never calls a model — CNCF CloudEvents v1.0 ClickHouse schema, both ClickHouse access paths (agent-facing MCP + direct database/sql client), CloudEvents taxonomy, and a direct batch ingestion endpoint. Debounce/coalesce and the budget/rate-limit gate were scoped out of this phase entirely (2026-08-27) as unwarranted complexity at this scale — deferred to Feature 06, if/when needed, backed by Turso persistence (not in-memory) to survive Cloud Run scale-to-zero.
 * **Deliverables**:
-  - `pkg/mcp/client.go`: MCP JSON-RPC 2.0 HTTP transport client (`run_query`, `list_tables`).
-  - `internal/agent/historian.go`: Queries ClickHouse for vendor defect rates, audio sync drift telemetry, and past turnarounds.
-  - `internal/agent/lineage.go`: Traces SQLite dependency trees for affected market deliveries.
-  - `internal/agent/optimizer.go`: Evaluates trade-offs (Speed vs Quality vs Cost) to recommend optimal vendor re-routing.
-  - `internal/agent/orchestrator.go`: Coordinates multi-agent parallel execution with Google GenAI / Gemini.
-* **Verification**: Live MCP connection test against `mcp-clickhouse` and automated multi-agent run with mock/real incident triggers.
+  - `migrations/clickhouse/001_events.sql` .. `003_vendor_metrics.sql`: CloudEvents v1.0 root event stream, QC inspection projection, vendor historical rollups.
+  - `internal/clickhouse/`: direct deterministic `database/sql` client (`client.go`, self-bootstrapping `CREATE DATABASE IF NOT EXISTS`) + domain packages (`events/`, `vendors/`) — recency-weighted accuracy (120-day decay), vendor rollups. No LLM involved.
+  - `pkg/mcp/`: agent-facing MCP client built on the official `modelcontextprotocol/go-sdk` + `google.golang.org/adk/v2/tool/mcptoolset`, connecting Gemini agents in Phase 06 to `mcp-clickhouse:8000` with ClickHouse native `readonly=1` safety.
+  - `pkg/domain/models/event.go` + `event_payloads.go`: CloudEvents v1.0 struct, static category classifier (`TELEMETRY`, `ROUTINE_OUTCOME`, `ANOMALY_SIGNAL`, `ALLOCATION_REQUEST`, `OPERATOR_FORCED`), typed per-event payload structs.
+  - `internal/api/events/`: `POST /api/events` — accepts a JSON array of CloudEvents, validates, inserts each directly into ClickHouse, returns `{status, count}`. No classification-based branching, no debounce, no dispatch — Feature 06 owns everything downstream of the ClickHouse write.
+* **Verification**: ClickHouse migrations apply cleanly against the `docker-compose` container (including from a genuinely fresh/no-database instance); CloudEvent classifier + typed-payload table-driven tests; batch endpoint HTTP lifecycle tests (success, empty array, non-array, malformed JSON); MCP round-trip test against `mcp-clickhouse`.
 
 ---
 
-### Feature 06: Docent Conversational Assistant (Gemini Chat)
+### Feature 06: Dedicated Agents (ADK Go v2 Graph)
+* **Scope**: Everything that actually calls Gemini — the incident-investigation graph and the vendor-allocation graph, both built as ADK Go v2 `workflow` graphs firing per individual `ANOMALY_SIGNAL`/`ALLOCATION_REQUEST` event from Feature 05 (no batching/coalescing upstream), plus the budget/concurrency gate (Turso-persisted, deferred from Feature 05 — see `REQ-AGENT-10`), the live SSE stream, and `@xyflow/react` visualization of the graph executing.
+* **Deliverables**:
+  - `internal/agent/graph.go`: ADK Go v2 wiring (`workflow.NewFunctionNode`, `workflow.NewAgentNode`, `workflow.Chain`/`Concat`, `workflow.NewJoinNode`, `workflowagent.New`).
+  - `internal/agent/triage_judge.go`, `historian.go` (hybrid), `lineage.go` (Go-only), `optimizer.go`, `policy_judge.go` (bounded reject→revise, capped retries), `executor.go` (transactional SQLite + SSE + downstream event emission).
+  - `internal/agent/vendor_scoring.go` (Go-only evidence assembly) + `vendor_judge.go` (always-fires allocation judge).
+  - `internal/turso/ent/schema/`: extend `vendor.go` with rate-card fields (`standard_rate_usd`, `rush_rate_usd`, `standard_turnaround_hours`, `rush_turnaround_hours`); new `investigation_runs`, `run_node_events`, `judge_verdicts` schemas.
+  - `internal/api/runs/`: `GET /api/runs/{id}`, `GET /api/runs/{id}/stream` (SSE node-transition + verdict feed); `internal/api/investigations/`: operator-forced trigger endpoints.
+  - `web/src/features/runs/`: live investigation graph reusing the `@xyflow/react` canvas, `useSSEStream` hook, judge verdict + rationale inline display.
+* **Verification**: per-node unit tests with a stub Gemini client; full-graph integration test against a fixture `ANOMALY_SIGNAL`/`ALLOCATION_REQUEST` event; live demo run against real Gemini; frontend `bun run typecheck`, `biome check src`, and browser walkthrough showing nodes lighting up in real time.
+
+---
+
+### Feature 07: Docent Conversational Assistant (Gemini Chat)
 * **Scope**: Natural language operator assistant with tool access to ClickHouse MCP and SQLite live state.
 * **Deliverables**:
   - `internal/api/assistant/`: Chat endpoint streaming Gemini reasoning and citations via SSE.
@@ -99,7 +119,7 @@ Build one complete feature slice end-to-end at a time:
 
 ---
 
-### Feature 07: Smart Simulator, Protected Seed Data & Communications Hub
+### Feature 08: Smart Simulator, Protected Seed Data & Communications Hub
 * **Scope**: Context-aware dynamic event simulator tab (`/simulator`), protected baseline reference seed data, and automated multi-channel stakeholder dispatches.
 * **Deliverables**:
   - `cmd/seed/main.go`: Seed protected system titles (*Eclipse*, *Atlas*) and top vendors into ClickHouse & SQLite.

@@ -25,6 +25,7 @@ volumes/
 # Agent-generated review reports & testing MCP files
 .agents/reviews/
 .playwright-mcp/
+.claude/
 *.png
 
 # OS & Editor temporary files

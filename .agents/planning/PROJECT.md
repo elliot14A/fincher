@@ -12,52 +12,68 @@ Fincher runs a structured **Studio Pipeline DAG** (Directed Acyclic Graph) of sp
 
 ## 2. The Four-Beat Story & The Disagreement Money Shot
 Every run is legible in ten seconds:
-> **Delta detected → Agents query ClickHouse history via MCP → Decision Node synthesizes numbers + context → State action executed & stakeholder dispatch drafted.**
+> **Anomaly settles → Evidence assembled from ClickHouse/SQLite → Judge renders a verdict with rationale → State action executed & stakeholder dispatch drafted.**
 
 ### The Hero Scenario: Disagreement Panel
-* **Context**: *Eclipse* master bumps to V13 two days before a 40-territory launch. Vendor A's Spanish audio produces a borderline sync drift (110ms against a 120ms tolerance).
-* **Naive Rule Automation**: PASS (110ms is within the static 120ms threshold).
-* **Fincher Decision Node (Gemini Pro + ClickHouse MVs)**: HOLD. Combines quantitative inputs (36h to launch, 40 territories, redelivery count = 2) with historical evidence (Vendor A's rolling defect rate is escalating, upstream master superseded) to hold delivery and draft a stakeholder notice.
+* **Context**: *Eclipse* master bumps to V13 two days before a 40-territory launch. Vendor A's Spanish audio produces a borderline sync drift (110ms).
+* **Naive Rule Automation**: PASS (110ms sits under a hardcoded tolerance — the exact kind of invented threshold Fincher deliberately does not use).
+* **Fincher Policy Judge (Gemini + ClickHouse MVs, no hardcoded threshold)**: HOLD. Reasons freshly over quantitative facts (36h to launch, 40 territories, redelivery count = 2, Vendor A's rolling defect rate escalating, upstream master superseded) and renders a verdict + rationale — the same 110ms reading on a non-primary territory with no premiere pressure would reasonably render RELEASE.
 
 ---
 
 ## 3. Architecture & Data Flow
 
+Fincher is **event-driven and push-based**, not scheduler-polled. Every event lands in ClickHouse immediately; a lightweight classifier decides, per individual event, whether it's worth a model's attention — see `REQUIREMENTS.md` (`REQ-EVT`, `REQ-AGENT`) for the full node contract. Debounce/coalesce/batching was evaluated and deliberately dropped (2026-08-27) as unwarranted complexity at this scale — see `STATE.md` decision log; the daily-cap/concurrency budget gate is deferred to Feature 06, Turso-persisted, not built in-memory.
+
 ```text
-       Cloud Scheduler (Periodic ticks: every N mins)
-                    │  HTTP POST /workflows/{id}/run
-                    ▼
-     ┌──────────────────────────────────────────────┐
-     │          Single-Request DAG Runner           │
-     │                                              │
-     │ 1. [ schedule_trigger ]                      │
-     │ 2. [ delta_gate ] (0 LLM cost exit if idle) │
-     │       │ (if delta found)                     │
-     │ 3. Parallel Query Nodes (ClickHouse MCP)    │
-     │    - vendor_reliability_query                │
-     │    - lineage_query                           │
-     │    - redelivery_query                        │
-     │    - recent_master_change_query              │
-     │    - time_to_premiere (computed live)        │
-     │       │                                      │
-     │ 4. Parallel Agent Nodes (Gemini Flash)       │
-     │    - vendor_risk_agent                       │
-     │    - dependency_impact_agent                 │
-     │       │                                      │
-     │ 5. [ assessment_agent ] (Gemini Pro)         │
-     │       │                                      │
-     │ 6. [ decision_node ] (Gemini Pro)            │
-     │    (Combines deterministic inputs + agents)  │
-     │    Branches: HOLD / RE_QC / RELEASE / NONE   │
-     │       │                                      │
-     │ 7. Action & Notification Nodes               │
-     │    - hold_delivery_action / release_action   │
-     │    - stakeholder_notice_action (Flash draft) │
-     │ 8. [ event_emitter ] (Sink to ClickHouse)    │
-     └──────────────────────┬───────────────────────┘
-                            ▼
-     Turso (State, Runs, Node Executions, Notifications)
+Ingest → ClickHouse (events, immutable)
+   │
+   ▼
+[Stage A: CloudEvent Filter] (pkg/domain/models, static, 0 LLM cost)
+   TELEMETRY / ROUTINE OUTCOME → drop (write-only)
+   ANOMALY SIGNAL              → straight to Stage C, one event at a time
+   ALLOCATION REQUEST          → straight to evidence+judgment
+   OPERATOR-FORCED             → immediate
+   │
+   ▼
+[Stage C: Triage Judge] ⚡ single flash call per event, no hardcoded severity thresholds
+   → route NO: logged, done (0 further cost)
+   → route YES: continue
+   │
+   ▼
+[Evidence fan-out]  Historian (hybrid: Go pre-baked queries + MCP tool-calling
+                     for novel cases) ∥ Lineage (Go-only dependency walk)
+   │
+   ▼ join
+[Optimizer ⚡] synthesizes ActionPlan from evidence
+   │
+   ▼
+[Policy Judge ⚡] verdict: APPROVED / REJECTED (loop back to Optimizer, capped
+                  retries, configurable up to 3) / ESCALATE (→ HOLD + alert)
+   │
+   ▼ APPROVED
+[Executor] (Go-only) transactional SQLite mutation → SSE broadcast → emits
+           resulting event back into ClickHouse (closed loop, AGENTS.md Inv. 4)
 ```
+
+### Parallel path: vendor allocation (new title / package needing QC)
+```text
+TitleCreated / PackageRequired
+   │
+   ▼
+[vendorScoringFn] (Go-only) merges SQLite rate cards (standard/rush rate +
+                   turnaround) with ClickHouse recency-weighted accuracy
+   │
+   ▼
+[Vendor Judge ⚡] ALWAYS fires (one flash call, no margin threshold gate) —
+                  reasons about cost/speed/quality tradeoffs fresh given
+                  premiere urgency and any open incidents on the candidates
+   │
+   ▼
+[Executor] → VENDOR_ASSIGNED
+```
+
+Both paths share the same primitive: **Go assembles evidence → one scoped LLM judge renders a verdict → Go executes it transactionally.** No node in either graph invents a numeric policy threshold; the graph topology (not a rule table) is what stays deterministic.
 
 ---
 
@@ -70,8 +86,8 @@ Every run is legible in ten seconds:
 | **Application State Store** | Turso / libSQL (`@libsql/client` / Go driver) | Serverless HTTP SQLite storing titles, packages, runs, node executions, notifications |
 | **Historical Analytics DB** | ClickHouse Cloud / Local Container (`24.3-alpine`) | 250k+ append-only QC/asset events + 4 Materialized Views |
 | **Agent DB Interface** | Official ClickHouse MCP Server (`mcp-clickhouse`) | Remote MCP HTTP transport (`/mcp`). ClickHouse credentials isolated exclusively in MCP container |
-| **AI Models** | Google GenAI SDK (`google.golang.org/genai` / ADK Go) | Gemini 2.5 Flash for query agents & draft notifications; Gemini 2.5 Pro for Assessment & Decision nodes |
-| **Decisions** | Hybrid `decision_node` | Combines quantitative MV metrics + agent synthesis into fixed branches (`HOLD`, `RE_QC`, `RELEASE`, `NONE`) |
+| **AI Models** | Google GenAI SDK (`google.golang.org/genai`) + ADK Go v2 graph engine (`google.golang.org/adk/v2`, `workflow` package) | Gemini Flash for triage/vendor/policy judges & draft notifications; Gemini Pro reserved for the Optimizer's `ActionPlan` synthesis on complex incidents |
+| **Decisions** | Evidence → Judgment → Execution primitive (`internal/agent/*`) | Go nodes assemble deterministic evidence; single-scoped LLM judge nodes render a verdict + rationale with no hardcoded thresholds; Go executes transactionally. Graph topology (ADK Go `workflow.Edge` routing), not a rule table, is what stays deterministic |
 | **Operator Assistant** | Read-first Docent Assistant | Answers "What's releasing this weekend?" and explains past run decisions with SQL query citations |
 | **HTTP API & SSE** | `github.com/labstack/echo/v4` | REST endpoints under `/api/*`, Swagger JSON spec serving, SSE for real-time node stepping |
 | **Frontend UI Runtime** | **Preact + Vite + TypeScript** | Microscopic ~3kb UI footprint with `@preact/preset-vite` and `preact/compat` |
@@ -86,9 +102,10 @@ Every run is legible in ten seconds:
 ---
 
 ## 5. Non-Negotiable Rules
-1. **ClickHouse via MCP Only**: All analytical history queries at runtime route through the official `mcp-clickhouse` server.
-2. **Google Cloud AI Tooling Only**: Exclusively use Google Gemini SDKs.
-3. **Delta Gate Cost Protection**: Routine ticks with no new events exit in $< 10\text{ms}$ at $0 LLM cost.
-4. **Mocked Notifications**: Stakeholder emails/dispatches are drafted with realistic LLM content and stored as `drafted` for in-browser review.
-5. **Acyclic Workflow Execution**: A run is a single DAG execution; closed loops (hold $\rightarrow$ re-QC $\rightarrow$ release) occur across successive runs.
-6. **Strict camelCase & Co-located Frontend**: All frontend files and directories are `camelCase`. Every component and feature sub-component is co-located with its `*.css.ts` styling and `index.ts` barrel export.
+1. **ClickHouse via MCP Only (for agents)**: All *agent-issued* analytical history queries route through the official `mcp-clickhouse` server. Deterministic Go nodes (e.g. `vendorScoringFn`) may query ClickHouse directly — MCP is the AI-facing safety boundary, not the only access path.
+2. **Google Cloud AI Tooling Only**: Exclusively use Google Gemini SDKs (via ADK Go v2).
+3. **Zero-Cost Mechanical Filter**: The Stage A taxonomy filter runs in-memory Go, at $0 LLM cost, before any model is invoked. Only `ANOMALY_SIGNAL`/`ALLOCATION_REQUEST`/`OPERATOR_FORCED` events reach a judge, one event at a time — no batching/coalescing stage.
+4. **No Invented Numeric Thresholds**: Fincher does not hardcode business-judgment constants (sync-drift ms tolerances, score margins, weighting coefficients). Deterministic code computes and presents *facts*; a scoped LLM judge renders the *verdict* over those facts, every time, with rationale.
+5. **Mocked Notifications**: Stakeholder emails/dispatches are drafted with realistic LLM content and stored as `drafted` for in-browser review.
+6. **Bounded Self-Correction, Not Unbounded Loops**: The Policy Judge's reject → revise cycle is capped (configurable, default up to 3) within a single investigation run. Beyond the cap, the run terminates in `ESCALATE` → `HOLD` + operator alert, never a silent retry storm.
+7. **Strict camelCase & Co-located Frontend**: All frontend files and directories are `camelCase`. Every component and feature sub-component is co-located with its `*.css.ts` styling and `index.ts` barrel export.
