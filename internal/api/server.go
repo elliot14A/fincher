@@ -1,6 +1,7 @@
 package api
 
 import (
+	"database/sql"
 	"time"
 
 	"github.com/labstack/echo/v4"
@@ -8,6 +9,7 @@ import (
 
 	"github.com/elliot14A/fincher/internal/api/deliveries"
 	"github.com/elliot14A/fincher/internal/api/dependencies"
+	"github.com/elliot14A/fincher/internal/api/events"
 	"github.com/elliot14A/fincher/internal/api/masters"
 	"github.com/elliot14A/fincher/internal/api/packages"
 	"github.com/elliot14A/fincher/internal/api/titles"
@@ -22,9 +24,10 @@ import (
 type Server struct {
 	echo   *echo.Echo
 	client *ent.Client
+	chDB   *sql.DB
 }
 
-func NewServer(client *ent.Client) *Server {
+func NewServer(client *ent.Client, chDB ...*sql.DB) *Server {
 	e := echo.New()
 	e.HideBanner = true
 	e.Use(middleware.Recover())
@@ -63,6 +66,9 @@ func NewServer(client *ent.Client) *Server {
 		echo:   e,
 		client: client,
 	}
+	if len(chDB) > 0 {
+		s.chDB = chDB[0]
+	}
 
 	s.registerRoutes()
 	return s
@@ -99,6 +105,10 @@ func (s *Server) registerRoutes() {
 	deliveries.RegisterRoutes(apiGroup.Group("/deliveries"), s.client)
 	dependencies.RegisterRoutes(apiGroup.Group("/dependencies"), s.client)
 	uploads.RegisterRoutes(apiGroup.Group("/uploads"), s.client)
+
+	if s.chDB != nil {
+		events.RegisterRoutes(apiGroup.Group("/events"), s.chDB)
+	}
 
 	web.RegisterRoutes(s.echo)
 }
