@@ -2,7 +2,7 @@
 
 import { type Client, type ClientMeta, formDataBodySerializer, type Options as Options2, type RequestResult, type TDataShape } from './client';
 import { client } from './client.gen';
-import type { DeleteDeliveriesByIdData, DeleteDeliveriesByIdErrors, DeleteDeliveriesByIdResponses, DeleteDependenciesByIdData, DeleteDependenciesByIdErrors, DeleteDependenciesByIdResponses, DeleteMastersByIdData, DeleteMastersByIdErrors, DeleteMastersByIdResponses, DeletePackagesByIdData, DeletePackagesByIdErrors, DeletePackagesByIdResponses, DeleteTitlesByIdData, DeleteTitlesByIdErrors, DeleteTitlesByIdResponses, DeleteUploadsByIdData, DeleteUploadsByIdErrors, DeleteUploadsByIdResponses, DeleteVendorsByIdData, DeleteVendorsByIdErrors, DeleteVendorsByIdResponses, GetDeliveriesByIdData, GetDeliveriesByIdErrors, GetDeliveriesByIdResponses, GetDeliveriesData, GetDeliveriesErrors, GetDeliveriesResponses, GetDependenciesData, GetDependenciesErrors, GetDependenciesGraphByTitleIdData, GetDependenciesGraphByTitleIdErrors, GetDependenciesGraphByTitleIdResponses, GetDependenciesResponses, GetMastersByIdData, GetMastersByIdErrors, GetMastersByIdResponses, GetMastersData, GetMastersErrors, GetMastersResponses, GetPackagesByIdData, GetPackagesByIdErrors, GetPackagesByIdResponses, GetPackagesData, GetPackagesErrors, GetPackagesResponses, GetTitlesByIdData, GetTitlesByIdErrors, GetTitlesByIdResponses, GetTitlesData, GetTitlesErrors, GetTitlesResponses, GetUploadsByIdData, GetUploadsByIdErrors, GetUploadsByIdResponses, GetVendorsByIdData, GetVendorsByIdErrors, GetVendorsByIdResponses, GetVendorsData, GetVendorsErrors, GetVendorsResponses, PatchDeliveriesByIdData, PatchDeliveriesByIdErrors, PatchDeliveriesByIdResponses, PatchPackagesByIdData, PatchPackagesByIdErrors, PatchPackagesByIdResponses, PatchTitlesByIdData, PatchTitlesByIdErrors, PatchTitlesByIdResponses, PatchVendorsByIdData, PatchVendorsByIdErrors, PatchVendorsByIdResponses, PostDeliveriesData, PostDeliveriesErrors, PostDeliveriesResponses, PostDependenciesData, PostDependenciesErrors, PostDependenciesResponses, PostMastersData, PostMastersErrors, PostMastersResponses, PostPackagesData, PostPackagesErrors, PostPackagesResponses, PostTitlesData, PostTitlesErrors, PostTitlesResponses, PostUploadsData, PostUploadsErrors, PostUploadsResponses, PostVendorsData, PostVendorsErrors, PostVendorsResponses } from './types.gen';
+import type { DeleteDeliveriesByIdData, DeleteDeliveriesByIdErrors, DeleteDeliveriesByIdResponses, DeleteDependenciesByIdData, DeleteDependenciesByIdErrors, DeleteDependenciesByIdResponses, DeleteMastersByIdData, DeleteMastersByIdErrors, DeleteMastersByIdResponses, DeletePackagesByIdData, DeletePackagesByIdErrors, DeletePackagesByIdResponses, DeleteTitlesByIdData, DeleteTitlesByIdErrors, DeleteTitlesByIdResponses, DeleteUploadsByIdData, DeleteUploadsByIdErrors, DeleteUploadsByIdResponses, DeleteVendorsByIdData, DeleteVendorsByIdErrors, DeleteVendorsByIdResponses, GetDeliveriesByIdData, GetDeliveriesByIdErrors, GetDeliveriesByIdResponses, GetDeliveriesData, GetDeliveriesErrors, GetDeliveriesResponses, GetDependenciesData, GetDependenciesErrors, GetDependenciesGraphByTitleIdData, GetDependenciesGraphByTitleIdErrors, GetDependenciesGraphByTitleIdResponses, GetDependenciesResponses, GetMastersByIdData, GetMastersByIdErrors, GetMastersByIdResponses, GetMastersData, GetMastersErrors, GetMastersResponses, GetPackagesByIdData, GetPackagesByIdErrors, GetPackagesByIdResponses, GetPackagesData, GetPackagesErrors, GetPackagesResponses, GetTitlesByIdData, GetTitlesByIdErrors, GetTitlesByIdResponses, GetTitlesData, GetTitlesErrors, GetTitlesResponses, GetUploadsByIdData, GetUploadsByIdErrors, GetUploadsByIdResponses, GetVendorsByIdData, GetVendorsByIdErrors, GetVendorsByIdResponses, GetVendorsData, GetVendorsErrors, GetVendorsResponses, PatchDeliveriesByIdData, PatchDeliveriesByIdErrors, PatchDeliveriesByIdResponses, PatchPackagesByIdData, PatchPackagesByIdErrors, PatchPackagesByIdResponses, PatchTitlesByIdData, PatchTitlesByIdErrors, PatchTitlesByIdResponses, PatchVendorsByIdData, PatchVendorsByIdErrors, PatchVendorsByIdResponses, PostDeliveriesData, PostDeliveriesErrors, PostDeliveriesResponses, PostDependenciesData, PostDependenciesErrors, PostDependenciesResponses, PostEventsData, PostEventsErrors, PostEventsResponses, PostMastersData, PostMastersErrors, PostMastersResponses, PostPackagesData, PostPackagesErrors, PostPackagesResponses, PostTitlesData, PostTitlesErrors, PostTitlesResponses, PostUploadsData, PostUploadsErrors, PostUploadsResponses, PostVendorsData, PostVendorsErrors, PostVendorsResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -101,6 +101,20 @@ export const getDependenciesGraphByTitleId = <ThrowOnError extends boolean = fal
  * Removes a lineage edge between parent and child media packages.
  */
 export const deleteDependenciesById = <ThrowOnError extends boolean = false>(options: Options<DeleteDependenciesByIdData, ThrowOnError>): RequestResult<DeleteDependenciesByIdResponses, DeleteDependenciesByIdErrors, ThrowOnError> => (options.client ?? client).delete<DeleteDependenciesByIdResponses, DeleteDependenciesByIdErrors, ThrowOnError>({ url: '/dependencies/{id}', ...options });
+
+/**
+ * Ingest event batch
+ *
+ * Ingests an array of CloudEvents directly into ClickHouse.
+ */
+export const postEvents = <ThrowOnError extends boolean = false>(options: Options<PostEventsData, ThrowOnError>): RequestResult<PostEventsResponses, PostEventsErrors, ThrowOnError> => (options.client ?? client).post<PostEventsResponses, PostEventsErrors, ThrowOnError>({
+    url: '/events',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
 
 /**
  * List all master cuts

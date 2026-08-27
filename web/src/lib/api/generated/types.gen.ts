@@ -65,6 +65,27 @@ export type ModelsDependencyPaginationResult = {
 
 export type ModelsDependencyType = 'AUDIO_SYNC' | 'SUBTITLE_ALIGNMENT' | 'MASTER_DERIVATION';
 
+export type ModelsEvent = {
+    created_at?: string;
+    data?: {
+        [key: string]: unknown;
+    };
+    datacontenttype?: string;
+    id?: string;
+    severity: 'INFO' | 'WARN' | 'CRITICAL';
+    source: string;
+    subject?: string;
+    time?: string;
+    type: string;
+};
+
+export type ModelsEventBatchResponse = {
+    count?: number;
+    status?: string;
+};
+
+export type ModelsEventSeverity = 'INFO' | 'WARN' | 'CRITICAL';
+
 export type ModelsLineageGraph = {
     roots?: Array<ModelsLineageNode>;
     title_id?: string;
@@ -544,6 +565,34 @@ export type DeleteDependenciesByIdResponses = {
      */
     204: unknown;
 };
+
+export type PostEventsData = {
+    /**
+     * CloudEvents array
+     */
+    body: Array<ModelsEvent>;
+    path?: never;
+    query?: never;
+    url: '/events';
+};
+
+export type PostEventsErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorsDomainError;
+};
+
+export type PostEventsError = PostEventsErrors[keyof PostEventsErrors];
+
+export type PostEventsResponses = {
+    /**
+     * Created
+     */
+    201: ModelsEventBatchResponse;
+};
+
+export type PostEventsResponse = PostEventsResponses[keyof PostEventsResponses];
 
 export type GetMastersData = {
     body?: never;

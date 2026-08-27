@@ -94,6 +94,33 @@ export const vModelsDependencyType = v.picklist([
     'MASTER_DERIVATION'
 ]);
 
+export const vModelsEvent = v.object({
+    created_at: v.optional(v.string()),
+    data: v.optional(v.record(v.string(), v.unknown())),
+    datacontenttype: v.optional(v.string()),
+    id: v.optional(v.string()),
+    severity: v.picklist([
+        'INFO',
+        'WARN',
+        'CRITICAL'
+    ]),
+    source: v.pipe(v.string(), v.minLength(1)),
+    subject: v.optional(v.string()),
+    time: v.optional(v.string()),
+    type: v.pipe(v.string(), v.minLength(1))
+});
+
+export const vModelsEventBatchResponse = v.object({
+    count: v.optional(v.pipe(v.number(), v.integer())),
+    status: v.optional(v.string())
+});
+
+export const vModelsEventSeverity = v.picklist([
+    'INFO',
+    'WARN',
+    'CRITICAL'
+]);
+
 export const vModelsMaster = v.object({
     created_at: v.optional(v.string()),
     id: v.string(),
@@ -391,6 +418,16 @@ export const vGetDependenciesGraphByTitleIdResponse = vModelsLineageGraph;
 export const vDeleteDependenciesByIdPath = v.object({
     id: v.string()
 });
+
+/**
+ * CloudEvents array
+ */
+export const vPostEventsBody = v.array(vModelsEvent);
+
+/**
+ * Created
+ */
+export const vPostEventsResponse = vModelsEventBatchResponse;
 
 export const vGetMastersQuery = v.object({
     title_id: v.optional(v.string()),
