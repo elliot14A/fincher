@@ -12,6 +12,7 @@ import (
 	"github.com/alecthomas/kong"
 
 	"github.com/elliot14A/fincher/internal/api"
+	"github.com/elliot14A/fincher/internal/clickhouse"
 	"github.com/elliot14A/fincher/internal/config"
 	"github.com/elliot14A/fincher/internal/turso"
 	"github.com/elliot14A/fincher/pkg/logger"
@@ -58,7 +59,17 @@ func main() {
 		return
 	}
 
-	srv := api.NewServer(dbClient)
+	chDB, err := clickhouse.Open(cfg.ClickHouseDSN)
+	if err != nil {
+		logger.Warn("failed to connect to clickhouse", "error", err)
+	} else {
+		defer chDB.Close()
+		if err := clickhouse.AutoMigrate(ctx, chDB); err != nil {
+			logger.Warn("failed to execute clickhouse schema migrations", "error", err)
+		}
+	}
+
+	srv := api.NewServer(dbClient, chDB)
 	e := srv.Router()
 
 	addr := fmt.Sprintf(":%d", cfg.Port)
