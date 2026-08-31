@@ -75,6 +75,48 @@ func (_u *VendorUpdate) SetNillableSpecialty(v *string) *VendorUpdate {
 	return _u
 }
 
+// SetHourlyRateUsd sets the "hourly_rate_usd" field.
+func (_u *VendorUpdate) SetHourlyRateUsd(v float64) *VendorUpdate {
+	_u.mutation.ResetHourlyRateUsd()
+	_u.mutation.SetHourlyRateUsd(v)
+	return _u
+}
+
+// SetNillableHourlyRateUsd sets the "hourly_rate_usd" field if the given value is not nil.
+func (_u *VendorUpdate) SetNillableHourlyRateUsd(v *float64) *VendorUpdate {
+	if v != nil {
+		_u.SetHourlyRateUsd(*v)
+	}
+	return _u
+}
+
+// AddHourlyRateUsd adds value to the "hourly_rate_usd" field.
+func (_u *VendorUpdate) AddHourlyRateUsd(v float64) *VendorUpdate {
+	_u.mutation.AddHourlyRateUsd(v)
+	return _u
+}
+
+// SetTurnaroundHours sets the "turnaround_hours" field.
+func (_u *VendorUpdate) SetTurnaroundHours(v int) *VendorUpdate {
+	_u.mutation.ResetTurnaroundHours()
+	_u.mutation.SetTurnaroundHours(v)
+	return _u
+}
+
+// SetNillableTurnaroundHours sets the "turnaround_hours" field if the given value is not nil.
+func (_u *VendorUpdate) SetNillableTurnaroundHours(v *int) *VendorUpdate {
+	if v != nil {
+		_u.SetTurnaroundHours(*v)
+	}
+	return _u
+}
+
+// AddTurnaroundHours adds value to the "turnaround_hours" field.
+func (_u *VendorUpdate) AddTurnaroundHours(v int) *VendorUpdate {
+	_u.mutation.AddTurnaroundHours(v)
+	return _u
+}
+
 // AddPackageIDs adds the "packages" edge to the MediaPackage entity by IDs.
 func (_u *VendorUpdate) AddPackageIDs(ids ...string) *VendorUpdate {
 	_u.mutation.AddPackageIDs(ids...)
@@ -164,6 +206,16 @@ func (_u *VendorUpdate) check() error {
 			return &ValidationError{Name: "specialty", err: fmt.Errorf(`ent: validator failed for field "Vendor.specialty": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.HourlyRateUsd(); ok {
+		if err := vendor.HourlyRateUsdValidator(v); err != nil {
+			return &ValidationError{Name: "hourly_rate_usd", err: fmt.Errorf(`ent: validator failed for field "Vendor.hourly_rate_usd": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.TurnaroundHours(); ok {
+		if err := vendor.TurnaroundHoursValidator(v); err != nil {
+			return &ValidationError{Name: "turnaround_hours", err: fmt.Errorf(`ent: validator failed for field "Vendor.turnaround_hours": %w`, err)}
+		}
+	}
 	return nil
 }
 
@@ -193,6 +245,18 @@ func (_u *VendorUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.Specialty(); ok {
 		_spec.SetField(vendor.FieldSpecialty, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.HourlyRateUsd(); ok {
+		_spec.SetField(vendor.FieldHourlyRateUsd, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedHourlyRateUsd(); ok {
+		_spec.AddField(vendor.FieldHourlyRateUsd, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.TurnaroundHours(); ok {
+		_spec.SetField(vendor.FieldTurnaroundHours, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedTurnaroundHours(); ok {
+		_spec.AddField(vendor.FieldTurnaroundHours, field.TypeInt, value)
 	}
 	if _u.mutation.PackagesCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -305,6 +369,48 @@ func (_u *VendorUpdateOne) SetNillableSpecialty(v *string) *VendorUpdateOne {
 	return _u
 }
 
+// SetHourlyRateUsd sets the "hourly_rate_usd" field.
+func (_u *VendorUpdateOne) SetHourlyRateUsd(v float64) *VendorUpdateOne {
+	_u.mutation.ResetHourlyRateUsd()
+	_u.mutation.SetHourlyRateUsd(v)
+	return _u
+}
+
+// SetNillableHourlyRateUsd sets the "hourly_rate_usd" field if the given value is not nil.
+func (_u *VendorUpdateOne) SetNillableHourlyRateUsd(v *float64) *VendorUpdateOne {
+	if v != nil {
+		_u.SetHourlyRateUsd(*v)
+	}
+	return _u
+}
+
+// AddHourlyRateUsd adds value to the "hourly_rate_usd" field.
+func (_u *VendorUpdateOne) AddHourlyRateUsd(v float64) *VendorUpdateOne {
+	_u.mutation.AddHourlyRateUsd(v)
+	return _u
+}
+
+// SetTurnaroundHours sets the "turnaround_hours" field.
+func (_u *VendorUpdateOne) SetTurnaroundHours(v int) *VendorUpdateOne {
+	_u.mutation.ResetTurnaroundHours()
+	_u.mutation.SetTurnaroundHours(v)
+	return _u
+}
+
+// SetNillableTurnaroundHours sets the "turnaround_hours" field if the given value is not nil.
+func (_u *VendorUpdateOne) SetNillableTurnaroundHours(v *int) *VendorUpdateOne {
+	if v != nil {
+		_u.SetTurnaroundHours(*v)
+	}
+	return _u
+}
+
+// AddTurnaroundHours adds value to the "turnaround_hours" field.
+func (_u *VendorUpdateOne) AddTurnaroundHours(v int) *VendorUpdateOne {
+	_u.mutation.AddTurnaroundHours(v)
+	return _u
+}
+
 // AddPackageIDs adds the "packages" edge to the MediaPackage entity by IDs.
 func (_u *VendorUpdateOne) AddPackageIDs(ids ...string) *VendorUpdateOne {
 	_u.mutation.AddPackageIDs(ids...)
@@ -407,6 +513,16 @@ func (_u *VendorUpdateOne) check() error {
 			return &ValidationError{Name: "specialty", err: fmt.Errorf(`ent: validator failed for field "Vendor.specialty": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.HourlyRateUsd(); ok {
+		if err := vendor.HourlyRateUsdValidator(v); err != nil {
+			return &ValidationError{Name: "hourly_rate_usd", err: fmt.Errorf(`ent: validator failed for field "Vendor.hourly_rate_usd": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.TurnaroundHours(); ok {
+		if err := vendor.TurnaroundHoursValidator(v); err != nil {
+			return &ValidationError{Name: "turnaround_hours", err: fmt.Errorf(`ent: validator failed for field "Vendor.turnaround_hours": %w`, err)}
+		}
+	}
 	return nil
 }
 
@@ -453,6 +569,18 @@ func (_u *VendorUpdateOne) sqlSave(ctx context.Context) (_node *Vendor, err erro
 	}
 	if value, ok := _u.mutation.Specialty(); ok {
 		_spec.SetField(vendor.FieldSpecialty, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.HourlyRateUsd(); ok {
+		_spec.SetField(vendor.FieldHourlyRateUsd, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedHourlyRateUsd(); ok {
+		_spec.AddField(vendor.FieldHourlyRateUsd, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.TurnaroundHours(); ok {
+		_spec.SetField(vendor.FieldTurnaroundHours, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedTurnaroundHours(); ok {
+		_spec.AddField(vendor.FieldTurnaroundHours, field.TypeInt, value)
 	}
 	if _u.mutation.PackagesCleared() {
 		edge := &sqlgraph.EdgeSpec{

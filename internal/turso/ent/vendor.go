@@ -28,6 +28,10 @@ type Vendor struct {
 	Name string `json:"name,omitempty"`
 	// Specialty holds the value of the "specialty" field.
 	Specialty string `json:"specialty,omitempty"`
+	// HourlyRateUsd holds the value of the "hourly_rate_usd" field.
+	HourlyRateUsd float64 `json:"hourly_rate_usd,omitempty"`
+	// TurnaroundHours holds the value of the "turnaround_hours" field.
+	TurnaroundHours int `json:"turnaround_hours,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the VendorQuery when eager-loading is set.
 	Edges        VendorEdges `json:"edges"`
@@ -59,6 +63,10 @@ func (*Vendor) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case vendor.FieldMetadata:
 			values[i] = new([]byte)
+		case vendor.FieldHourlyRateUsd:
+			values[i] = new(sql.NullFloat64)
+		case vendor.FieldTurnaroundHours:
+			values[i] = new(sql.NullInt64)
 		case vendor.FieldID, vendor.FieldName, vendor.FieldSpecialty:
 			values[i] = new(sql.NullString)
 		case vendor.FieldCreatedAt, vendor.FieldUpdatedAt:
@@ -116,6 +124,18 @@ func (_m *Vendor) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.Specialty = value.String
 			}
+		case vendor.FieldHourlyRateUsd:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field hourly_rate_usd", values[i])
+			} else if value.Valid {
+				_m.HourlyRateUsd = value.Float64
+			}
+		case vendor.FieldTurnaroundHours:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field turnaround_hours", values[i])
+			} else if value.Valid {
+				_m.TurnaroundHours = int(value.Int64)
+			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
 		}
@@ -171,6 +191,12 @@ func (_m *Vendor) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("specialty=")
 	builder.WriteString(_m.Specialty)
+	builder.WriteString(", ")
+	builder.WriteString("hourly_rate_usd=")
+	builder.WriteString(fmt.Sprintf("%v", _m.HourlyRateUsd))
+	builder.WriteString(", ")
+	builder.WriteString("turnaround_hours=")
+	builder.WriteString(fmt.Sprintf("%v", _m.TurnaroundHours))
 	builder.WriteByte(')')
 	return builder.String()
 }

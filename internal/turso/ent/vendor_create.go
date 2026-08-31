@@ -67,6 +67,34 @@ func (_c *VendorCreate) SetSpecialty(v string) *VendorCreate {
 	return _c
 }
 
+// SetHourlyRateUsd sets the "hourly_rate_usd" field.
+func (_c *VendorCreate) SetHourlyRateUsd(v float64) *VendorCreate {
+	_c.mutation.SetHourlyRateUsd(v)
+	return _c
+}
+
+// SetNillableHourlyRateUsd sets the "hourly_rate_usd" field if the given value is not nil.
+func (_c *VendorCreate) SetNillableHourlyRateUsd(v *float64) *VendorCreate {
+	if v != nil {
+		_c.SetHourlyRateUsd(*v)
+	}
+	return _c
+}
+
+// SetTurnaroundHours sets the "turnaround_hours" field.
+func (_c *VendorCreate) SetTurnaroundHours(v int) *VendorCreate {
+	_c.mutation.SetTurnaroundHours(v)
+	return _c
+}
+
+// SetNillableTurnaroundHours sets the "turnaround_hours" field if the given value is not nil.
+func (_c *VendorCreate) SetNillableTurnaroundHours(v *int) *VendorCreate {
+	if v != nil {
+		_c.SetTurnaroundHours(*v)
+	}
+	return _c
+}
+
 // SetID sets the "id" field.
 func (_c *VendorCreate) SetID(v string) *VendorCreate {
 	_c.mutation.SetID(v)
@@ -131,6 +159,14 @@ func (_c *VendorCreate) defaults() {
 		v := vendor.DefaultUpdatedAt()
 		_c.mutation.SetUpdatedAt(v)
 	}
+	if _, ok := _c.mutation.HourlyRateUsd(); !ok {
+		v := vendor.DefaultHourlyRateUsd
+		_c.mutation.SetHourlyRateUsd(v)
+	}
+	if _, ok := _c.mutation.TurnaroundHours(); !ok {
+		v := vendor.DefaultTurnaroundHours
+		_c.mutation.SetTurnaroundHours(v)
+	}
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -155,6 +191,22 @@ func (_c *VendorCreate) check() error {
 	if v, ok := _c.mutation.Specialty(); ok {
 		if err := vendor.SpecialtyValidator(v); err != nil {
 			return &ValidationError{Name: "specialty", err: fmt.Errorf(`ent: validator failed for field "Vendor.specialty": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.HourlyRateUsd(); !ok {
+		return &ValidationError{Name: "hourly_rate_usd", err: errors.New(`ent: missing required field "Vendor.hourly_rate_usd"`)}
+	}
+	if v, ok := _c.mutation.HourlyRateUsd(); ok {
+		if err := vendor.HourlyRateUsdValidator(v); err != nil {
+			return &ValidationError{Name: "hourly_rate_usd", err: fmt.Errorf(`ent: validator failed for field "Vendor.hourly_rate_usd": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.TurnaroundHours(); !ok {
+		return &ValidationError{Name: "turnaround_hours", err: errors.New(`ent: missing required field "Vendor.turnaround_hours"`)}
+	}
+	if v, ok := _c.mutation.TurnaroundHours(); ok {
+		if err := vendor.TurnaroundHoursValidator(v); err != nil {
+			return &ValidationError{Name: "turnaround_hours", err: fmt.Errorf(`ent: validator failed for field "Vendor.turnaround_hours": %w`, err)}
 		}
 	}
 	if v, ok := _c.mutation.ID(); ok {
@@ -216,6 +268,14 @@ func (_c *VendorCreate) createSpec() (*Vendor, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.Specialty(); ok {
 		_spec.SetField(vendor.FieldSpecialty, field.TypeString, value)
 		_node.Specialty = value
+	}
+	if value, ok := _c.mutation.HourlyRateUsd(); ok {
+		_spec.SetField(vendor.FieldHourlyRateUsd, field.TypeFloat64, value)
+		_node.HourlyRateUsd = value
+	}
+	if value, ok := _c.mutation.TurnaroundHours(); ok {
+		_spec.SetField(vendor.FieldTurnaroundHours, field.TypeInt, value)
+		_node.TurnaroundHours = value
 	}
 	if nodes := _c.mutation.PackagesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

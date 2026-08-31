@@ -23,6 +23,12 @@ func Update(ctx context.Context, client *ent.Client, id string, input *models.Up
 	if input.Specialty != nil {
 		builder.SetSpecialty(*input.Specialty)
 	}
+	if input.HourlyRateUSD != nil {
+		builder.SetHourlyRateUsd(*input.HourlyRateUSD)
+	}
+	if input.TurnaroundHours != nil {
+		builder.SetTurnaroundHours(*input.TurnaroundHours)
+	}
 	if input.Metadata != nil {
 		builder.SetMetadata(input.Metadata)
 	}

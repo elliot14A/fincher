@@ -18,7 +18,9 @@ func Create(ctx context.Context, client *ent.Client, v *models.Vendor) domainerr
 	builder := client.Vendor.Create().
 		SetID(v.ID).
 		SetName(v.Name).
-		SetSpecialty(v.Specialty)
+		SetSpecialty(v.Specialty).
+		SetHourlyRateUsd(v.HourlyRateUSD).
+		SetTurnaroundHours(v.TurnaroundHours)
 
 	if v.Metadata != nil {
 		builder.SetMetadata(v.Metadata)

@@ -85,6 +85,16 @@ func Specialty(v string) predicate.Vendor {
 	return predicate.Vendor(sql.FieldEQ(FieldSpecialty, v))
 }
 
+// HourlyRateUsd applies equality check predicate on the "hourly_rate_usd" field. It's identical to HourlyRateUsdEQ.
+func HourlyRateUsd(v float64) predicate.Vendor {
+	return predicate.Vendor(sql.FieldEQ(FieldHourlyRateUsd, v))
+}
+
+// TurnaroundHours applies equality check predicate on the "turnaround_hours" field. It's identical to TurnaroundHoursEQ.
+func TurnaroundHours(v int) predicate.Vendor {
+	return predicate.Vendor(sql.FieldEQ(FieldTurnaroundHours, v))
+}
+
 // MetadataIsNil applies the IsNil predicate on the "metadata" field.
 func MetadataIsNil() predicate.Vendor {
 	return predicate.Vendor(sql.FieldIsNull(FieldMetadata))
@@ -303,6 +313,86 @@ func SpecialtyEqualFold(v string) predicate.Vendor {
 // SpecialtyContainsFold applies the ContainsFold predicate on the "specialty" field.
 func SpecialtyContainsFold(v string) predicate.Vendor {
 	return predicate.Vendor(sql.FieldContainsFold(FieldSpecialty, v))
+}
+
+// HourlyRateUsdEQ applies the EQ predicate on the "hourly_rate_usd" field.
+func HourlyRateUsdEQ(v float64) predicate.Vendor {
+	return predicate.Vendor(sql.FieldEQ(FieldHourlyRateUsd, v))
+}
+
+// HourlyRateUsdNEQ applies the NEQ predicate on the "hourly_rate_usd" field.
+func HourlyRateUsdNEQ(v float64) predicate.Vendor {
+	return predicate.Vendor(sql.FieldNEQ(FieldHourlyRateUsd, v))
+}
+
+// HourlyRateUsdIn applies the In predicate on the "hourly_rate_usd" field.
+func HourlyRateUsdIn(vs ...float64) predicate.Vendor {
+	return predicate.Vendor(sql.FieldIn(FieldHourlyRateUsd, vs...))
+}
+
+// HourlyRateUsdNotIn applies the NotIn predicate on the "hourly_rate_usd" field.
+func HourlyRateUsdNotIn(vs ...float64) predicate.Vendor {
+	return predicate.Vendor(sql.FieldNotIn(FieldHourlyRateUsd, vs...))
+}
+
+// HourlyRateUsdGT applies the GT predicate on the "hourly_rate_usd" field.
+func HourlyRateUsdGT(v float64) predicate.Vendor {
+	return predicate.Vendor(sql.FieldGT(FieldHourlyRateUsd, v))
+}
+
+// HourlyRateUsdGTE applies the GTE predicate on the "hourly_rate_usd" field.
+func HourlyRateUsdGTE(v float64) predicate.Vendor {
+	return predicate.Vendor(sql.FieldGTE(FieldHourlyRateUsd, v))
+}
+
+// HourlyRateUsdLT applies the LT predicate on the "hourly_rate_usd" field.
+func HourlyRateUsdLT(v float64) predicate.Vendor {
+	return predicate.Vendor(sql.FieldLT(FieldHourlyRateUsd, v))
+}
+
+// HourlyRateUsdLTE applies the LTE predicate on the "hourly_rate_usd" field.
+func HourlyRateUsdLTE(v float64) predicate.Vendor {
+	return predicate.Vendor(sql.FieldLTE(FieldHourlyRateUsd, v))
+}
+
+// TurnaroundHoursEQ applies the EQ predicate on the "turnaround_hours" field.
+func TurnaroundHoursEQ(v int) predicate.Vendor {
+	return predicate.Vendor(sql.FieldEQ(FieldTurnaroundHours, v))
+}
+
+// TurnaroundHoursNEQ applies the NEQ predicate on the "turnaround_hours" field.
+func TurnaroundHoursNEQ(v int) predicate.Vendor {
+	return predicate.Vendor(sql.FieldNEQ(FieldTurnaroundHours, v))
+}
+
+// TurnaroundHoursIn applies the In predicate on the "turnaround_hours" field.
+func TurnaroundHoursIn(vs ...int) predicate.Vendor {
+	return predicate.Vendor(sql.FieldIn(FieldTurnaroundHours, vs...))
+}
+
+// TurnaroundHoursNotIn applies the NotIn predicate on the "turnaround_hours" field.
+func TurnaroundHoursNotIn(vs ...int) predicate.Vendor {
+	return predicate.Vendor(sql.FieldNotIn(FieldTurnaroundHours, vs...))
+}
+
+// TurnaroundHoursGT applies the GT predicate on the "turnaround_hours" field.
+func TurnaroundHoursGT(v int) predicate.Vendor {
+	return predicate.Vendor(sql.FieldGT(FieldTurnaroundHours, v))
+}
+
+// TurnaroundHoursGTE applies the GTE predicate on the "turnaround_hours" field.
+func TurnaroundHoursGTE(v int) predicate.Vendor {
+	return predicate.Vendor(sql.FieldGTE(FieldTurnaroundHours, v))
+}
+
+// TurnaroundHoursLT applies the LT predicate on the "turnaround_hours" field.
+func TurnaroundHoursLT(v int) predicate.Vendor {
+	return predicate.Vendor(sql.FieldLT(FieldTurnaroundHours, v))
+}
+
+// TurnaroundHoursLTE applies the LTE predicate on the "turnaround_hours" field.
+func TurnaroundHoursLTE(v int) predicate.Vendor {
+	return predicate.Vendor(sql.FieldLTE(FieldTurnaroundHours, v))
 }
 
 // HasPackages applies the HasEdge predicate on the "packages" edge.

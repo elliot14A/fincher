@@ -24,6 +24,10 @@ const (
 	FieldName = "name"
 	// FieldSpecialty holds the string denoting the specialty field in the database.
 	FieldSpecialty = "specialty"
+	// FieldHourlyRateUsd holds the string denoting the hourly_rate_usd field in the database.
+	FieldHourlyRateUsd = "hourly_rate_usd"
+	// FieldTurnaroundHours holds the string denoting the turnaround_hours field in the database.
+	FieldTurnaroundHours = "turnaround_hours"
 	// EdgePackages holds the string denoting the packages edge name in mutations.
 	EdgePackages = "packages"
 	// Table holds the table name of the vendor in the database.
@@ -45,6 +49,8 @@ var Columns = []string{
 	FieldUpdatedAt,
 	FieldName,
 	FieldSpecialty,
+	FieldHourlyRateUsd,
+	FieldTurnaroundHours,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -68,6 +74,14 @@ var (
 	NameValidator func(string) error
 	// SpecialtyValidator is a validator for the "specialty" field. It is called by the builders before save.
 	SpecialtyValidator func(string) error
+	// DefaultHourlyRateUsd holds the default value on creation for the "hourly_rate_usd" field.
+	DefaultHourlyRateUsd float64
+	// HourlyRateUsdValidator is a validator for the "hourly_rate_usd" field. It is called by the builders before save.
+	HourlyRateUsdValidator func(float64) error
+	// DefaultTurnaroundHours holds the default value on creation for the "turnaround_hours" field.
+	DefaultTurnaroundHours int
+	// TurnaroundHoursValidator is a validator for the "turnaround_hours" field. It is called by the builders before save.
+	TurnaroundHoursValidator func(int) error
 	// IDValidator is a validator for the "id" field. It is called by the builders before save.
 	IDValidator func(string) error
 )
@@ -98,6 +112,16 @@ func ByName(opts ...sql.OrderTermOption) OrderOption {
 // BySpecialty orders the results by the specialty field.
 func BySpecialty(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldSpecialty, opts...).ToFunc()
+}
+
+// ByHourlyRateUsd orders the results by the hourly_rate_usd field.
+func ByHourlyRateUsd(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldHourlyRateUsd, opts...).ToFunc()
+}
+
+// ByTurnaroundHours orders the results by the turnaround_hours field.
+func ByTurnaroundHours(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldTurnaroundHours, opts...).ToFunc()
 }
 
 // ByPackagesCount orders the results by packages count.

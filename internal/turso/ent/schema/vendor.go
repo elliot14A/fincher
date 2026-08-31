@@ -23,6 +23,12 @@ func (Vendor) Fields() []ent.Field {
 			NotEmpty(),
 		field.String("specialty").
 			NotEmpty(),
+		field.Float("hourly_rate_usd").
+			Default(0.0).
+			Min(0.0),
+		field.Int("turnaround_hours").
+			Default(24).
+			Positive(),
 	}
 }
 
