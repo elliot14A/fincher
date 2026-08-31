@@ -36,7 +36,7 @@ START → triage_judge ⚡ (route NO → end / YES → continue)
   (`pkg/domain/models/actionplan.go`: `HOLD_DELIVERY`, `INVALIDATE_PACKAGE`,
   `REASSIGN_VENDOR`, ...).
 * `policy_judge.go`: ⚡, verdict `APPROVED | REJECTED | ESCALATE` + rationale, one
-  `judge_verdicts` row per attempt.
+  `wf_results` row per attempt.
 * `executor.go`: Go-only, single SQLite tx applying `ActionPlan` actions, SSE broadcast per
   action, emits the resulting event back into ClickHouse (closed loop, AGENTS.md Invariant 4).
 
@@ -53,17 +53,14 @@ TitleCreated / PackageRequired / VENDOR_RECONFORM_DISPATCHED  (one event at a ti
 * `executor.go` (shared): applies the vendor assignment, emits `VENDOR_ASSIGNED`.
 
 ### 3. Ent schema additions (`internal/turso/ent/schema/`)
-* `investigation_run.go`: `id`, `title_id`, `trigger_category`, `status`, `created_at`.
-* `run_node_event.go`: `run_id` (FK), `node_name`, `node_type`, `status`, `payload_json`,
-  `occurred_at` — the SSE replay/audit source.
-* `judge_verdict.go`: `run_id` (FK), `judge_name`, `verdict`, `rationale`, `attempt_number`,
-  `created_at`.
-* `vendor.go` extension: `standard_rate_usd`, `rush_rate_usd`, `standard_turnaround_hours`,
-  `rush_turnaround_hours` (nullable/defaulted for existing rows).
+* `run.go`: `id`, `title_slug` (default `"GLOBAL"`), `trigger`, `status`, `started_at`, `ended_at`.
+* `step.go`: `id`, `run_id` (FK), `name`, `status`, `started_at`, `ended_at` — the SSE replay/audit source.
+* `wf_result.go`: `id`, `run_id` (FK), `step_id` (FK), `judge`, `outcome`, `rationale`, `attempt`.
+* `vendor.go` extension: `hourly_rate_usd` (`field.Float`, default `0.0`), `turnaround_hours` (`field.Int`, default `24`).
 
 ### 4. API & SSE (`internal/api/runs/`, `internal/api/investigations/`)
-* `GET /api/runs/{id}`, `GET /api/runs/{id}/stream` — SSE, one frame per `run_node_event` /
-  `judge_verdict` insert.
+* `GET /api/runs`, `GET /api/runs/{id}`, `GET /api/runs/{id}/stream` — SSE, one frame per `step` /
+  `wf_result` insert.
 * `POST /api/investigations`, `POST /api/vendor-assignments` — `OPERATOR_FORCED` manual
   triggers.
 * `GET /api/budget` — exposes the budget/concurrency gate's state. **Not yet designed**: Feature

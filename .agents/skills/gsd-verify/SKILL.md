@@ -47,7 +47,7 @@ go test -v ./pkg/mcp/... -race
 
 ### 5. Architectural Review
 * **Read-Only Agents**: Ensure AI sub-agents query strictly via MCP and NEVER perform direct SQL writes.
-* **Deterministic Policy Gate**: Ensure all state mutations flow through the Go policy engine.
+* **Policy Verification Gate**: Ensure all state mutations flow through policy verification and transactional software execution.
 * **Closed-Loop Progression**: Verify executed actions emit downstream events.
 
 ### 6. Write Verification Report

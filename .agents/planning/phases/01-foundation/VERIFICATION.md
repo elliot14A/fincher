@@ -40,7 +40,7 @@ Not applicable yet — `pkg/mcp/client.go` (Task 3) hasn't been created. `docker
 
 ## 5. Architectural Review
 
-No engine/agent/action code exists yet (Milestone 2+), so the read-only-agent and deterministic-policy-gate invariants aren't testable at this phase.
+No engine/agent/action code exists yet (Milestone 2+), so the read-only-agent and policy-verification invariants aren't testable at this phase.
 
 ---
 

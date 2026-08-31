@@ -25,7 +25,7 @@ Use this skill to research, structure, and decompose implementation tasks for th
    - Concrete verification criteria (unit tests, CLI runs, HTTP responses)
 
 3. **Verify Plan Feasibility**:
-   - Check against system invariants (Read-only agents, MCP credential isolation, deterministic policies).
+   - Check against system invariants (Read-only agents, MCP credential isolation, policy verification).
    - Ensure tasks fit within a clean execution context without cognitive bloat.
 
 4. **Write `PLAN.md`**:

@@ -18,10 +18,10 @@ This document defines the architectural rules, engineering standards, multi-agen
    * The AI assistant's primary role is scaffolding, boilerplate definitions, type declarations, configuration templates, and research.
 2. **Untrusted Until Verified**:
    * All AI-generated code is untrusted until reviewed, compiled, and verified against defined rules, unit tests, and integration checks.
-3. **Event-Driven Deterministism**:
-   * All actions emerge dynamically from incoming production events, historical evidence from ClickHouse MCP, multi-agent reasoning, and database-backed policies.
+3. **Event-Driven Execution**:
+   * All actions emerge dynamically from incoming production events, historical evidence from ClickHouse MCP, and multi-agent reasoning.
 4. **No Unchecked AI Authority**:
-   * Agents **never** mutate production state directly. Agents produce structured proposals (`ActionPlan`). The Go policy engine deterministically gates every action against the database policies table.
+   * Agents **never** mutate production state directly. Agents produce structured proposals (`ActionPlan`). The Policy Verification Judge evaluates every action plan in a bounded loop before transactional software execution.
 
 ### AI Engineering Rules
 1. **Think Before Proposing**:
@@ -59,10 +59,10 @@ All engineering milestones, state transitions, and requirements are managed thro
 * The **Historian Agent** and **Dependency Agent** execute concurrently via Go goroutines / Google ADK Go orchestrator.
 * Each agent operates with specific bounded system instructions and focused tool access.
 
-### Invariant 3: Deterministic Policy Gating
-* The Action Planner proposes *intent* (e.g., `HOLD_DELIVERY`, `INVALIDATE_PACKAGE`).
-* The Policy Engine verifies concrete conditions against operational rules stored in the database `policies` table.
-* AI never overrides policy thresholds.
+### Invariant 3: Policy Verification & Bounded Self-Correction
+* The Action Planner proposes structured *intent* (e.g., `HOLD_DELIVERY`, `REASSIGN_VENDOR`).
+* The Policy Verification Judge evaluates the proposed plan against operational safety guidelines, launch countdown urgency, and blast radius in a bounded loop (capped at 3 attempts).
+* Software executes mutations only after positive plan verification, or escalates to `HOLD` + operator alert if the retry cap is exceeded.
 
 ### Invariant 4: Closed-Loop Event Progression
 * Every executed action must emit a downstream event (e.g., `INVALIDATE_PACKAGE` -> emits `PACKAGE_INVALIDATED` -> creates re-QC job -> emits `QC_STARTED` -> `QC_PASSED` -> emits `DELIVERY_RELEASED`).
@@ -83,8 +83,7 @@ All engineering milestones, state transitions, and requirements are managed thro
 | **AI Runtime** | Google ADK Go (`google.golang.org/adk/v2`) + Google GenAI (`google.golang.org/genai`) | Programmatic multi-agent orchestration, concurrency, structured schema output |
 | **LLM Model** | Gemini 2.5 / Gemini 2.0 Flash / Pro | Structured JSON outputs, fast reasoning over historical analytical evidence |
 | **Analytical DB** | ClickHouse | Historical event store: QC logs, asset updates, vendor track records, past incidents |
-| **Agent Interface to DB** | Official ClickHouse MCP Server (`ghcr.io/clickhouse/mcp-clickhouse:latest`) | Remote MCP HTTP transport client (`pkg/mcp`). ClickHouse credentials isolated exclusively in MCP container. |
-| **Application State & Policies DB** | Turso / SQLite + `go-sqlite3` | High-performance operational state & policies table with WAL mode |
+| **Application State DB** | Turso / SQLite + `go-sqlite3` | High-performance operational state with WAL mode |
 | **Frontend Runtime** | **Preact + Vite + TypeScript** | Microscopic ~3kb UI runtime with `@preact/preset-vite` and `preact/compat` |
 | **Frontend Styling** | **Vanilla Extract (`.css.ts`) + Recipes** | Zero-runtime CSS extraction, 100% type-safe design tokens (`theme.css.ts`) |
 | **Frontend Routing** | **`@tanstack/react-router`** | Type-safe, file-based routing (`src/routes/`) with `@tanstack/router-plugin` |
@@ -146,11 +145,10 @@ fincher/
 │
 ├── internal/                     # Private Go domain logic (strict boundaries)
 │   ├── api/                      # REST handlers (/api/*), OpenAPI serving, SSE stream
-│   ├── agent/                    # Multi-agent orchestrator & Google ADK Go sub-agents
-│   ├── policy/                   # Deterministic Policy Engine (evaluates DB policies table)
+│   ├── agent/                    # Multi-agent orchestrator & judges (triage, planner, verifier, selector)
 │   ├── executor/                 # Software Execution Engine (state mutations & downstream events)
 │   ├── simulator/                # Production media event generator
-│   ├── turso/                    # Database access layer (Turso/SQLite state & policies)
+│   ├── turso/                    # Database access layer (Turso/SQLite operational state)
 │   └── config/                   # Configuration parsing via Kong
 │
 ├── pkg/                          # Shared Go contracts, wire types, MCP integration

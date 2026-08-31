@@ -103,8 +103,9 @@ Build one complete feature slice end-to-end at a time:
   - `internal/agent/graph.go`: ADK Go v2 wiring (`workflow.NewFunctionNode`, `workflow.NewAgentNode`, `workflow.Chain`/`Concat`, `workflow.NewJoinNode`, `workflowagent.New`).
   - `internal/agent/triage_judge.go`, `historian.go` (hybrid), `lineage.go` (Go-only), `optimizer.go`, `policy_judge.go` (bounded reject→revise, capped retries), `executor.go` (transactional SQLite + SSE + downstream event emission).
   - `internal/agent/vendor_scoring.go` (Go-only evidence assembly) + `vendor_judge.go` (always-fires allocation judge).
-  - `internal/turso/ent/schema/`: extend `vendor.go` with rate-card fields (`standard_rate_usd`, `rush_rate_usd`, `standard_turnaround_hours`, `rush_turnaround_hours`); new `investigation_runs`, `run_node_events`, `judge_verdicts` schemas.
-  - `internal/api/runs/`: `GET /api/runs/{id}`, `GET /api/runs/{id}/stream` (SSE node-transition + verdict feed); `internal/api/investigations/`: operator-forced trigger endpoints.
+  - `internal/turso/ent/schema/`: extend `vendor.go` with `hourly_rate_usd` and `turnaround_hours`; new `run.go` (`title_slug`), `step.go`, and `wf_result.go` schemas.
+  - `internal/turso/runs/`: CRUD actions for runs, steps, and results.
+  - `internal/api/runs/`: `GET /api/runs`, `GET /api/runs/{id}`, `GET /api/runs/{id}/stream` (SSE step transition + result feed); `internal/api/investigations/`: operator-forced trigger endpoints.
   - `web/src/features/runs/`: live investigation graph reusing the `@xyflow/react` canvas, `useSSEStream` hook, judge verdict + rationale inline display.
 * **Verification**: per-node unit tests with a stub Gemini client; full-graph integration test against a fixture `ANOMALY_SIGNAL`/`ALLOCATION_REQUEST` event; live demo run against real Gemini; frontend `bun run typecheck`, `biome check src`, and browser walkthrough showing nodes lighting up in real time.
 

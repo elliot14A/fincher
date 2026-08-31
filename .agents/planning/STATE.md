@@ -1,11 +1,23 @@
 # Fincher — Live Operational State & Milestone Pointer
 
 ## Current Status Pointer
-* **Active Milestone**: Feature 05: ClickHouse Ingestion Pipeline (zero LLM cost substrate)
-* **Active Phase**: `05-clickhouse-ingestion-pipeline`
-* **Phase Status**: PLANNED, READY TO EXECUTE
-* **Next Milestone**: Feature 06: Dedicated Agents (ADK Go v2 graph)
-* **Timestamp**: 2026-08-26T00:00:00+05:30
+* **Active Milestone**: Feature 06: Dedicated Agents & Hackathon Workflow Engine
+* **Active Phase**: `06-dedicated-agents`
+* **Phase Status**: READY TO EXECUTE (Plan updated per Python validation report & spec)
+* **Next Milestone**: Feature 07: Docent Conversational Assistant (Gemini Chat)
+* **Timestamp**: 2026-08-30T17:10:00+05:30
+
+## Key Decision Log (2026-08-30)
+* **Validated compressed-time model and multi-package delivery dependencies**:
+  Built and verified a standalone Python reference harness in `/tmp/opencode/fincher_timemodel/` (46 tests, 0 failures). Proved that tasks elapsing in ~8–12s with decoupled linear domain clocks keep ClickHouse history honest across any time scale.
+* **Fixed sequential-edge duration inflation bug (§3)**:
+  Validation exposed that scheduling a dependent task from a polling tick inflated a 6h+12h chain to 24.5h. In Go, dependent tasks must be scheduled directly from the dependency's completion callback.
+* **Upgraded outbound communications to active simulated dispatches**:
+  Eliminated passive markdown drafts. When `EMAIL_VENDOR`, `NOTIFY_STAKEHOLDERS`, or `POST_SOCIAL_UPDATE` executes, the runner generates simulated dispatch receipt IDs (`DELIVERED`/`PUBLISHED`) and emits real CloudEvents to ClickHouse.
+* **Established closed-loop title self-healing (§13)**:
+  Clean QC return events (`fincher.qc.completed` with `PASSED`) unhold dependent packages, unhold deliveries if all packages are valid, and flip Title `OverallStatus` from `HOLD` back to `ON_TRACK`.
+* **Adopted unified QC vendor model**:
+  Eliminated artificial separation between asset creators and scan tools. Vendors are certified QC & delivery partners evaluated on rate cards, turnaround, and ClickHouse historical accuracy.
 
 ## Key Decision Log (2026-08-27)
 * **Cut debounce/coalesce/dedup and the in-memory budget/concurrency gate from Feature 05
@@ -105,13 +117,16 @@
   - [ ] Rate Limiting: Parked for later (to be implemented with Turso persistent store to survive Cloud Run scale-to-zero).
   - [x] Verification: full pipeline tests against live ClickHouse container (`internal/api/events`, `internal/clickhouse/events`, `internal/clickhouse/vendors`, `pkg/mcp`).
 
-- [ ] **Feature 06: Dedicated Agents (ADK Go v2 Graph)** (see `.agents/planning/phases/06-dedicated-agents/`)
-  - [ ] `internal/agent/graph.go`: ADK Go v2 workflow wiring.
-  - [ ] `triage_judge.go`, `historian.go`, `lineage.go`, `optimizer.go`, `policy_judge.go`, `executor.go`.
-  - [ ] `vendor_scoring.go`, `vendor_judge.go` + `Vendor` ent schema rate-card extension.
-  - [ ] `internal/api/runs/` SSE stream + `internal/api/investigations/` operator triggers.
-  - [ ] `web/src/features/runs/`: live `@xyflow/react` investigation graph.
-  - [ ] Verification: stubbed-LLM node tests, fixture full-graph run, live Gemini demo run, frontend typecheck/biome.
+- [ ] **Feature 06: Dedicated Agents & Hackathon Workflow Engine** (see `.agents/planning/phases/06-dedicated-agents/PLAN.md`)
+  - [x] Workflow schemas (`run.go`, `step.go`, `wf_result.go`) + `internal/turso/runs/` CRUD actions + Title `slug`.
+  - [x] Pure Go staged workflows (`ExecuteIncident`, `ExecuteAllocation`) with 4-stage step persistence, `WfResult`, and dynamic deadline computation.
+  - [x] Real-time SSE streaming (`GET /api/runs/:id/stream`) emitting updates per stage transition.
+  - [ ] **Unit 1**: Active mock dispatches in `internal/agent/runner.go` (`EMAIL_VENDOR`, `NOTIFY_STAKEHOLDERS`, `POST_SOCIAL_UPDATE` with receipt IDs and ClickHouse events).
+  - [ ] **Unit 2**: Closed-loop resolution workflow & Title self-healing (`ExecuteResolution`).
+  - [ ] **Unit 3**: Single front door ingestion auto-router in `internal/api/events/create.go`.
+  - [ ] **Unit 4**: Title projection tool (`get_title_ready_projection`) & compressed-time scheduler.
+  - [ ] **Unit 5**: Non-dominated vendor & 195-event realistic demo seeder (`cmd/seed/main.go`).
+  - [ ] **Unit 6**: Frontend live operations console & hero simulator (`web/src/features/runs/` + `web/src/routes/runs.tsx`).
 
 - [ ] **Feature 07: Docent Conversational Assistant (Gemini Chat)**
   - [ ] Natural language operator assistant streaming reasoning over ClickHouse & SQLite.

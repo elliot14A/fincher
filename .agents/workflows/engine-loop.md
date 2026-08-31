@@ -25,7 +25,7 @@ flowchart TD
     ANALYST -->|AnalystAssessment| BUNDLE[EvidenceBundle]
 
     BUNDLE --> PLANNER[Action Planner Agent<br/>Propose Structured ActionPlan: Invalidate, Re-QC, Hold]
-    PLANNER -->|ActionPlan| POL[Deterministic Policy Engine<br/>Evaluate Rules from DB policies Table]
+    PLANNER -->|ActionPlan| POL[Policy Verification Judge<br/>Evaluate Operational Criteria & Blast Radius]
 
     POL --> DEC{Policy Decision}
     

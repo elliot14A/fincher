@@ -15,9 +15,9 @@
 
 ### Turso / libSQL Application State (`REQ-TURSO`)
 * **REQ-TURSO-01**: Turso stores the delivery domain: `titles`, `masters`, `packages`, `vendors`, `deliveries`, `dependencies`.
-* **REQ-TURSO-02**: Turso stores the agent execution domain: `investigation_runs`, `run_node_events` (per-node transitions for SSE replay/audit), `judge_verdicts` (verdict + rationale, immutable), `budget_counters`.
+* **REQ-TURSO-02**: Turso stores the agent workflow execution domain: `runs` (workflow run with `title_slug`), `steps` (per-node transitions for SSE replay/audit), `wf_results` (judge outcome + rationale, immutable).
 * **REQ-TURSO-03**: Database schema is managed via type-safe Ent ORM schemas in `internal/turso/ent/schema/` with automated migrations.
-* **REQ-TURSO-04**: `Vendor` schema extended with rate-card fields: `standard_rate_usd`, `rush_rate_usd`, `standard_turnaround_hours`, `rush_turnaround_hours` — quoted/current operational data, distinct from ClickHouse's historical performance rollups (`REQ-CH-03`).
+* **REQ-TURSO-04**: `Vendor` schema extended with operational fields: `hourly_rate_usd` and `turnaround_hours` — quoted/current operational data, distinct from ClickHouse's historical performance rollups (`REQ-CH-03`).
 
 ### Event Taxonomy & Agent Graph (`REQ-EVT`, `REQ-AGENT`)
 * **REQ-EVT-01**: `pkg/domain/models/` defines CloudEvents v1.0 and a static taxonomy mapping `type` → category: `TELEMETRY`, `ROUTINE_OUTCOME`, `ANOMALY_SIGNAL`, `ALLOCATION_REQUEST`, `OPERATOR_FORCED`. This is ontology (what an event structurally is), never a numeric business threshold.

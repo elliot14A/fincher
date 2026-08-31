@@ -2,13 +2,13 @@
 
 **Autonomous Delivery-Integrity Operations Engine for Media Production**
 
-Fincher is an event-driven operations workflow engine designed for film and television post-production release pipelines. It continuously consumes media lifecycle events, investigates historical context via ClickHouse using the official ClickHouse Model Context Protocol (MCP) server, coordinates a multi-agent Gemini + Google ADK Go investigation workflow, generates remediation plans, and gates all actions behind deterministic database policies before execution.
+Fincher is an event-driven operations workflow engine designed for film and television post-production release pipelines. It continuously consumes media lifecycle events, investigates historical context via ClickHouse using the official ClickHouse Model Context Protocol (MCP) server, coordinates a multi-agent Gemini investigation workflow, generates remediation plans, and verifies all actions through a policy judge before execution.
 
 ---
 
 ## Core Philosophy
 
-> **AI investigates and plans. Database policies decide what is permitted. Software executes.**
+> **AI investigates and plans. Scoped judges verify. Software executes.**
 
 Fincher is an autonomous operations engine operating a closed-loop operations lifecycle.
 
@@ -39,22 +39,22 @@ Fincher is an autonomous operations engine operating a closed-loop operations li
                (Proposes candidate actions)
                               │
                               ▼
-               [ Deterministic Policy Engine ]
-           (Evaluates candidate actions vs rules)
-                              │
-               ┌──────────────┴──────────────┐
-               ▼                             ▼
-        [ ALLOWED ]                  [ HUMAN APPROVAL ]
-               │                             │
-               ▼                             ▼
-       [ Go Executor ]              [ Approval Queue (UI) ]
-               │                             │ (Upon human review)
-               ▼                             │
-      Mutate State & Emit                    ▼
-          New Event ─────────────────────────┘
-               │
-               ▼
-      [ Closed Loop ] ──► Feed back to Orchestrator (Re-evaluates until terminal state)
+                [ Policy Verification Judge ]
+            (Evaluates candidate actions vs operational criteria)
+                               │
+                ┌──────────────┴──────────────┐
+                ▼                             ▼
+         [ APPROVED ]                  [ HUMAN APPROVAL ]
+                │                             │
+                ▼                             ▼
+        [ Go Executor ]              [ Approval Queue (UI) ]
+                │                             │ (Upon human review)
+                ▼                             │
+       Mutate State & Emit                    ▼
+           New Event ─────────────────────────┘
+                │
+                ▼
+       [ Closed Loop ] ──► Feed back to Orchestrator (Re-evaluates until terminal state)
 ```
 
 ---
@@ -66,7 +66,7 @@ Fincher is an autonomous operations engine operating a closed-loop operations li
 * **Historical Analytics DB**: ClickHouse
 * **Agent-to-DB Interface**: Official ClickHouse Model Context Protocol (MCP) Server
 * **Application State DB**: SQLite (WAL mode)
-* **Policy Engine**: Pure Go Deterministic Evaluator (`internal/policy`)
+* **Policy Verifier**: Scoped Gemini Judge with bounded self-correction loop
 * **Operations Console**: Embedded Web UI served via Go `embed.FS`
 
 ---
