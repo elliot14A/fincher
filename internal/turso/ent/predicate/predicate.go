@@ -18,6 +18,12 @@ type Master func(*sql.Selector)
 // MediaPackage is the predicate function for mediapackage builders.
 type MediaPackage func(*sql.Selector)
 
+// Run is the predicate function for run builders.
+type Run func(*sql.Selector)
+
+// Step is the predicate function for step builders.
+type Step func(*sql.Selector)
+
 // Title is the predicate function for title builders.
 type Title func(*sql.Selector)
 
@@ -26,3 +32,6 @@ type Upload func(*sql.Selector)
 
 // Vendor is the predicate function for vendor builders.
 type Vendor func(*sql.Selector)
+
+// WfResult is the predicate function for wfresult builders.
+type WfResult func(*sql.Selector)

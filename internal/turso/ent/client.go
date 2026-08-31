@@ -19,9 +19,12 @@ import (
 	"github.com/elliot14A/fincher/internal/turso/ent/dependency"
 	"github.com/elliot14A/fincher/internal/turso/ent/master"
 	"github.com/elliot14A/fincher/internal/turso/ent/mediapackage"
+	"github.com/elliot14A/fincher/internal/turso/ent/run"
+	"github.com/elliot14A/fincher/internal/turso/ent/step"
 	"github.com/elliot14A/fincher/internal/turso/ent/title"
 	"github.com/elliot14A/fincher/internal/turso/ent/upload"
 	"github.com/elliot14A/fincher/internal/turso/ent/vendor"
+	"github.com/elliot14A/fincher/internal/turso/ent/wfresult"
 )
 
 // Client is the client that holds all ent builders.
@@ -37,12 +40,18 @@ type Client struct {
 	Master *MasterClient
 	// MediaPackage is the client for interacting with the MediaPackage builders.
 	MediaPackage *MediaPackageClient
+	// Run is the client for interacting with the Run builders.
+	Run *RunClient
+	// Step is the client for interacting with the Step builders.
+	Step *StepClient
 	// Title is the client for interacting with the Title builders.
 	Title *TitleClient
 	// Upload is the client for interacting with the Upload builders.
 	Upload *UploadClient
 	// Vendor is the client for interacting with the Vendor builders.
 	Vendor *VendorClient
+	// WfResult is the client for interacting with the WfResult builders.
+	WfResult *WfResultClient
 }
 
 // NewClient creates a new client configured with the given options.
@@ -58,9 +67,12 @@ func (c *Client) init() {
 	c.Dependency = NewDependencyClient(c.config)
 	c.Master = NewMasterClient(c.config)
 	c.MediaPackage = NewMediaPackageClient(c.config)
+	c.Run = NewRunClient(c.config)
+	c.Step = NewStepClient(c.config)
 	c.Title = NewTitleClient(c.config)
 	c.Upload = NewUploadClient(c.config)
 	c.Vendor = NewVendorClient(c.config)
+	c.WfResult = NewWfResultClient(c.config)
 }
 
 type (
@@ -157,9 +169,12 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		Dependency:   NewDependencyClient(cfg),
 		Master:       NewMasterClient(cfg),
 		MediaPackage: NewMediaPackageClient(cfg),
+		Run:          NewRunClient(cfg),
+		Step:         NewStepClient(cfg),
 		Title:        NewTitleClient(cfg),
 		Upload:       NewUploadClient(cfg),
 		Vendor:       NewVendorClient(cfg),
+		WfResult:     NewWfResultClient(cfg),
 	}, nil
 }
 
@@ -183,9 +198,12 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		Dependency:   NewDependencyClient(cfg),
 		Master:       NewMasterClient(cfg),
 		MediaPackage: NewMediaPackageClient(cfg),
+		Run:          NewRunClient(cfg),
+		Step:         NewStepClient(cfg),
 		Title:        NewTitleClient(cfg),
 		Upload:       NewUploadClient(cfg),
 		Vendor:       NewVendorClient(cfg),
+		WfResult:     NewWfResultClient(cfg),
 	}, nil
 }
 
@@ -215,7 +233,8 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
-		c.Delivery, c.Dependency, c.Master, c.MediaPackage, c.Title, c.Upload, c.Vendor,
+		c.Delivery, c.Dependency, c.Master, c.MediaPackage, c.Run, c.Step, c.Title,
+		c.Upload, c.Vendor, c.WfResult,
 	} {
 		n.Use(hooks...)
 	}
@@ -225,7 +244,8 @@ func (c *Client) Use(hooks ...Hook) {
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
-		c.Delivery, c.Dependency, c.Master, c.MediaPackage, c.Title, c.Upload, c.Vendor,
+		c.Delivery, c.Dependency, c.Master, c.MediaPackage, c.Run, c.Step, c.Title,
+		c.Upload, c.Vendor, c.WfResult,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -242,12 +262,18 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.Master.mutate(ctx, m)
 	case *MediaPackageMutation:
 		return c.MediaPackage.mutate(ctx, m)
+	case *RunMutation:
+		return c.Run.mutate(ctx, m)
+	case *StepMutation:
+		return c.Step.mutate(ctx, m)
 	case *TitleMutation:
 		return c.Title.mutate(ctx, m)
 	case *UploadMutation:
 		return c.Upload.mutate(ctx, m)
 	case *VendorMutation:
 		return c.Vendor.mutate(ctx, m)
+	case *WfResultMutation:
+		return c.WfResult.mutate(ctx, m)
 	default:
 		return nil, fmt.Errorf("ent: unknown mutation type %T", m)
 	}
@@ -913,6 +939,336 @@ func (c *MediaPackageClient) mutate(ctx context.Context, m *MediaPackageMutation
 	}
 }
 
+// RunClient is a client for the Run schema.
+type RunClient struct {
+	config
+}
+
+// NewRunClient returns a client for the Run from the given config.
+func NewRunClient(c config) *RunClient {
+	return &RunClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `run.Hooks(f(g(h())))`.
+func (c *RunClient) Use(hooks ...Hook) {
+	c.hooks.Run = append(c.hooks.Run, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `run.Intercept(f(g(h())))`.
+func (c *RunClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Run = append(c.inters.Run, interceptors...)
+}
+
+// Create returns a builder for creating a Run entity.
+func (c *RunClient) Create() *RunCreate {
+	mutation := newRunMutation(c.config, OpCreate)
+	return &RunCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Run entities.
+func (c *RunClient) CreateBulk(builders ...*RunCreate) *RunCreateBulk {
+	return &RunCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *RunClient) MapCreateBulk(slice any, setFunc func(*RunCreate, int)) *RunCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &RunCreateBulk{err: fmt.Errorf("calling to RunClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*RunCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &RunCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Run.
+func (c *RunClient) Update() *RunUpdate {
+	mutation := newRunMutation(c.config, OpUpdate)
+	return &RunUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *RunClient) UpdateOne(_m *Run) *RunUpdateOne {
+	mutation := newRunMutation(c.config, OpUpdateOne, withRun(_m))
+	return &RunUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *RunClient) UpdateOneID(id string) *RunUpdateOne {
+	mutation := newRunMutation(c.config, OpUpdateOne, withRunID(id))
+	return &RunUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Run.
+func (c *RunClient) Delete() *RunDelete {
+	mutation := newRunMutation(c.config, OpDelete)
+	return &RunDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *RunClient) DeleteOne(_m *Run) *RunDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *RunClient) DeleteOneID(id string) *RunDeleteOne {
+	builder := c.Delete().Where(run.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &RunDeleteOne{builder}
+}
+
+// Query returns a query builder for Run.
+func (c *RunClient) Query() *RunQuery {
+	return &RunQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeRun},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Run entity by its id.
+func (c *RunClient) Get(ctx context.Context, id string) (*Run, error) {
+	return c.Query().Where(run.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *RunClient) GetX(ctx context.Context, id string) *Run {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QuerySteps queries the steps edge of a Run.
+func (c *RunClient) QuerySteps(_m *Run) *StepQuery {
+	query := (&StepClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(run.Table, run.FieldID, id),
+			sqlgraph.To(step.Table, step.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, run.StepsTable, run.StepsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryResults queries the results edge of a Run.
+func (c *RunClient) QueryResults(_m *Run) *WfResultQuery {
+	query := (&WfResultClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(run.Table, run.FieldID, id),
+			sqlgraph.To(wfresult.Table, wfresult.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, run.ResultsTable, run.ResultsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *RunClient) Hooks() []Hook {
+	return c.hooks.Run
+}
+
+// Interceptors returns the client interceptors.
+func (c *RunClient) Interceptors() []Interceptor {
+	return c.inters.Run
+}
+
+func (c *RunClient) mutate(ctx context.Context, m *RunMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&RunCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&RunUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&RunUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&RunDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Run mutation op: %q", m.Op())
+	}
+}
+
+// StepClient is a client for the Step schema.
+type StepClient struct {
+	config
+}
+
+// NewStepClient returns a client for the Step from the given config.
+func NewStepClient(c config) *StepClient {
+	return &StepClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `step.Hooks(f(g(h())))`.
+func (c *StepClient) Use(hooks ...Hook) {
+	c.hooks.Step = append(c.hooks.Step, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `step.Intercept(f(g(h())))`.
+func (c *StepClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Step = append(c.inters.Step, interceptors...)
+}
+
+// Create returns a builder for creating a Step entity.
+func (c *StepClient) Create() *StepCreate {
+	mutation := newStepMutation(c.config, OpCreate)
+	return &StepCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Step entities.
+func (c *StepClient) CreateBulk(builders ...*StepCreate) *StepCreateBulk {
+	return &StepCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *StepClient) MapCreateBulk(slice any, setFunc func(*StepCreate, int)) *StepCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &StepCreateBulk{err: fmt.Errorf("calling to StepClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*StepCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &StepCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Step.
+func (c *StepClient) Update() *StepUpdate {
+	mutation := newStepMutation(c.config, OpUpdate)
+	return &StepUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *StepClient) UpdateOne(_m *Step) *StepUpdateOne {
+	mutation := newStepMutation(c.config, OpUpdateOne, withStep(_m))
+	return &StepUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *StepClient) UpdateOneID(id string) *StepUpdateOne {
+	mutation := newStepMutation(c.config, OpUpdateOne, withStepID(id))
+	return &StepUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Step.
+func (c *StepClient) Delete() *StepDelete {
+	mutation := newStepMutation(c.config, OpDelete)
+	return &StepDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *StepClient) DeleteOne(_m *Step) *StepDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *StepClient) DeleteOneID(id string) *StepDeleteOne {
+	builder := c.Delete().Where(step.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &StepDeleteOne{builder}
+}
+
+// Query returns a query builder for Step.
+func (c *StepClient) Query() *StepQuery {
+	return &StepQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeStep},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Step entity by its id.
+func (c *StepClient) Get(ctx context.Context, id string) (*Step, error) {
+	return c.Query().Where(step.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *StepClient) GetX(ctx context.Context, id string) *Step {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryRun queries the run edge of a Step.
+func (c *StepClient) QueryRun(_m *Step) *RunQuery {
+	query := (&RunClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(step.Table, step.FieldID, id),
+			sqlgraph.To(run.Table, run.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, step.RunTable, step.RunColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryResults queries the results edge of a Step.
+func (c *StepClient) QueryResults(_m *Step) *WfResultQuery {
+	query := (&WfResultClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(step.Table, step.FieldID, id),
+			sqlgraph.To(wfresult.Table, wfresult.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, step.ResultsTable, step.ResultsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *StepClient) Hooks() []Hook {
+	return c.hooks.Step
+}
+
+// Interceptors returns the client interceptors.
+func (c *StepClient) Interceptors() []Interceptor {
+	return c.inters.Step
+}
+
+func (c *StepClient) mutate(ctx context.Context, m *StepMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&StepCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&StepUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&StepUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&StepDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Step mutation op: %q", m.Op())
+	}
+}
+
 // TitleClient is a client for the Title schema.
 type TitleClient struct {
 	config
@@ -1376,13 +1732,179 @@ func (c *VendorClient) mutate(ctx context.Context, m *VendorMutation) (Value, er
 	}
 }
 
+// WfResultClient is a client for the WfResult schema.
+type WfResultClient struct {
+	config
+}
+
+// NewWfResultClient returns a client for the WfResult from the given config.
+func NewWfResultClient(c config) *WfResultClient {
+	return &WfResultClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `wfresult.Hooks(f(g(h())))`.
+func (c *WfResultClient) Use(hooks ...Hook) {
+	c.hooks.WfResult = append(c.hooks.WfResult, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `wfresult.Intercept(f(g(h())))`.
+func (c *WfResultClient) Intercept(interceptors ...Interceptor) {
+	c.inters.WfResult = append(c.inters.WfResult, interceptors...)
+}
+
+// Create returns a builder for creating a WfResult entity.
+func (c *WfResultClient) Create() *WfResultCreate {
+	mutation := newWfResultMutation(c.config, OpCreate)
+	return &WfResultCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of WfResult entities.
+func (c *WfResultClient) CreateBulk(builders ...*WfResultCreate) *WfResultCreateBulk {
+	return &WfResultCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *WfResultClient) MapCreateBulk(slice any, setFunc func(*WfResultCreate, int)) *WfResultCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &WfResultCreateBulk{err: fmt.Errorf("calling to WfResultClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*WfResultCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &WfResultCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for WfResult.
+func (c *WfResultClient) Update() *WfResultUpdate {
+	mutation := newWfResultMutation(c.config, OpUpdate)
+	return &WfResultUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *WfResultClient) UpdateOne(_m *WfResult) *WfResultUpdateOne {
+	mutation := newWfResultMutation(c.config, OpUpdateOne, withWfResult(_m))
+	return &WfResultUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *WfResultClient) UpdateOneID(id string) *WfResultUpdateOne {
+	mutation := newWfResultMutation(c.config, OpUpdateOne, withWfResultID(id))
+	return &WfResultUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for WfResult.
+func (c *WfResultClient) Delete() *WfResultDelete {
+	mutation := newWfResultMutation(c.config, OpDelete)
+	return &WfResultDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *WfResultClient) DeleteOne(_m *WfResult) *WfResultDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *WfResultClient) DeleteOneID(id string) *WfResultDeleteOne {
+	builder := c.Delete().Where(wfresult.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &WfResultDeleteOne{builder}
+}
+
+// Query returns a query builder for WfResult.
+func (c *WfResultClient) Query() *WfResultQuery {
+	return &WfResultQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeWfResult},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a WfResult entity by its id.
+func (c *WfResultClient) Get(ctx context.Context, id string) (*WfResult, error) {
+	return c.Query().Where(wfresult.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *WfResultClient) GetX(ctx context.Context, id string) *WfResult {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryRun queries the run edge of a WfResult.
+func (c *WfResultClient) QueryRun(_m *WfResult) *RunQuery {
+	query := (&RunClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(wfresult.Table, wfresult.FieldID, id),
+			sqlgraph.To(run.Table, run.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, wfresult.RunTable, wfresult.RunColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryStep queries the step edge of a WfResult.
+func (c *WfResultClient) QueryStep(_m *WfResult) *StepQuery {
+	query := (&StepClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(wfresult.Table, wfresult.FieldID, id),
+			sqlgraph.To(step.Table, step.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, wfresult.StepTable, wfresult.StepColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *WfResultClient) Hooks() []Hook {
+	return c.hooks.WfResult
+}
+
+// Interceptors returns the client interceptors.
+func (c *WfResultClient) Interceptors() []Interceptor {
+	return c.inters.WfResult
+}
+
+func (c *WfResultClient) mutate(ctx context.Context, m *WfResultMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&WfResultCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&WfResultUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&WfResultUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&WfResultDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown WfResult mutation op: %q", m.Op())
+	}
+}
+
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		Delivery, Dependency, Master, MediaPackage, Title, Upload, Vendor []ent.Hook
+		Delivery, Dependency, Master, MediaPackage, Run, Step, Title, Upload, Vendor,
+		WfResult []ent.Hook
 	}
 	inters struct {
-		Delivery, Dependency, Master, MediaPackage, Title, Upload,
-		Vendor []ent.Interceptor
+		Delivery, Dependency, Master, MediaPackage, Run, Step, Title, Upload, Vendor,
+		WfResult []ent.Interceptor
 	}
 )

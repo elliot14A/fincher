@@ -16,9 +16,12 @@ import (
 	"github.com/elliot14A/fincher/internal/turso/ent/dependency"
 	"github.com/elliot14A/fincher/internal/turso/ent/master"
 	"github.com/elliot14A/fincher/internal/turso/ent/mediapackage"
+	"github.com/elliot14A/fincher/internal/turso/ent/run"
+	"github.com/elliot14A/fincher/internal/turso/ent/step"
 	"github.com/elliot14A/fincher/internal/turso/ent/title"
 	"github.com/elliot14A/fincher/internal/turso/ent/upload"
 	"github.com/elliot14A/fincher/internal/turso/ent/vendor"
+	"github.com/elliot14A/fincher/internal/turso/ent/wfresult"
 )
 
 // ent aliases to avoid import conflicts in user's code.
@@ -83,9 +86,12 @@ func checkColumn(t, c string) error {
 			dependency.Table:   dependency.ValidColumn,
 			master.Table:       master.ValidColumn,
 			mediapackage.Table: mediapackage.ValidColumn,
+			run.Table:          run.ValidColumn,
+			step.Table:         step.ValidColumn,
 			title.Table:        title.ValidColumn,
 			upload.Table:       upload.ValidColumn,
 			vendor.Table:       vendor.ValidColumn,
+			wfresult.Table:     wfresult.ValidColumn,
 		})
 	})
 	return columnCheck(t, c)

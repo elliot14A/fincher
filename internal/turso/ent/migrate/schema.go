@@ -141,6 +141,7 @@ var (
 		{Name: "derived_from_master_version", Type: field.TypeString},
 		{Name: "redelivery_count", Type: field.TypeInt, Default: 0},
 		{Name: "status", Type: field.TypeEnum, Enums: []string{"PENDING", "VALID", "INVALIDATED", "RE_QC_PENDING"}, Default: "PENDING"},
+		{Name: "market", Type: field.TypeString, Nullable: true, Default: ""},
 		{Name: "title_id", Type: field.TypeString},
 		{Name: "vendor_id", Type: field.TypeString},
 	}
@@ -152,13 +153,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "media_packages_titles_packages",
-				Columns:    []*schema.Column{MediaPackagesColumns[10]},
+				Columns:    []*schema.Column{MediaPackagesColumns[11]},
 				RefColumns: []*schema.Column{TitlesColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "media_packages_vendors_packages",
-				Columns:    []*schema.Column{MediaPackagesColumns[11]},
+				Columns:    []*schema.Column{MediaPackagesColumns[12]},
 				RefColumns: []*schema.Column{VendorsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -167,12 +168,12 @@ var (
 			{
 				Name:    "mediapackage_title_id",
 				Unique:  false,
-				Columns: []*schema.Column{MediaPackagesColumns[10]},
+				Columns: []*schema.Column{MediaPackagesColumns[11]},
 			},
 			{
 				Name:    "mediapackage_vendor_id",
 				Unique:  false,
-				Columns: []*schema.Column{MediaPackagesColumns[11]},
+				Columns: []*schema.Column{MediaPackagesColumns[12]},
 			},
 			{
 				Name:    "mediapackage_status",
@@ -184,6 +185,89 @@ var (
 				Unique:  false,
 				Columns: []*schema.Column{MediaPackagesColumns[4]},
 			},
+			{
+				Name:    "mediapackage_market",
+				Unique:  false,
+				Columns: []*schema.Column{MediaPackagesColumns[10]},
+			},
+		},
+	}
+	// RunsColumns holds the columns for the "runs" table.
+	RunsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeString, Unique: true},
+		{Name: "metadata", Type: field.TypeJSON, Nullable: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "title_slug", Type: field.TypeString, Default: "GLOBAL"},
+		{Name: "trigger", Type: field.TypeString},
+		{Name: "status", Type: field.TypeEnum, Enums: []string{"PENDING", "RUNNING", "COMPLETED", "FAILED", "ESCALATED"}, Default: "RUNNING"},
+		{Name: "started_at", Type: field.TypeTime},
+		{Name: "ended_at", Type: field.TypeTime, Nullable: true},
+	}
+	// RunsTable holds the schema information for the "runs" table.
+	RunsTable = &schema.Table{
+		Name:       "runs",
+		Columns:    RunsColumns,
+		PrimaryKey: []*schema.Column{RunsColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "run_status",
+				Unique:  false,
+				Columns: []*schema.Column{RunsColumns[6]},
+			},
+			{
+				Name:    "run_trigger",
+				Unique:  false,
+				Columns: []*schema.Column{RunsColumns[5]},
+			},
+			{
+				Name:    "run_title_slug",
+				Unique:  false,
+				Columns: []*schema.Column{RunsColumns[4]},
+			},
+		},
+	}
+	// StepsColumns holds the columns for the "steps" table.
+	StepsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeString, Unique: true},
+		{Name: "metadata", Type: field.TypeJSON, Nullable: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "name", Type: field.TypeString},
+		{Name: "status", Type: field.TypeEnum, Enums: []string{"PENDING", "RUNNING", "COMPLETED", "FAILED", "SKIPPED"}, Default: "RUNNING"},
+		{Name: "started_at", Type: field.TypeTime},
+		{Name: "ended_at", Type: field.TypeTime, Nullable: true},
+		{Name: "run_id", Type: field.TypeString},
+	}
+	// StepsTable holds the schema information for the "steps" table.
+	StepsTable = &schema.Table{
+		Name:       "steps",
+		Columns:    StepsColumns,
+		PrimaryKey: []*schema.Column{StepsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "steps_runs_steps",
+				Columns:    []*schema.Column{StepsColumns[8]},
+				RefColumns: []*schema.Column{RunsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "step_run_id",
+				Unique:  false,
+				Columns: []*schema.Column{StepsColumns[8]},
+			},
+			{
+				Name:    "step_status",
+				Unique:  false,
+				Columns: []*schema.Column{StepsColumns[5]},
+			},
+			{
+				Name:    "step_name",
+				Unique:  false,
+				Columns: []*schema.Column{StepsColumns[4]},
+			},
 		},
 	}
 	// TitlesColumns holds the columns for the "titles" table.
@@ -193,6 +277,7 @@ var (
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "name", Type: field.TypeString},
+		{Name: "slug", Type: field.TypeString, Unique: true},
 		{Name: "type", Type: field.TypeEnum, Enums: []string{"FEATURE", "SERIES", "SPECIAL"}, Default: "FEATURE"},
 		{Name: "premiere_date", Type: field.TypeTime},
 		{Name: "territories", Type: field.TypeInt, Default: 1},
@@ -208,12 +293,12 @@ var (
 			{
 				Name:    "title_overall_status",
 				Unique:  false,
-				Columns: []*schema.Column{TitlesColumns[9]},
+				Columns: []*schema.Column{TitlesColumns[10]},
 			},
 			{
 				Name:    "title_type",
 				Unique:  false,
-				Columns: []*schema.Column{TitlesColumns[5]},
+				Columns: []*schema.Column{TitlesColumns[6]},
 			},
 		},
 	}
@@ -240,6 +325,8 @@ var (
 		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "name", Type: field.TypeString},
 		{Name: "specialty", Type: field.TypeString},
+		{Name: "hourly_rate_usd", Type: field.TypeFloat64, Default: 0},
+		{Name: "turnaround_hours", Type: field.TypeInt, Default: 24},
 	}
 	// VendorsTable holds the schema information for the "vendors" table.
 	VendorsTable = &schema.Table{
@@ -254,15 +341,73 @@ var (
 			},
 		},
 	}
+	// WfResultsColumns holds the columns for the "wf_results" table.
+	WfResultsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeString, Unique: true},
+		{Name: "metadata", Type: field.TypeJSON, Nullable: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "judge", Type: field.TypeString},
+		{Name: "outcome", Type: field.TypeString},
+		{Name: "rationale", Type: field.TypeString, Default: ""},
+		{Name: "attempt", Type: field.TypeInt, Default: 1},
+		{Name: "run_id", Type: field.TypeString},
+		{Name: "step_id", Type: field.TypeString, Nullable: true},
+	}
+	// WfResultsTable holds the schema information for the "wf_results" table.
+	WfResultsTable = &schema.Table{
+		Name:       "wf_results",
+		Columns:    WfResultsColumns,
+		PrimaryKey: []*schema.Column{WfResultsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "wf_results_runs_results",
+				Columns:    []*schema.Column{WfResultsColumns[8]},
+				RefColumns: []*schema.Column{RunsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "wf_results_steps_results",
+				Columns:    []*schema.Column{WfResultsColumns[9]},
+				RefColumns: []*schema.Column{StepsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "wfresult_run_id",
+				Unique:  false,
+				Columns: []*schema.Column{WfResultsColumns[8]},
+			},
+			{
+				Name:    "wfresult_step_id",
+				Unique:  false,
+				Columns: []*schema.Column{WfResultsColumns[9]},
+			},
+			{
+				Name:    "wfresult_judge",
+				Unique:  false,
+				Columns: []*schema.Column{WfResultsColumns[4]},
+			},
+			{
+				Name:    "wfresult_outcome",
+				Unique:  false,
+				Columns: []*schema.Column{WfResultsColumns[5]},
+			},
+		},
+	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
 		DeliveriesTable,
 		DependenciesTable,
 		MastersTable,
 		MediaPackagesTable,
+		RunsTable,
+		StepsTable,
 		TitlesTable,
 		UploadsTable,
 		VendorsTable,
+		WfResultsTable,
 	}
 )
 
@@ -273,4 +418,7 @@ func init() {
 	MastersTable.ForeignKeys[0].RefTable = TitlesTable
 	MediaPackagesTable.ForeignKeys[0].RefTable = TitlesTable
 	MediaPackagesTable.ForeignKeys[1].RefTable = VendorsTable
+	StepsTable.ForeignKeys[0].RefTable = RunsTable
+	WfResultsTable.ForeignKeys[0].RefTable = RunsTable
+	WfResultsTable.ForeignKeys[1].RefTable = StepsTable
 }

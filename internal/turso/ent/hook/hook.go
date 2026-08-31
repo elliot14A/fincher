@@ -57,6 +57,30 @@ func (f MediaPackageFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.MediaPackageMutation", m)
 }
 
+// The RunFunc type is an adapter to allow the use of ordinary
+// function as Run mutator.
+type RunFunc func(context.Context, *ent.RunMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f RunFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.RunMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.RunMutation", m)
+}
+
+// The StepFunc type is an adapter to allow the use of ordinary
+// function as Step mutator.
+type StepFunc func(context.Context, *ent.StepMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f StepFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.StepMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.StepMutation", m)
+}
+
 // The TitleFunc type is an adapter to allow the use of ordinary
 // function as Title mutator.
 type TitleFunc func(context.Context, *ent.TitleMutation) (ent.Value, error)
@@ -91,6 +115,18 @@ func (f VendorFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, erro
 		return f(ctx, mv)
 	}
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.VendorMutation", m)
+}
+
+// The WfResultFunc type is an adapter to allow the use of ordinary
+// function as WfResult mutator.
+type WfResultFunc func(context.Context, *ent.WfResultMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f WfResultFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.WfResultMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.WfResultMutation", m)
 }
 
 // Condition is a hook condition function.
