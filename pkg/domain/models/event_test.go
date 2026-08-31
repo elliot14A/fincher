@@ -105,9 +105,23 @@ func TestEvent_Classify(t *testing.T) {
 			expected: models.CategoryIncident,
 		},
 		{
-			name: "title created is allocation",
+			name: "title created is telemetry",
 			event: &models.Event{
 				Type: models.TypeTitleCreated,
+			},
+			expected: models.CategoryTelemetry,
+		},
+		{
+			name: "package required is allocation",
+			event: &models.Event{
+				Type: models.TypePackageRequired,
+			},
+			expected: models.CategoryAllocation,
+		},
+		{
+			name: "vendor reconform dispatched is allocation",
+			event: &models.Event{
+				Type: models.TypeVendorReconformDispatched,
 			},
 			expected: models.CategoryAllocation,
 		},

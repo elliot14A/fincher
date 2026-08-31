@@ -118,7 +118,7 @@ func (e *Event) PayloadJSON() (string, error) {
 // Classify determines the EventCategory for downstream routing.
 func (e *Event) Classify() EventCategory {
 	switch strings.ToLower(e.Type) {
-	case TypeVendorHeartbeat, TypePackageDownloadStarted, TypePackageDownloadProgress:
+	case TypeVendorHeartbeat, TypePackageDownloadStarted, TypePackageDownloadProgress, TypeTitleCreated:
 		return CategoryTelemetry
 
 	case TypeVendorAssigned, TypeVendorEmailed, TypeStakeholdersNotified, TypeSocialPosted,
@@ -145,7 +145,7 @@ func (e *Event) Classify() EventCategory {
 	case TypeAudioSyncDriftDetected, TypeMasterCutRevised, TypeVendorSLABreach, TypePackageInvalidated:
 		return CategoryIncident
 
-	case TypeTitleCreated, TypePackageRequired, TypeVendorReconformDispatched:
+	case TypePackageRequired, TypeVendorReconformDispatched:
 		return CategoryAllocation
 
 	case TypeOperatorForced, TypeInvestigationTriggered:
