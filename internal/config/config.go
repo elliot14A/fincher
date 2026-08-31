@@ -13,6 +13,10 @@ const (
 	DefaultMaxSyncDriftMs        = 120.0
 	DefaultVendorDefectThreshold = 0.05
 	DefaultPremiereUrgentHours   = 72.0
+	DefaultTurnaroundHours       = 12.0
+	// DefaultMasterReconformHours: 48h master reconform ensures stale-master titles land in WATCH/TIGHT for a 72h premiere (72h - (48h + 12h) = 12h buffer).
+	DefaultMasterReconformHours  = 48.0
+	MaxRedeliveryAttempts        = 3
 )
 
 // Config holds runtime infrastructure and service configuration.
