@@ -4,9 +4,12 @@ import (
 	"database/sql"
 
 	"github.com/labstack/echo/v4"
+	"google.golang.org/adk/v2/model"
+
+	"github.com/elliot14A/fincher/internal/turso/ent"
 )
 
-// RegisterRoutes registers the event batch ingestion endpoint.
-func RegisterRoutes(g *echo.Group, db *sql.DB) {
-	g.POST("", Create(db))
+// RegisterRoutes registers the event batch ingestion and routing endpoint.
+func RegisterRoutes(g *echo.Group, db *sql.DB, tursoClient *ent.Client, modelProvider func() model.LLM) {
+	g.POST("", Create(db, tursoClient, modelProvider))
 }

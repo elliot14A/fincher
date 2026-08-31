@@ -7,12 +7,14 @@ require (
 	github.com/ClickHouse/clickhouse-go/v2 v2.48.0
 	github.com/alecthomas/kong v1.16.1
 	github.com/go-playground/validator/v10 v10.30.3
+	github.com/google/jsonschema-go v0.4.3
 	github.com/google/uuid v1.6.0
 	github.com/labstack/echo/v4 v4.15.4
 	github.com/mattn/go-sqlite3 v1.14.50
 	github.com/modelcontextprotocol/go-sdk v1.7.0
 	github.com/tursodatabase/libsql-client-go v0.0.0-20260528064733-9d5d30a29a60
 	google.golang.org/adk/v2 v2.2.0
+	google.golang.org/genai v1.66.0
 )
 
 require (
@@ -39,8 +41,8 @@ require (
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
-	github.com/google/jsonschema-go v0.4.3 // indirect
 	github.com/google/s2a-go v0.1.9 // indirect
+	github.com/google/safehtml v0.1.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.19 // indirect
 	github.com/googleapis/gax-go/v2 v2.23.0 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
@@ -78,7 +80,6 @@ require (
 	golang.org/x/text v0.40.0 // indirect
 	golang.org/x/time v0.15.0 // indirect
 	google.golang.org/api v0.291.0 // indirect
-	google.golang.org/genai v1.66.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260724162435-b2f20204f0df // indirect
 	google.golang.org/grpc v1.83.0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect

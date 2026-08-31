@@ -33,7 +33,7 @@ func generateUploadID() string {
 // Upload handles POST /api/uploads.
 //
 //	@Summary		Upload an image asset
-//	@Description	Uploads a raster image (PNG, JPEG, WebP, GIF <= 1MB) stored directly in SQLite as binary BLOB.
+//	@Description	Uploads a raster image (PNG, JPEG, WebP, GIF <= 1MB)
 //	@Tags			uploads
 //	@Accept			multipart/form-data
 //	@Produce		json

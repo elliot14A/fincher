@@ -7,11 +7,14 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 
+	"google.golang.org/adk/v2/model"
+
 	"github.com/elliot14A/fincher/internal/api/deliveries"
 	"github.com/elliot14A/fincher/internal/api/dependencies"
 	"github.com/elliot14A/fincher/internal/api/events"
 	"github.com/elliot14A/fincher/internal/api/masters"
 	"github.com/elliot14A/fincher/internal/api/packages"
+	"github.com/elliot14A/fincher/internal/api/runs"
 	"github.com/elliot14A/fincher/internal/api/titles"
 	"github.com/elliot14A/fincher/internal/api/uploads"
 	"github.com/elliot14A/fincher/internal/api/vendors"
@@ -25,6 +28,11 @@ type Server struct {
 	echo   *echo.Echo
 	client *ent.Client
 	chDB   *sql.DB
+	llm    model.LLM
+}
+
+func (s *Server) SetModel(m model.LLM) {
+	s.llm = m
 }
 
 func NewServer(client *ent.Client, chDB ...*sql.DB) *Server {
@@ -105,9 +113,10 @@ func (s *Server) registerRoutes() {
 	deliveries.RegisterRoutes(apiGroup.Group("/deliveries"), s.client)
 	dependencies.RegisterRoutes(apiGroup.Group("/dependencies"), s.client)
 	uploads.RegisterRoutes(apiGroup.Group("/uploads"), s.client)
+	runs.RegisterRoutes(apiGroup.Group("/runs"), s.client, s.chDB, func() model.LLM { return s.llm })
 
 	if s.chDB != nil {
-		events.RegisterRoutes(apiGroup.Group("/events"), s.chDB)
+		events.RegisterRoutes(apiGroup.Group("/events"), s.chDB, s.client, func() model.LLM { return s.llm })
 	}
 
 	web.RegisterRoutes(s.echo)

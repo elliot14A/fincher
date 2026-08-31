@@ -11,6 +11,7 @@ import (
 
 	"github.com/alecthomas/kong"
 
+	"github.com/elliot14A/fincher/internal/agent"
 	"github.com/elliot14A/fincher/internal/api"
 	"github.com/elliot14A/fincher/internal/clickhouse"
 	"github.com/elliot14A/fincher/internal/config"
@@ -70,6 +71,15 @@ func main() {
 	}
 
 	srv := api.NewServer(dbClient, chDB)
+	if cfg.GeminiAPIKey != "" {
+		modelRes := agent.NewModel(ctx, cfg.GeminiAPIKey, cfg.FlashModel)
+		if modelRes.IsErr() {
+			logger.Warn("failed to initialize gemini model", "error", modelRes.Error())
+		} else {
+			srv.SetModel(modelRes.Unwrap())
+			logger.Info("initialized gemini model runtime", "model", cfg.FlashModel)
+		}
+	}
 	e := srv.Router()
 
 	addr := fmt.Sprintf(":%d", cfg.Port)
