@@ -1,32 +1,59 @@
 package scheduler
 
 import (
-	"context"
 	"fmt"
+	"math"
+	"math/rand"
+	"sort"
 	"sync"
 	"time"
 
 	"github.com/google/uuid"
 
 	domainerrors "github.com/elliot14A/fincher/pkg/domain/errors"
+	"github.com/elliot14A/fincher/pkg/domain/models"
 	"github.com/elliot14A/fincher/pkg/logger"
+	"github.com/elliot14A/fincher/pkg/recovery"
+)
+
+// DefaultSchedulerSeed is the fixed constant used for reproducible demo runs.
+const DefaultSchedulerSeed = int64(20260828)
+
+// Retention constants defining the bounded task history with hysteresis band.
+const (
+	maxRetainedTasks = 500
+	reapBatch        = 128
 )
 
 // Scheduler manages in-memory compressed-time task execution and DAG duration chaining.
 type Scheduler struct {
-	mu        sync.RWMutex
-	tasks     map[string]*Task
-	timeScale time.Duration
+	mu          sync.RWMutex
+	tasks       map[string]*Task
+	timeScale   time.Duration
+	rng         *rand.Rand
+	rngMu       sync.Mutex
+	runVariance float64
 }
 
-// NewScheduler constructs a thread-safe scheduler instance with the specified time compression factor.
-func NewScheduler(timeScale time.Duration) *Scheduler {
+// NewScheduler constructs a thread-safe scheduler instance with the specified time compression factor and optional seed.
+func NewScheduler(timeScale time.Duration, seed ...int64) *Scheduler {
 	if timeScale <= 0 {
 		timeScale = time.Second
 	}
+	seedVal := DefaultSchedulerSeed
+	if len(seed) > 0 && seed[0] != 0 {
+		seedVal = seed[0]
+	}
+
+	r := rand.New(rand.NewSource(seedVal))
+	// runVariance in range [0.5, 1.5), drawn once per scheduler instance from seeded RNG
+	variance := 0.5 + r.Float64()
+
 	return &Scheduler{
-		tasks:     make(map[string]*Task),
-		timeScale: timeScale,
+		tasks:       make(map[string]*Task),
+		timeScale:   timeScale,
+		rng:         r,
+		runVariance: variance,
 	}
 }
 
@@ -37,14 +64,64 @@ func (s *Scheduler) TimeScale() time.Duration {
 	return s.timeScale
 }
 
+// RunVariance returns the per-instance variance multiplier drawn at initialization.
+func (s *Scheduler) RunVariance() float64 {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.runVariance
+}
+
+// TaskCount returns the total number of retained tasks in the scheduler map.
+func (s *Scheduler) TaskCount() int {
+	if s == nil {
+		return 0
+	}
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return len(s.tasks)
+}
+
+// reapLocked prunes oldest terminal tasks (Completed/Cancelled) when total count exceeds maxRetainedTasks + reapBatch.
+// Must be called with s.mu write lock held. RUNNING tasks are never reaped.
+func (s *Scheduler) reapLocked() {
+	if len(s.tasks) < maxRetainedTasks+reapBatch {
+		return
+	}
+
+	var terminal []*Task
+	for _, t := range s.tasks {
+		if t.Status != TaskStatusRunning {
+			terminal = append(terminal, t)
+		}
+	}
+	if len(terminal) == 0 {
+		return
+	}
+
+	// Sort terminal tasks by StartedAt ascending (oldest first)
+	sort.Slice(terminal, func(i, j int) bool {
+		return terminal[i].StartedAt.Before(terminal[j].StartedAt)
+	})
+
+	excess := len(s.tasks) - maxRetainedTasks
+	for i := 0; i < excess && i < len(terminal); i++ {
+		delete(s.tasks, terminal[i].ID)
+	}
+}
+
 // ScheduleTask registers and launches a compressed-time task.
 // If a previous active task exists for the same package, it is cancelled to prevent duplicate completions.
 func (s *Scheduler) ScheduleTask(
 	kind TaskKind,
 	targetID, titleSlug, vendorID string,
+	component models.ComponentType,
+	forceOutcome string,
 	turnaroundHours float64,
 	onComplete func(t *Task),
 ) (*Task, error) {
+	if s == nil {
+		return nil, nil
+	}
 	if targetID == "" {
 		return nil, domainerrors.NewWithOp("scheduler.ScheduleTask", domainerrors.CodeInvalidInput, "target_id cannot be empty", nil)
 	}
@@ -58,16 +135,14 @@ func (s *Scheduler) ScheduleTask(
 	// Cancel existing in-flight task for the same package (idempotency guard)
 	if kind == TaskKindPackage {
 		for _, existing := range s.tasks {
-			if existing.Kind == TaskKindPackage && existing.TargetID == targetID &&
-				(existing.Status == TaskStatusRunning || existing.Status == TaskStatusScheduled) {
+			if existing.Kind == TaskKindPackage && existing.TargetID == targetID && existing.Status == TaskStatusRunning {
 				if existing.timer != nil {
 					existing.timer.Stop()
 				}
-				if existing.cancelFunc != nil {
-					existing.cancelFunc()
-				}
+				nowCanc := time.Now().UTC()
 				existing.Status = TaskStatusCancelled
-				logger.Info("scheduler: cancelled existing in-flight task on package re-assignment",
+				existing.CancelledAt = &nowCanc
+				logger.Debug("scheduler: cancelled existing in-flight task on package re-assignment",
 					"task_id", existing.ID,
 					"package_id", targetID,
 				)
@@ -77,10 +152,17 @@ func (s *Scheduler) ScheduleTask(
 
 	taskID := fmt.Sprintf("task-%s-%s", kind, uuid.NewString()[:8])
 	now := time.Now().UTC()
-	realDuration := time.Duration(turnaroundHours * float64(s.timeScale))
-	finishReal := now.Add(realDuration)
 
-	ctx, cancel := context.WithCancel(context.Background())
+	// Safe duration calculation: guarded against float overflow and rounded
+	raw := turnaroundHours * float64(s.timeScale)
+	if raw > float64(math.MaxInt64) {
+		raw = float64(math.MaxInt64)
+	}
+	realDuration := time.Duration(math.Round(raw))
+	if realDuration < 0 {
+		realDuration = 0
+	}
+	finishReal := now.Add(realDuration)
 
 	task := &Task{
 		ID:              taskID,
@@ -88,37 +170,42 @@ func (s *Scheduler) ScheduleTask(
 		TargetID:        targetID,
 		TitleSlug:       titleSlug,
 		VendorID:        vendorID,
+		Component:       component,
+		ForceOutcome:    forceOutcome,
 		TurnaroundHours: turnaroundHours,
 		StartedAt:       now,
 		FinishReal:      finishReal,
 		Status:          TaskStatusRunning,
-		cancelFunc:      cancel,
 	}
 
-	// Schedule execution callback
+	// Schedule execution callback with atomic status transition and immutable snapshot delivery
 	task.timer = time.AfterFunc(realDuration, func() {
-		s.mu.Lock()
-		// Check if task was cancelled while waiting
-		if task.Status != TaskStatusRunning {
-			s.mu.Unlock()
-			return
-		}
-		task.Status = TaskStatusCompleted
-		s.mu.Unlock()
-
-		select {
-		case <-ctx.Done():
-			return
-		default:
-			if onComplete != nil {
-				onComplete(task)
+		recovery.WrapPanic(fmt.Sprintf("scheduler.callback.task=%s.target=%s", taskID, targetID), func() {
+			s.mu.Lock()
+			shouldFire := (task.Status == TaskStatusRunning)
+			var snap *Task
+			if shouldFire {
+				nowComp := time.Now().UTC()
+				task.Status = TaskStatusCompleted
+				task.CompletedAt = &nowComp
+				snap = task.Snapshot()
 			}
-		}
+			s.mu.Unlock()
+
+			if !shouldFire {
+				return
+			}
+
+			if onComplete != nil {
+				onComplete(snap)
+			}
+		}, nil)
 	})
 
 	s.tasks[taskID] = task
+	s.reapLocked()
 
-	logger.Info("scheduler: scheduled compressed-time task",
+	logger.Debug("scheduler: scheduled compressed-time task",
 		"task_id", task.ID,
 		"kind", task.Kind,
 		"target_id", task.TargetID,
@@ -127,33 +214,37 @@ func (s *Scheduler) ScheduleTask(
 		"finish_real", finishReal.Format(time.RFC3339),
 	)
 
-	return task, nil
+	return task.Snapshot(), nil
 }
 
 // CancelTasksForPackage cancels all in-flight tasks for a specific package.
 func (s *Scheduler) CancelTasksForPackage(packageID string) int {
+	if s == nil {
+		return 0
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	cancelled := 0
 	for _, t := range s.tasks {
-		if t.Kind == TaskKindPackage && t.TargetID == packageID &&
-			(t.Status == TaskStatusRunning || t.Status == TaskStatusScheduled) {
+		if t.Kind == TaskKindPackage && t.TargetID == packageID && t.Status == TaskStatusRunning {
 			if t.timer != nil {
 				t.timer.Stop()
 			}
-			if t.cancelFunc != nil {
-				t.cancelFunc()
-			}
+			nowCanc := time.Now().UTC()
 			t.Status = TaskStatusCancelled
+			t.CancelledAt = &nowCanc
 			cancelled++
 		}
 	}
 	return cancelled
 }
 
-// GetTask returns a snapshot of a task by ID.
+// GetTask returns a clean snapshot of a task by ID.
 func (s *Scheduler) GetTask(id string) (*Task, bool) {
+	if s == nil {
+		return nil, false
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -161,35 +252,38 @@ func (s *Scheduler) GetTask(id string) (*Task, bool) {
 	if !exists {
 		return nil, false
 	}
-	cp := *t
-	return &cp, true
+	return t.Snapshot(), true
 }
 
-// GetActiveTasks returns all currently running tasks.
+// GetActiveTasks returns clean snapshots of all currently running tasks.
 func (s *Scheduler) GetActiveTasks() []*Task {
+	if s == nil {
+		return nil
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
 	var active []*Task
 	for _, t := range s.tasks {
 		if t.Status == TaskStatusRunning {
-			cp := *t
-			active = append(active, &cp)
+			active = append(active, t.Snapshot())
 		}
 	}
 	return active
 }
 
-// GetTasksForTitle returns all tasks associated with a title slug.
+// GetTasksForTitle returns clean snapshots of all tasks associated with a title slug.
 func (s *Scheduler) GetTasksForTitle(titleSlug string) []*Task {
+	if s == nil {
+		return nil
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
 	var list []*Task
 	for _, t := range s.tasks {
 		if t.TitleSlug == titleSlug {
-			cp := *t
-			list = append(list, &cp)
+			list = append(list, t.Snapshot())
 		}
 	}
 	return list

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/elliot14A/fincher/internal/agent/scheduler"
+	"github.com/elliot14A/fincher/pkg/domain/models"
 )
 
 func TestScheduler_ScheduleTask_CompletesAfterCompressedDuration(t *testing.T) {
@@ -22,6 +23,8 @@ func TestScheduler_ScheduleTask_CompletesAfterCompressedDuration(t *testing.T) {
 		"pkg-audio-de",
 		"avatar-fire-ash",
 		"vendor-deluxe",
+		models.ComponentAudio,
+		"PASSED",
 		5.0, // 5 hours => 50ms real
 		func(completed *scheduler.Task) {
 			completedTask = completed
@@ -68,6 +71,8 @@ func TestScheduler_ScheduleTask_CancelsOnPackageReassignment(t *testing.T) {
 		"pkg-audio-de",
 		"avatar-fire-ash",
 		"vendor-slow",
+		models.ComponentAudio,
+		"",
 		10.0, // 500ms
 		func(completed *scheduler.Task) {
 			task1Completed = true
@@ -89,6 +94,8 @@ func TestScheduler_ScheduleTask_CancelsOnPackageReassignment(t *testing.T) {
 		"pkg-audio-de",
 		"avatar-fire-ash",
 		"vendor-fast",
+		models.ComponentAudio,
+		"",
 		2.0, // 100ms
 		func(completed *scheduler.Task) {
 			task2Completed = true
@@ -134,6 +141,8 @@ func TestScheduler_CancelTasksForPackage(t *testing.T) {
 		"pkg-cancel-target",
 		"avatar-fire-ash",
 		"vendor-deluxe",
+		models.ComponentAudio,
+		"",
 		10.0,
 		nil,
 	)
@@ -168,6 +177,8 @@ func TestScheduler_SequentialDAG_DurationAddition(t *testing.T) {
 		"master-V02",
 		"avatar-fire-ash",
 		"vendor-editorial",
+		models.ComponentVideo,
+		"PASSED",
 		6.0,
 		func(masterTask *scheduler.Task) {
 			masterFinishTime = time.Now()
@@ -178,6 +189,8 @@ func TestScheduler_SequentialDAG_DurationAddition(t *testing.T) {
 				"pkg-audio-de",
 				"avatar-fire-ash",
 				"vendor-deluxe",
+				models.ComponentAudio,
+				"PASSED",
 				12.0,
 				func(dubTask *scheduler.Task) {
 					dubFinishTime = time.Now()
@@ -199,14 +212,14 @@ func TestScheduler_SequentialDAG_DurationAddition(t *testing.T) {
 	dubDuration := dubFinishTime.Sub(masterFinishTime)
 	totalDuration := dubFinishTime.Sub(startTime)
 
-	// Master ~30ms, Dub ~60ms, Total ~90ms (within reasonable test tolerances)
-	if masterDuration < 25*time.Millisecond {
-		t.Errorf("expected master duration ~30ms, got: %v", masterDuration)
+	// Master ~30ms, Dub ~60ms, Total ~90ms (within tight test tolerances checking upper bounds to prevent §3 inflation)
+	if masterDuration < 25*time.Millisecond || masterDuration > 60*time.Millisecond {
+		t.Errorf("expected master duration ~30ms (range [25ms, 60ms]), got: %v", masterDuration)
 	}
-	if dubDuration < 50*time.Millisecond {
-		t.Errorf("expected dub duration ~60ms, got: %v", dubDuration)
+	if dubDuration < 50*time.Millisecond || dubDuration > 95*time.Millisecond {
+		t.Errorf("expected dub duration ~60ms (range [50ms, 95ms]), got: %v", dubDuration)
 	}
-	if totalDuration < 80*time.Millisecond {
-		t.Errorf("expected total sequential duration ~90ms, got: %v", totalDuration)
+	if totalDuration < 80*time.Millisecond || totalDuration > 150*time.Millisecond {
+		t.Errorf("expected total sequential duration ~90ms (range [80ms, 150ms]), got: %v", totalDuration)
 	}
 }
