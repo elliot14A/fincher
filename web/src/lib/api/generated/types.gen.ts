@@ -262,12 +262,13 @@ export type ModelsUpdateTitleInput = {
 };
 
 export type ModelsUpdateVendorInput = {
+    components?: Array<string>;
     hourly_rate_usd?: number;
+    markets?: Array<string>;
     metadata?: {
         [key: string]: unknown;
     };
     name?: string;
-    specialty?: string;
     turnaround_hours?: number;
 };
 
@@ -281,14 +282,15 @@ export type ModelsUploadResponse = {
 };
 
 export type ModelsVendor = {
+    components: Array<string>;
     created_at?: string;
     hourly_rate_usd?: number;
     id: string;
+    markets?: Array<string>;
     metadata?: {
         [key: string]: unknown;
     };
     name: string;
-    specialty: string;
     turnaround_hours?: number;
     updated_at?: string;
 };
@@ -1095,7 +1097,7 @@ export type GetRunsByIdStreamError = GetRunsByIdStreamErrors[keyof GetRunsByIdSt
 
 export type GetRunsByIdStreamResponses = {
     /**
-     * Stream of events: event: update\\ndata: {...}\\n\\n
+     * Stream of events: event: update\ndata: {...}\n\n
      */
     200: string;
 };
@@ -1370,7 +1372,11 @@ export type GetVendorsData = {
     path?: never;
     query?: {
         /**
-         * Specialty filter (e.g. AUDIO_DUBBING, SUBTITLES)
+         * Component filter (e.g. AUDIO, SUBTITLE, VIDEO)
+         */
+        component?: string;
+        /**
+         * Legacy specialty filter
          */
         specialty?: string;
         /**

@@ -142,12 +142,12 @@ function TitleRow({
   }`
   const masterText = `Master ${titleItem.current_master_version || 'V01'}`
   const noteText = getTitleStatusNote(titleItem.overall_status)
-  const avatarUrl = (titleItem.metadata as Record<string, string> | undefined)?.avatar_url
+  const posterUrl = (titleItem.metadata as Record<string, string> | undefined)?.poster_url
 
   return (
     <div {...rowProps}>
-      {avatarUrl ? (
-        <img src={avatarUrl} alt={titleItem.name} class={posterThumb} />
+      {posterUrl ? (
+        <img src={posterUrl} alt={titleItem.name} class={posterThumb} />
       ) : (
         <div class={posterThumb}>
           <Film size={18} />

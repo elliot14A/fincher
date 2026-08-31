@@ -318,10 +318,11 @@ export const vModelsUpdateTitleInput = v.object({
 });
 
 export const vModelsUpdateVendorInput = v.object({
+    components: v.optional(v.pipe(v.array(v.string()), v.minLength(1))),
     hourly_rate_usd: v.optional(v.pipe(v.number(), v.minValue(0))),
+    markets: v.optional(v.array(v.string())),
     metadata: v.optional(v.record(v.string(), v.unknown())),
     name: v.optional(v.pipe(v.string(), v.minLength(1))),
-    specialty: v.optional(v.pipe(v.string(), v.minLength(1))),
     turnaround_hours: v.optional(v.pipe(v.number(), v.integer()))
 });
 
@@ -335,12 +336,13 @@ export const vModelsUploadResponse = v.object({
 });
 
 export const vModelsVendor = v.object({
+    components: v.pipe(v.array(v.string()), v.minLength(1)),
     created_at: v.optional(v.string()),
     hourly_rate_usd: v.optional(v.pipe(v.number(), v.minValue(0))),
     id: v.string(),
+    markets: v.optional(v.array(v.string())),
     metadata: v.optional(v.record(v.string(), v.unknown())),
     name: v.string(),
-    specialty: v.string(),
     turnaround_hours: v.optional(v.pipe(v.number(), v.integer())),
     updated_at: v.optional(v.string())
 });
@@ -622,7 +624,7 @@ export const vGetRunsByIdStreamPath = v.object({
 });
 
 /**
- * Stream of events: event: update\\ndata: {...}\\n\\n
+ * Stream of events: event: update\ndata: {...}\n\n
  */
 export const vGetRunsByIdStreamResponse = v.string();
 
@@ -699,6 +701,7 @@ export const vGetUploadsByIdPath = v.object({
 });
 
 export const vGetVendorsQuery = v.object({
+    component: v.optional(v.string()),
     specialty: v.optional(v.string()),
     page: v.optional(v.pipe(v.number(), v.integer())),
     limit: v.optional(v.pipe(v.number(), v.integer())),

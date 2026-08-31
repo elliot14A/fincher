@@ -52,7 +52,7 @@ export function CreatePackageModal({ isOpen, onClose, initialTitleId }: CreatePa
   const vendorOptions =
     vendorsData?.items?.map((v) => ({
       value: v.id,
-      label: `${v.name} (${v.specialty})`,
+      label: `${v.name} (${v.components?.join(', ') || 'General'})`,
     })) ?? []
 
   const [titleId, setTitleId] = useState(initialTitleId || '')

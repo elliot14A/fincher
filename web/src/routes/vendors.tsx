@@ -17,6 +17,7 @@ import { formatDate } from '#/lib/utils'
 import {
   actions,
   cardName,
+  componentBadge,
   countdownValue,
   emptyState,
   emptyText,
@@ -24,8 +25,8 @@ import {
   header,
   list,
   loadingState,
+  marketBadge,
   metaRow,
-  metaSpecialty,
   nameStack,
   page as pageClass,
   pageSubtitle,
@@ -48,9 +49,9 @@ export const Route = createFileRoute('/vendors')({
 
 const TABS = [
   { id: 'ALL', label: 'All' },
-  { id: 'AUDIO_DUBBING', label: 'Audio Dubbing' },
-  { id: 'SUBTITLES', label: 'Subtitles' },
-  { id: 'QC_LAB', label: 'QC Lab' },
+  { id: 'AUDIO', label: 'Audio Dubbing' },
+  { id: 'SUBTITLE', label: 'Subtitles' },
+  { id: 'VIDEO', label: 'QC Lab' },
 ] as const
 
 type TabId = (typeof TABS)[number]['id']
@@ -74,13 +75,15 @@ function VendorRow({
     activeClassName: rowActive,
   })
 
-  const avatarUrl = (vendor.metadata as Record<string, string> | undefined)?.avatar_url
+  const posterUrl = (vendor.metadata as Record<string, string> | undefined)?.poster_url
   const formattedDate = formatDate(vendor.created_at, undefined, 'Registered')
+  const componentsList = vendor.components ?? []
+  const marketsList = vendor.markets ?? []
 
   return (
     <div {...rowProps}>
-      {avatarUrl ? (
-        <img src={avatarUrl} alt={vendor.name} class={vendorAvatar} />
+      {posterUrl ? (
+        <img src={posterUrl} alt={vendor.name} class={vendorAvatar} />
       ) : (
         <div class={vendorAvatar}>
           <Building2 size={18} />
@@ -90,7 +93,18 @@ function VendorRow({
       <div class={nameStack}>
         <span class={cardName}>{vendor.name}</span>
         <div class={metaRow}>
-          <span class={metaSpecialty}>{vendor.specialty}</span>
+          {componentsList.map((comp) => (
+            <span key={comp} class={componentBadge}>
+              {comp}
+            </span>
+          ))}
+          {marketsList.length > 0 ? (
+            <span class={marketBadge}>
+              {marketsList.length === 5 ? 'All 5 Markets' : marketsList.join(', ')}
+            </span>
+          ) : (
+            <span class={marketBadge}>Global</span>
+          )}
         </div>
       </div>
 
@@ -165,7 +179,7 @@ function VendorsPage() {
     tabs: TABS,
     buildQueryOptions: ({ filter, page, limit, sort_order }) =>
       vendorsQueryOptions({
-        specialty: filter,
+        component: filter,
         page,
         limit,
         sort_order,

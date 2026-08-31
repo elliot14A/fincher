@@ -42,8 +42,9 @@ func TestVendors_HTTP_Lifecycle(t *testing.T) {
 				"tier": "P0",
 			},
 		},
-		Name:      "Vendor A",
-		Specialty: "AUDIO_DUBBING",
+		Name:       "Vendor A",
+		Components: []string{"AUDIO"},
+		Markets:    []string{"en-US"},
 	}
 
 	// 1. POST /api/vendors
@@ -66,8 +67,8 @@ func TestVendors_HTTP_Lifecycle(t *testing.T) {
 		t.Fatalf("expected status 200, got %d", rec.Code)
 	}
 
-	// 3. GET /api/vendors?specialty=AUDIO_DUBBING
-	req = httptest.NewRequest(http.MethodGet, "/api/vendors?specialty=AUDIO_DUBBING", nil)
+	// 3. GET /api/vendors?component=AUDIO
+	req = httptest.NewRequest(http.MethodGet, "/api/vendors?component=AUDIO", nil)
 	rec = httptest.NewRecorder()
 	e.ServeHTTP(rec, req)
 

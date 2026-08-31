@@ -33,7 +33,7 @@ export function CreateTitleModal({ isOpen, onClose }: CreateTitleModalProps) {
   const [premiereDate, setPremiereDate] = useState(getDefaultPremiereDate())
   const [territories, setTerritories] = useState('35')
   const [masterVersion, setMasterVersion] = useState('V01')
-  const [avatarUrl, setAvatarUrl] = useState<string | undefined>(undefined)
+  const [posterUrl, setPosterUrl] = useState<string | undefined>()
 
   const handleNameChange = (val: string) => {
     setName(val)
@@ -55,7 +55,7 @@ export function CreateTitleModal({ isOpen, onClose }: CreateTitleModalProps) {
     setPremiereDate(getDefaultPremiereDate())
     setTerritories('35')
     setMasterVersion('V01')
-    setAvatarUrl(undefined)
+    setPosterUrl(undefined)
   }
 
   const mutation = useMutation({
@@ -82,7 +82,7 @@ export function CreateTitleModal({ isOpen, onClose }: CreateTitleModalProps) {
           territories: territoryCount,
           current_master_version: masterVersion.trim() || 'V01',
           overall_status: 'PROCESSING',
-          metadata: avatarUrl ? { avatar_url: avatarUrl } : {},
+          metadata: posterUrl ? { poster_url: posterUrl } : {},
         },
       })
 
@@ -206,7 +206,7 @@ export function CreateTitleModal({ isOpen, onClose }: CreateTitleModalProps) {
         </div>
 
         <FormField label="Poster Thumbnail" optional helper="Max 1MB PNG, JPEG, WebP, or GIF">
-          <ImageUpload value={avatarUrl} onChange={setAvatarUrl} disabled={mutation.isPending} />
+          <ImageUpload value={posterUrl} onChange={setPosterUrl} disabled={mutation.isPending} />
         </FormField>
       </form>
     </Modal>

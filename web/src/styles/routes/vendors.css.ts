@@ -137,14 +137,6 @@ export const metaRow = style({
   gap: vars.space.xs,
 })
 
-export const metaSpecialty = style({
-  fontSize: vars.fontSize.xs,
-  color: vars.color.textTertiary,
-  overflow: 'hidden',
-  whiteSpace: 'nowrap',
-  textOverflow: 'ellipsis',
-})
-
 export const statusStack = style({
   display: 'flex',
   alignItems: 'center',
@@ -213,4 +205,28 @@ export const loadingState = style({
   fontSize: vars.fontSize.sm,
   minHeight: '380px',
   flex: 1,
+})
+
+export const componentBadge = style({
+  display: 'inline-flex',
+  alignItems: 'center',
+  padding: `${vars.space['3xs']} ${vars.space.xs}`,
+  borderRadius: vars.radii.xs,
+  backgroundColor: vars.color.primaryMuted,
+  color: vars.color.primary,
+  fontSize: vars.fontSize['3xs'],
+  fontWeight: 600,
+  textTransform: 'uppercase',
+  letterSpacing: '0.04em',
+})
+
+export const marketBadge = style({
+  display: 'inline-flex',
+  alignItems: 'center',
+  padding: `${vars.space['3xs']} ${vars.space.xs}`,
+  borderRadius: vars.radii.xs,
+  backgroundColor: vars.color.surfaceElevated,
+  color: vars.color.textSecondary,
+  fontSize: vars.fontSize['3xs'],
+  fontFamily: fonts.mono,
 })

@@ -976,7 +976,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Stream of events: event: update\\\\ndata: {...}\\\\n\\\\n",
+                        "description": "Stream of events: event: update\\ndata: {...}\\n\\n",
                         "schema": {
                             "type": "string"
                         }
@@ -1331,7 +1331,13 @@
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Specialty filter (e.g. AUDIO_DUBBING, SUBTITLES)",
+                        "description": "Component filter (e.g. AUDIO, SUBTITLE, VIDEO)",
+                        "name": "component",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Legacy specialty filter",
                         "name": "specialty",
                         "in": "query"
                     },
@@ -2498,19 +2504,28 @@
         "models.UpdateVendorInput": {
             "type": "object",
             "properties": {
+                "components": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "hourly_rate_usd": {
                     "type": "number",
                     "minimum": 0
+                },
+                "markets": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "metadata": {
                     "type": "object",
                     "additionalProperties": {}
                 },
                 "name": {
-                    "type": "string",
-                    "minLength": 1
-                },
-                "specialty": {
                     "type": "string",
                     "minLength": 1
                 },
@@ -2545,11 +2560,18 @@
         "models.Vendor": {
             "type": "object",
             "required": [
+                "components",
                 "id",
-                "name",
-                "specialty"
+                "name"
             ],
             "properties": {
+                "components": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "created_at": {
                     "type": "string"
                 },
@@ -2560,14 +2582,17 @@
                 "id": {
                     "type": "string"
                 },
+                "markets": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "metadata": {
                     "type": "object",
                     "additionalProperties": {}
                 },
                 "name": {
-                    "type": "string"
-                },
-                "specialty": {
                     "type": "string"
                 },
                 "turnaround_hours": {

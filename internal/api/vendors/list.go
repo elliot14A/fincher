@@ -18,7 +18,8 @@ import (
 //	@Description	Fetches registered vendors with pagination, optionally filtered by specialty.
 //	@Tags			vendors
 //	@Produce		json
-//	@Param			specialty	query		string	false	"Specialty filter (e.g. AUDIO_DUBBING, SUBTITLES)"
+//	@Param			component	query		string	false	"Component filter (e.g. AUDIO, SUBTITLE, VIDEO)"
+//	@Param			specialty	query		string	false	"Legacy specialty filter"
 //	@Param			page		query		int		false	"Page number (default: 1)"
 //	@Param			limit		query		int		false	"Items per page (default: 10, max: 100)"
 //	@Param			sort_order	query		string	false	"Sort order (asc, desc)"
@@ -28,10 +29,13 @@ import (
 //	@Router			/vendors [get]
 func List(client *ent.Client) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		spec := c.QueryParam("specialty")
+		comp := c.QueryParam("component")
+		if comp == "" {
+			comp = c.QueryParam("specialty")
+		}
 		var filter domainerrors.Option[string]
-		if spec != "" {
-			filter = domainerrors.Some(spec)
+		if comp != "" {
+			filter = domainerrors.Some(comp)
 		} else {
 			filter = domainerrors.None[string]()
 		}

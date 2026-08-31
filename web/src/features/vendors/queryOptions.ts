@@ -9,6 +9,7 @@ import { DEFAULT_PAGE, DEFAULT_PAGE_LIMIT, DEFAULT_SORT_ORDER } from '#/lib/cons
 import { vendorsKeys } from './queryKeys'
 
 export type VendorsFilters = {
+  component?: string
   specialty?: string
   page?: number
   limit?: number
@@ -18,18 +19,18 @@ export type VendorsFilters = {
 
 export const vendorsQueryOptions = (filters?: VendorsFilters | string) => {
   const normalized: VendorsFilters =
-    typeof filters === 'string' ? { specialty: filters } : (filters ?? {})
+    typeof filters === 'string' ? { component: filters } : (filters ?? {})
 
   const page = normalized.page ?? DEFAULT_PAGE
   const limit = normalized.limit ?? DEFAULT_PAGE_LIMIT
   const sort_order = normalized.sort_order ?? DEFAULT_SORT_ORDER
-  const specialty =
-    normalized.specialty && normalized.specialty !== 'ALL' ? normalized.specialty : undefined
+  const comp = normalized.component ?? normalized.specialty
+  const component = comp && comp !== 'ALL' ? comp : undefined
   const search = normalized.search
 
   return queryOptions({
     queryKey: vendorsKeys.list({
-      specialty: specialty ?? 'ALL',
+      specialty: component ?? 'ALL',
       page,
       limit,
       sort_order,
@@ -41,7 +42,7 @@ export const vendorsQueryOptions = (filters?: VendorsFilters | string) => {
           page,
           limit,
           sort_order,
-          ...(specialty ? { specialty } : {}),
+          ...(component ? { component } : {}),
           ...(search ? { search } : {}),
         },
       })
