@@ -9,6 +9,7 @@ import (
 
 	"github.com/elliot14A/fincher/internal/agent"
 	"github.com/elliot14A/fincher/internal/agent/tools"
+	"github.com/elliot14A/fincher/internal/turso/ent"
 	"github.com/elliot14A/fincher/internal/turso/runs"
 	tursotitles "github.com/elliot14A/fincher/internal/turso/titles"
 	domainerrors "github.com/elliot14A/fincher/pkg/domain/errors"
@@ -18,6 +19,29 @@ import (
 
 // DefaultMaxRemediationAttempts caps the verifier self-correction loop.
 const DefaultMaxRemediationAttempts = 3
+
+func failIncidentStage(ctx context.Context, client *ent.Client, runID, titleSlug, stepID, stageName string, err error) {
+	now := time.Now().UTC()
+	stepUpd := runs.UpdateStepStatus(ctx, client, stepID, models.StepStatusFailed, &now, map[string]any{"error": err.Error()})
+	if stepUpd.IsErr() {
+		logger.Warn("incident: failed to update step status on stage failure",
+			"run_id", runID,
+			"title_slug", titleSlug,
+			"step_id", stepID,
+			"stage", stageName,
+			"error", stepUpd.Error(),
+		)
+	}
+	runUpd := runs.UpdateRunStatus(ctx, client, runID, models.RunStatusFailed, &now, nil)
+	if runUpd.IsErr() {
+		logger.Warn("incident: failed to update run status on stage failure",
+			"run_id", runID,
+			"title_slug", titleSlug,
+			"stage", stageName,
+			"error", runUpd.Error(),
+		)
+	}
+}
 
 // ExecuteIncident runs the 4-stage Multi-Agent incident investigation and remediation graph:
 //  1. Stage 1: Triage Judge (Filter benign/routine events vs actionable anomalies)
@@ -92,14 +116,7 @@ func ExecuteIncident(ctx context.Context, deps IncidentGraphDeps, input Incident
 	filterRes := agent.FilterEvent(ctx, deps.Model, input.Event, hoursUntilPremiere)
 	now := time.Now().UTC()
 	if filterRes.IsErr() {
-		updStepRes := runs.UpdateStepStatus(ctx, deps.TursoClient, triageStepID, models.StepStatusFailed, &now, map[string]any{"error": filterRes.Error().Error()})
-		if updStepRes.IsErr() {
-			logger.Warn("incident: failed to update triage step status to failed", "run_id", runID, "step_id", triageStepID, "error", updStepRes.Error())
-		}
-		updRunRes := runs.UpdateRunStatus(ctx, deps.TursoClient, runID, models.RunStatusFailed, &now, nil)
-		if updRunRes.IsErr() {
-			logger.Warn("incident: failed to update run status to failed", "run_id", runID, "error", updRunRes.Error())
-		}
+		failIncidentStage(ctx, deps.TursoClient, runID, titleSlug, triageStepID, "triage_judge", filterRes.Error())
 		return nil, filterRes.Error()
 	}
 	filterDecision := filterRes.Unwrap()
@@ -167,9 +184,7 @@ func ExecuteIncident(ctx context.Context, deps IncidentGraphDeps, input Incident
 		HoursUntilPremiere: hoursUntilPremiere,
 	})
 	if err != nil {
-		now = time.Now().UTC()
-		_ = runs.UpdateStepStatus(ctx, deps.TursoClient, contextStepID, models.StepStatusFailed, &now, map[string]any{"error": err.Error()})
-		_ = runs.UpdateRunStatus(ctx, deps.TursoClient, runID, models.RunStatusFailed, &now, nil)
+		failIncidentStage(ctx, deps.TursoClient, runID, titleSlug, contextStepID, "context_delivery_impact", err)
 		return nil, domainerrors.NewWithOp("graph.ExecuteIncident", domainerrors.CodeInternal, "failed to gather delivery impact", err)
 	}
 
@@ -181,9 +196,7 @@ func ExecuteIncident(ctx context.Context, deps IncidentGraphDeps, input Incident
 			Component: component,
 		})
 		if err != nil {
-			now = time.Now().UTC()
-			_ = runs.UpdateStepStatus(ctx, deps.TursoClient, contextStepID, models.StepStatusFailed, &now, map[string]any{"error": err.Error()})
-			_ = runs.UpdateRunStatus(ctx, deps.TursoClient, runID, models.RunStatusFailed, &now, nil)
+			failIncidentStage(ctx, deps.TursoClient, runID, titleSlug, contextStepID, "context_historical_analytics", err)
 			return nil, domainerrors.NewWithOp("graph.ExecuteIncident", domainerrors.CodeInternal, "failed to gather historical analytics", err)
 		}
 	} else {
@@ -197,9 +210,7 @@ func ExecuteIncident(ctx context.Context, deps IncidentGraphDeps, input Incident
 		Specialty: component,
 	})
 	if err != nil {
-		now = time.Now().UTC()
-		_ = runs.UpdateStepStatus(ctx, deps.TursoClient, contextStepID, models.StepStatusFailed, &now, map[string]any{"error": err.Error()})
-		_ = runs.UpdateRunStatus(ctx, deps.TursoClient, runID, models.RunStatusFailed, &now, nil)
+		failIncidentStage(ctx, deps.TursoClient, runID, titleSlug, contextStepID, "context_vendor_candidates", err)
 		return nil, domainerrors.NewWithOp("graph.ExecuteIncident", domainerrors.CodeInternal, "failed to gather vendor candidates", err)
 	}
 
@@ -252,18 +263,14 @@ func ExecuteIncident(ctx context.Context, deps IncidentGraphDeps, input Incident
 	for attempt := 1; attempt <= maxAttempts; attempt++ {
 		planRes := agent.PlanRemediation(ctx, deps.Model, input.Event, impact, analytics, candidates, projection, feedback)
 		if planRes.IsErr() {
-			now = time.Now().UTC()
-			_ = runs.UpdateStepStatus(ctx, deps.TursoClient, remediationStepID, models.StepStatusFailed, &now, map[string]any{"error": planRes.Error().Error()})
-			_ = runs.UpdateRunStatus(ctx, deps.TursoClient, runID, models.RunStatusFailed, &now, nil)
+			failIncidentStage(ctx, deps.TursoClient, runID, titleSlug, remediationStepID, "remediation_plan", planRes.Error())
 			return nil, planRes.Error()
 		}
 		currentPlan := planRes.Unwrap()
 
 		verifyRes := agent.VerifyPlan(currentPlan, impact, candidates, attempt)
 		if verifyRes.IsErr() {
-			now = time.Now().UTC()
-			_ = runs.UpdateStepStatus(ctx, deps.TursoClient, remediationStepID, models.StepStatusFailed, &now, map[string]any{"error": verifyRes.Error().Error()})
-			_ = runs.UpdateRunStatus(ctx, deps.TursoClient, runID, models.RunStatusFailed, &now, nil)
+			failIncidentStage(ctx, deps.TursoClient, runID, titleSlug, remediationStepID, "remediation_verify", verifyRes.Error())
 			return nil, verifyRes.Error()
 		}
 		lastVerification = verifyRes.Unwrap()
@@ -330,9 +337,7 @@ func ExecuteIncident(ctx context.Context, deps IncidentGraphDeps, input Incident
 			OnScheduleComplete: deps.OnScheduleComplete,
 		}, runID, executorStepID, finalPlan)
 		if execRes.IsErr() {
-			now = time.Now().UTC()
-			_ = runs.UpdateStepStatus(ctx, deps.TursoClient, executorStepID, models.StepStatusFailed, &now, map[string]any{"error": execRes.Error().Error()})
-			_ = runs.UpdateRunStatus(ctx, deps.TursoClient, runID, models.RunStatusFailed, &now, nil)
+			failIncidentStage(ctx, deps.TursoClient, runID, titleSlug, executorStepID, "remediation_executor", execRes.Error())
 			return nil, execRes.Error()
 		}
 		result := execRes.Unwrap()
