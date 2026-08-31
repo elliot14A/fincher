@@ -42,9 +42,10 @@ func setupTestServer(t *testing.T) (*api.Server, *ent.Client) {
 
 	// 2. Seed Vendor
 	_ = tursovendors.Create(ctx, client, &models.Vendor{
-		Base:      models.Base{ID: "vendor_a"},
-		Name:      "Vendor A",
-		Specialty: "AUDIO_DUBBING",
+		Base:       models.Base{ID: "vendor_a"},
+		Name:       "Vendor A",
+		Components: []string{"AUDIO"},
+		Markets:    []string{"en-US"},
 	})
 
 	// 3. Seed Packages

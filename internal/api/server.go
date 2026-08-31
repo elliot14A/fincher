@@ -117,7 +117,7 @@ func (s *Server) registerRoutes() {
 		})
 	})
 
-	titles.RegisterRoutes(apiGroup.Group("/titles"), s.client)
+	titles.RegisterRoutes(apiGroup.Group("/titles"), s.client, s.chDB, func() model.LLM { return s.llm }, s.scheduler)
 	masters.RegisterRoutes(apiGroup.Group("/masters"), s.client)
 	vendors.RegisterRoutes(apiGroup.Group("/vendors"), s.client)
 	packages.RegisterRoutes(apiGroup.Group("/packages"), s.client)

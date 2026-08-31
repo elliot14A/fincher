@@ -87,10 +87,20 @@ func Create(client *ent.Client, chDB *sql.DB, modelProvider func() model.LLM) ec
 				TursoClient: client,
 				ClickHouse:  chDB,
 			}
+			comp := req.Component
+			if comp == "" {
+				comp = "AUDIO"
+			}
 			runObj, _, err := graph.DispatchAllocation(c.Request().Context(), allocDeps, graph.AllocationInput{
-				RunID:              runID,
-				TitleSlug:          titleSlug,
-				Component:          req.Component,
+				RunID:     runID,
+				TitleSlug: titleSlug,
+				Requirements: []models.AllocationRequirement{
+					{
+						Component: comp,
+						Market:    "",
+						Language:  "en-US",
+					},
+				},
 				HoursUntilPremiere: req.HoursUntilPremiere,
 			})
 			if err != nil {

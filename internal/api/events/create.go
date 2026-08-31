@@ -106,9 +106,17 @@ func IngestAndRoute(
 				continue
 			}
 			component := "AUDIO"
+			market := ""
+			language := "en-US"
 			if ev.Data != nil {
 				if compStr, ok := ev.Data["component"].(string); ok && compStr != "" {
 					component = compStr
+				}
+				if mStr, ok := ev.Data["market"].(string); ok && mStr != "" {
+					market = mStr
+				}
+				if lStr, ok := ev.Data["language"].(string); ok && lStr != "" {
+					language = lStr
 				}
 			}
 			allocDeps := graph.AllocationGraphDeps{
@@ -119,7 +127,13 @@ func IngestAndRoute(
 			runObj, _, err := graph.DispatchAllocation(ctx, allocDeps, graph.AllocationInput{
 				RunID:     "run-" + ev.ID,
 				TitleSlug: ev.Subject,
-				Component: component,
+				Requirements: []models.AllocationRequirement{
+					{
+						Component: component,
+						Market:    market,
+						Language:  language,
+					},
+				},
 			})
 			if err != nil {
 				logger.Error("failed to dispatch allocation from ingestion", "event_id", ev.ID, "error", err)

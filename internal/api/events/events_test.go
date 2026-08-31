@@ -73,7 +73,7 @@ func TestEvents_BatchIngestion_And_Routing(t *testing.T) {
 	mock := &mockLLM{
 		responses: []string{
 			`{"actionable":false,"anomaly_type":"BENIGN_TELEMETRY","severity":"INFO","rationale":"Routine heartbeat ping"}`,
-			`{"selected_vendor_id":"vendor-deluxe","confidence":0.95,"rationale":"Fast turnaround selected"}`,
+			`{"assignments":[{"component":"AUDIO","market":"en-US","language":"en-US","winner_vendor_id":"vendor-deluxe","winner_vendor_name":"Deluxe Media","hourly_rate_usd":150.0,"turnaround_hours":24,"rationale":"Fast turnaround selected"}],"overall_summary":"Audio assigned to Deluxe"}`,
 		},
 	}
 
@@ -91,7 +91,8 @@ func TestEvents_BatchIngestion_And_Routing(t *testing.T) {
 	_ = client.Vendor.Create().
 		SetID("vendor-deluxe").
 		SetName("Deluxe Media").
-		SetSpecialty("AUDIO_DUBBING").
+		SetComponents([]string{"AUDIO"}).
+		SetMarkets([]string{"en-US"}).
 		SetHourlyRateUsd(150.0).
 		SetTurnaroundHours(24).
 		SaveX(context.Background())

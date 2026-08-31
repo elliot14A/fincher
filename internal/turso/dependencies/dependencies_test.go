@@ -39,9 +39,10 @@ func setupTestDB(t *testing.T) *ent.Client {
 
 	// 2. Seed Vendor
 	_ = vendors.Create(ctx, client, &models.Vendor{
-		Base:      models.Base{ID: "vendor_a"},
-		Name:      "Vendor A",
-		Specialty: "AUDIO_DUBBING",
+		Base:       models.Base{ID: "vendor_a"},
+		Name:       "Vendor A",
+		Components: []string{"AUDIO"},
+		Markets:    []string{"en-US"},
 	})
 
 	// 3. Seed Packages: Video, Spanish Audio, Spanish Subtitles

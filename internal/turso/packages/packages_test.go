@@ -42,9 +42,10 @@ func setupTestDB(t *testing.T) *ent.Client {
 
 	// 2. Seed Vendor
 	vendorRes := vendors.Create(ctx, client, &models.Vendor{
-		Base:      models.Base{ID: "vendor_a"},
-		Name:      "Vendor A",
-		Specialty: "AUDIO_DUBBING",
+		Base:       models.Base{ID: "vendor_a"},
+		Name:       "Vendor A",
+		Components: []string{"AUDIO"},
+		Markets:    []string{"en-US"},
 	})
 	if vendorRes.IsErr() {
 		t.Fatalf("failed to seed vendor: %v", vendorRes.Error())

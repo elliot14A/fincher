@@ -4,16 +4,40 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"iter"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
 
+	"google.golang.org/adk/v2/model"
+	"google.golang.org/genai"
+
 	"github.com/elliot14A/fincher/internal/api"
 	"github.com/elliot14A/fincher/internal/turso"
 	"github.com/elliot14A/fincher/internal/turso/ent"
+	"github.com/elliot14A/fincher/internal/turso/vendors"
 	"github.com/elliot14A/fincher/pkg/domain/models"
 )
+
+type mockLLM struct {
+	response string
+}
+
+func (m *mockLLM) Name() string { return "mock-llm" }
+
+func (m *mockLLM) GenerateContent(ctx context.Context, req *model.LLMRequest, stream bool) iter.Seq2[*model.LLMResponse, error] {
+	return func(yield func(*model.LLMResponse, error) bool) {
+		resp := &model.LLMResponse{
+			Content: &genai.Content{
+				Parts: []*genai.Part{
+					{Text: m.response},
+				},
+			},
+		}
+		yield(resp, nil)
+	}
+}
 
 func setupTestServer(t *testing.T) (*api.Server, *ent.Client) {
 	client, err := turso.Open(":memory:", "")
@@ -73,6 +97,18 @@ func TestTitles_HTTP_Lifecycle(t *testing.T) {
 		t.Errorf("unexpected created title data: %+v", created)
 	}
 
+	// Verify bundled master was created in Turso
+	mList, err := client.Master.Query().Where().All(context.Background())
+	if err != nil {
+		t.Fatalf("failed to query masters: %v", err)
+	}
+	if len(mList) != 1 {
+		t.Fatalf("expected 1 bundled master in database, got: %d", len(mList))
+	}
+	if mList[0].Version != "V12" {
+		t.Errorf("expected bundled master version V12, got: %s", mList[0].Version)
+	}
+
 	// 2. GET /api/titles/:id
 	req = httptest.NewRequest(http.MethodGet, "/api/titles/title-eclipse", nil)
 	rec = httptest.NewRecorder()
@@ -126,7 +162,18 @@ func TestTitles_HTTP_Lifecycle(t *testing.T) {
 		t.Errorf("expected patched status HOLD, got: %s", patched.OverallStatus)
 	}
 
-	// 5. DELETE /api/titles/:id
+	// 5. DELETE /api/titles/:id -> 409 Conflict (blocked by bundled master)
+	req = httptest.NewRequest(http.MethodDelete, "/api/titles/title-eclipse", nil)
+	rec = httptest.NewRecorder()
+	e.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusConflict {
+		t.Fatalf("expected status 409 conflict when deleting title with master, got %d", rec.Code)
+	}
+
+	// Clean up bundled master and retry delete
+	_ = client.Master.DeleteOneID("mst-eclipse-v12").Exec(context.Background())
+
 	req = httptest.NewRequest(http.MethodDelete, "/api/titles/title-eclipse", nil)
 	rec = httptest.NewRecorder()
 	e.ServeHTTP(rec, req)
@@ -142,5 +189,130 @@ func TestTitles_HTTP_Lifecycle(t *testing.T) {
 
 	if rec.Code != http.StatusNotFound {
 		t.Fatalf("expected status 404 after delete, got %d", rec.Code)
+	}
+}
+
+func TestTitles_Onboarding_WithAllocation(t *testing.T) {
+	client, err := turso.Open(":memory:", "")
+	if err != nil {
+		t.Fatalf("failed to open memory ent client: %v", err)
+	}
+	defer client.Close()
+
+	ctx := context.Background()
+	if err := turso.AutoMigrate(ctx, client); err != nil {
+		t.Fatalf("failed to run ent automigration: %v", err)
+	}
+
+	// Seed vendors for allocation
+	_ = vendors.Create(ctx, client, &models.Vendor{
+		Base:            models.Base{ID: "vnd-technicolor"},
+		Name:            "Technicolor",
+		Components:      []string{"VIDEO"},
+		Markets:         []string{},
+		HourlyRateUSD:   185.0,
+		TurnaroundHours: 16,
+	})
+	_ = vendors.Create(ctx, client, &models.Vendor{
+		Base:            models.Base{ID: "vnd-deluxe"},
+		Name:            "Deluxe Media",
+		Components:      []string{"AUDIO", "SUBTITLE"},
+		Markets:         []string{"en-US", "de-DE"},
+		HourlyRateUSD:   200.0,
+		TurnaroundHours: 12,
+	})
+
+	mockPlan := `{
+		"assignments": [
+			{
+				"component": "VIDEO",
+				"market": "",
+				"language": "en-US",
+				"winner_vendor_id": "vnd-technicolor",
+				"winner_vendor_name": "Technicolor",
+				"hourly_rate_usd": 185.0,
+				"turnaround_hours": 16,
+				"rationale": "Sole video provider."
+			},
+			{
+				"component": "AUDIO",
+				"market": "en-US",
+				"language": "en-US",
+				"winner_vendor_id": "vnd-deluxe",
+				"winner_vendor_name": "Deluxe Media",
+				"hourly_rate_usd": 200.0,
+				"turnaround_hours": 12,
+				"rationale": "High quality audio."
+			},
+			{
+				"component": "SUBTITLE",
+				"market": "en-US",
+				"language": "en-US",
+				"winner_vendor_id": "vnd-deluxe",
+				"winner_vendor_name": "Deluxe Media",
+				"hourly_rate_usd": 200.0,
+				"turnaround_hours": 12,
+				"rationale": "Rapid subtitle turnaround."
+			}
+		],
+		"overall_summary": "Staffing plan complete."
+	}`
+
+	mock := &mockLLM{response: mockPlan}
+	server := api.NewServer(client)
+	server.SetModel(mock)
+	e := server.Router()
+
+	titlePayload := models.Title{
+		Base: models.Base{
+			ID: "title-avatar-fire-ash",
+			Metadata: map[string]any{
+				"markets": []string{"en-US"},
+			},
+		},
+		Name:                 "Avatar: Fire and Ash",
+		Type:                 models.TitleTypeFeature,
+		PremiereDate:         time.Now().UTC().Add(72 * time.Hour),
+		Territories:          1,
+		CurrentMasterVersion: "V01",
+		OverallStatus:        models.StatusOnTrack,
+	}
+
+	body, _ := json.Marshal(titlePayload)
+	req := httptest.NewRequest(http.MethodPost, "/api/titles", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	e.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("expected 201 Created, got: %d (%s)", rec.Code, rec.Body.String())
+	}
+
+	// 1. Verify Master V01 was bundled
+	mList, err := client.Master.Query().Where().All(ctx)
+	if err != nil || len(mList) != 1 {
+		t.Fatalf("expected 1 bundled master, got: %d (err: %v)", len(mList), err)
+	}
+
+	// Wait briefly for background allocation run
+	time.Sleep(150 * time.Millisecond)
+
+	// 2. Verify single allocation Run was dispatched in Turso
+	runsList, err := client.Run.Query().Where().All(ctx)
+	if err != nil || len(runsList) != 1 {
+		t.Fatalf("expected exactly 1 allocation run dispatched, got: %d (err: %v)", len(runsList), err)
+	}
+	if runsList[0].Trigger != "allocation" {
+		t.Errorf("expected trigger 'allocation', got: %s", runsList[0].Trigger)
+	}
+
+	// 3. Verify Run has Steps and Results
+	stepsList, _ := client.Step.Query().Where().All(ctx)
+	if len(stepsList) != 2 {
+		t.Fatalf("expected 2 steps in run, got: %d", len(stepsList))
+	}
+	resultsList, _ := client.WfResult.Query().Where().All(ctx)
+	if len(resultsList) != 3 {
+		t.Fatalf("expected 3 assignment results, got: %d", len(resultsList))
 	}
 }
