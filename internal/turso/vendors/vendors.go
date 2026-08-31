@@ -18,7 +18,8 @@ func toDomain(v *ent.Vendor) *models.Vendor {
 			UpdatedAt: v.UpdatedAt,
 		},
 		Name:            v.Name,
-		Specialty:       v.Specialty,
+		Components:      v.Components,
+		Markets:         v.Markets,
 		HourlyRateUSD:   v.HourlyRateUsd,
 		TurnaroundHours: v.TurnaroundHours,
 	}

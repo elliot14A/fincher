@@ -10,6 +10,7 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/dialect/sql/sqljson"
 	"entgo.io/ent/schema/field"
 	"github.com/elliot14A/fincher/internal/turso/ent/mediapackage"
 	"github.com/elliot14A/fincher/internal/turso/ent/predicate"
@@ -61,17 +62,27 @@ func (_u *VendorUpdate) SetNillableName(v *string) *VendorUpdate {
 	return _u
 }
 
-// SetSpecialty sets the "specialty" field.
-func (_u *VendorUpdate) SetSpecialty(v string) *VendorUpdate {
-	_u.mutation.SetSpecialty(v)
+// SetComponents sets the "components" field.
+func (_u *VendorUpdate) SetComponents(v []string) *VendorUpdate {
+	_u.mutation.SetComponents(v)
 	return _u
 }
 
-// SetNillableSpecialty sets the "specialty" field if the given value is not nil.
-func (_u *VendorUpdate) SetNillableSpecialty(v *string) *VendorUpdate {
-	if v != nil {
-		_u.SetSpecialty(*v)
-	}
+// AppendComponents appends value to the "components" field.
+func (_u *VendorUpdate) AppendComponents(v []string) *VendorUpdate {
+	_u.mutation.AppendComponents(v)
+	return _u
+}
+
+// SetMarkets sets the "markets" field.
+func (_u *VendorUpdate) SetMarkets(v []string) *VendorUpdate {
+	_u.mutation.SetMarkets(v)
+	return _u
+}
+
+// AppendMarkets appends value to the "markets" field.
+func (_u *VendorUpdate) AppendMarkets(v []string) *VendorUpdate {
+	_u.mutation.AppendMarkets(v)
 	return _u
 }
 
@@ -201,11 +212,6 @@ func (_u *VendorUpdate) check() error {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "Vendor.name": %w`, err)}
 		}
 	}
-	if v, ok := _u.mutation.Specialty(); ok {
-		if err := vendor.SpecialtyValidator(v); err != nil {
-			return &ValidationError{Name: "specialty", err: fmt.Errorf(`ent: validator failed for field "Vendor.specialty": %w`, err)}
-		}
-	}
 	if v, ok := _u.mutation.HourlyRateUsd(); ok {
 		if err := vendor.HourlyRateUsdValidator(v); err != nil {
 			return &ValidationError{Name: "hourly_rate_usd", err: fmt.Errorf(`ent: validator failed for field "Vendor.hourly_rate_usd": %w`, err)}
@@ -243,8 +249,21 @@ func (_u *VendorUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(vendor.FieldName, field.TypeString, value)
 	}
-	if value, ok := _u.mutation.Specialty(); ok {
-		_spec.SetField(vendor.FieldSpecialty, field.TypeString, value)
+	if value, ok := _u.mutation.Components(); ok {
+		_spec.SetField(vendor.FieldComponents, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedComponents(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, vendor.FieldComponents, value)
+		})
+	}
+	if value, ok := _u.mutation.Markets(); ok {
+		_spec.SetField(vendor.FieldMarkets, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedMarkets(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, vendor.FieldMarkets, value)
+		})
 	}
 	if value, ok := _u.mutation.HourlyRateUsd(); ok {
 		_spec.SetField(vendor.FieldHourlyRateUsd, field.TypeFloat64, value)
@@ -355,17 +374,27 @@ func (_u *VendorUpdateOne) SetNillableName(v *string) *VendorUpdateOne {
 	return _u
 }
 
-// SetSpecialty sets the "specialty" field.
-func (_u *VendorUpdateOne) SetSpecialty(v string) *VendorUpdateOne {
-	_u.mutation.SetSpecialty(v)
+// SetComponents sets the "components" field.
+func (_u *VendorUpdateOne) SetComponents(v []string) *VendorUpdateOne {
+	_u.mutation.SetComponents(v)
 	return _u
 }
 
-// SetNillableSpecialty sets the "specialty" field if the given value is not nil.
-func (_u *VendorUpdateOne) SetNillableSpecialty(v *string) *VendorUpdateOne {
-	if v != nil {
-		_u.SetSpecialty(*v)
-	}
+// AppendComponents appends value to the "components" field.
+func (_u *VendorUpdateOne) AppendComponents(v []string) *VendorUpdateOne {
+	_u.mutation.AppendComponents(v)
+	return _u
+}
+
+// SetMarkets sets the "markets" field.
+func (_u *VendorUpdateOne) SetMarkets(v []string) *VendorUpdateOne {
+	_u.mutation.SetMarkets(v)
+	return _u
+}
+
+// AppendMarkets appends value to the "markets" field.
+func (_u *VendorUpdateOne) AppendMarkets(v []string) *VendorUpdateOne {
+	_u.mutation.AppendMarkets(v)
 	return _u
 }
 
@@ -508,11 +537,6 @@ func (_u *VendorUpdateOne) check() error {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "Vendor.name": %w`, err)}
 		}
 	}
-	if v, ok := _u.mutation.Specialty(); ok {
-		if err := vendor.SpecialtyValidator(v); err != nil {
-			return &ValidationError{Name: "specialty", err: fmt.Errorf(`ent: validator failed for field "Vendor.specialty": %w`, err)}
-		}
-	}
 	if v, ok := _u.mutation.HourlyRateUsd(); ok {
 		if err := vendor.HourlyRateUsdValidator(v); err != nil {
 			return &ValidationError{Name: "hourly_rate_usd", err: fmt.Errorf(`ent: validator failed for field "Vendor.hourly_rate_usd": %w`, err)}
@@ -567,8 +591,21 @@ func (_u *VendorUpdateOne) sqlSave(ctx context.Context) (_node *Vendor, err erro
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(vendor.FieldName, field.TypeString, value)
 	}
-	if value, ok := _u.mutation.Specialty(); ok {
-		_spec.SetField(vendor.FieldSpecialty, field.TypeString, value)
+	if value, ok := _u.mutation.Components(); ok {
+		_spec.SetField(vendor.FieldComponents, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedComponents(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, vendor.FieldComponents, value)
+		})
+	}
+	if value, ok := _u.mutation.Markets(); ok {
+		_spec.SetField(vendor.FieldMarkets, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedMarkets(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, vendor.FieldMarkets, value)
+		})
 	}
 	if value, ok := _u.mutation.HourlyRateUsd(); ok {
 		_spec.SetField(vendor.FieldHourlyRateUsd, field.TypeFloat64, value)

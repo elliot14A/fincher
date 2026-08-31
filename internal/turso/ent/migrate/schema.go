@@ -324,7 +324,8 @@ var (
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "name", Type: field.TypeString},
-		{Name: "specialty", Type: field.TypeString},
+		{Name: "components", Type: field.TypeJSON},
+		{Name: "markets", Type: field.TypeJSON},
 		{Name: "hourly_rate_usd", Type: field.TypeFloat64, Default: 0},
 		{Name: "turnaround_hours", Type: field.TypeInt, Default: 24},
 	}
@@ -333,13 +334,6 @@ var (
 		Name:       "vendors",
 		Columns:    VendorsColumns,
 		PrimaryKey: []*schema.Column{VendorsColumns[0]},
-		Indexes: []*schema.Index{
-			{
-				Name:    "vendor_specialty",
-				Unique:  false,
-				Columns: []*schema.Column{VendorsColumns[5]},
-			},
-		},
 	}
 	// WfResultsColumns holds the columns for the "wf_results" table.
 	WfResultsColumns = []*schema.Column{

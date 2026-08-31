@@ -6784,7 +6784,10 @@ type VendorMutation struct {
 	created_at          *time.Time
 	updated_at          *time.Time
 	name                *string
-	specialty           *string
+	components          *[]string
+	appendcomponents    []string
+	markets             *[]string
+	appendmarkets       []string
 	hourly_rate_usd     *float64
 	addhourly_rate_usd  *float64
 	turnaround_hours    *int
@@ -7059,40 +7062,106 @@ func (m *VendorMutation) ResetName() {
 	m.name = nil
 }
 
-// SetSpecialty sets the "specialty" field.
-func (m *VendorMutation) SetSpecialty(s string) {
-	m.specialty = &s
+// SetComponents sets the "components" field.
+func (m *VendorMutation) SetComponents(s []string) {
+	m.components = &s
+	m.appendcomponents = nil
 }
 
-// Specialty returns the value of the "specialty" field in the mutation.
-func (m *VendorMutation) Specialty() (r string, exists bool) {
-	v := m.specialty
+// Components returns the value of the "components" field in the mutation.
+func (m *VendorMutation) Components() (r []string, exists bool) {
+	v := m.components
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldSpecialty returns the old "specialty" field's value of the Vendor entity.
+// OldComponents returns the old "components" field's value of the Vendor entity.
 // If the Vendor object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *VendorMutation) OldSpecialty(ctx context.Context) (v string, err error) {
+func (m *VendorMutation) OldComponents(ctx context.Context) (v []string, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldSpecialty is only allowed on UpdateOne operations")
+		return v, errors.New("OldComponents is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldSpecialty requires an ID field in the mutation")
+		return v, errors.New("OldComponents requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldSpecialty: %w", err)
+		return v, fmt.Errorf("querying old value for OldComponents: %w", err)
 	}
-	return oldValue.Specialty, nil
+	return oldValue.Components, nil
 }
 
-// ResetSpecialty resets all changes to the "specialty" field.
-func (m *VendorMutation) ResetSpecialty() {
-	m.specialty = nil
+// AppendComponents adds s to the "components" field.
+func (m *VendorMutation) AppendComponents(s []string) {
+	m.appendcomponents = append(m.appendcomponents, s...)
+}
+
+// AppendedComponents returns the list of values that were appended to the "components" field in this mutation.
+func (m *VendorMutation) AppendedComponents() ([]string, bool) {
+	if len(m.appendcomponents) == 0 {
+		return nil, false
+	}
+	return m.appendcomponents, true
+}
+
+// ResetComponents resets all changes to the "components" field.
+func (m *VendorMutation) ResetComponents() {
+	m.components = nil
+	m.appendcomponents = nil
+}
+
+// SetMarkets sets the "markets" field.
+func (m *VendorMutation) SetMarkets(s []string) {
+	m.markets = &s
+	m.appendmarkets = nil
+}
+
+// Markets returns the value of the "markets" field in the mutation.
+func (m *VendorMutation) Markets() (r []string, exists bool) {
+	v := m.markets
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMarkets returns the old "markets" field's value of the Vendor entity.
+// If the Vendor object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *VendorMutation) OldMarkets(ctx context.Context) (v []string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldMarkets is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldMarkets requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMarkets: %w", err)
+	}
+	return oldValue.Markets, nil
+}
+
+// AppendMarkets adds s to the "markets" field.
+func (m *VendorMutation) AppendMarkets(s []string) {
+	m.appendmarkets = append(m.appendmarkets, s...)
+}
+
+// AppendedMarkets returns the list of values that were appended to the "markets" field in this mutation.
+func (m *VendorMutation) AppendedMarkets() ([]string, bool) {
+	if len(m.appendmarkets) == 0 {
+		return nil, false
+	}
+	return m.appendmarkets, true
+}
+
+// ResetMarkets resets all changes to the "markets" field.
+func (m *VendorMutation) ResetMarkets() {
+	m.markets = nil
+	m.appendmarkets = nil
 }
 
 // SetHourlyRateUsd sets the "hourly_rate_usd" field.
@@ -7295,7 +7364,7 @@ func (m *VendorMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *VendorMutation) Fields() []string {
-	fields := make([]string, 0, 7)
+	fields := make([]string, 0, 8)
 	if m.metadata != nil {
 		fields = append(fields, vendor.FieldMetadata)
 	}
@@ -7308,8 +7377,11 @@ func (m *VendorMutation) Fields() []string {
 	if m.name != nil {
 		fields = append(fields, vendor.FieldName)
 	}
-	if m.specialty != nil {
-		fields = append(fields, vendor.FieldSpecialty)
+	if m.components != nil {
+		fields = append(fields, vendor.FieldComponents)
+	}
+	if m.markets != nil {
+		fields = append(fields, vendor.FieldMarkets)
 	}
 	if m.hourly_rate_usd != nil {
 		fields = append(fields, vendor.FieldHourlyRateUsd)
@@ -7333,8 +7405,10 @@ func (m *VendorMutation) Field(name string) (ent.Value, bool) {
 		return m.UpdatedAt()
 	case vendor.FieldName:
 		return m.Name()
-	case vendor.FieldSpecialty:
-		return m.Specialty()
+	case vendor.FieldComponents:
+		return m.Components()
+	case vendor.FieldMarkets:
+		return m.Markets()
 	case vendor.FieldHourlyRateUsd:
 		return m.HourlyRateUsd()
 	case vendor.FieldTurnaroundHours:
@@ -7356,8 +7430,10 @@ func (m *VendorMutation) OldField(ctx context.Context, name string) (ent.Value, 
 		return m.OldUpdatedAt(ctx)
 	case vendor.FieldName:
 		return m.OldName(ctx)
-	case vendor.FieldSpecialty:
-		return m.OldSpecialty(ctx)
+	case vendor.FieldComponents:
+		return m.OldComponents(ctx)
+	case vendor.FieldMarkets:
+		return m.OldMarkets(ctx)
 	case vendor.FieldHourlyRateUsd:
 		return m.OldHourlyRateUsd(ctx)
 	case vendor.FieldTurnaroundHours:
@@ -7399,12 +7475,19 @@ func (m *VendorMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetName(v)
 		return nil
-	case vendor.FieldSpecialty:
-		v, ok := value.(string)
+	case vendor.FieldComponents:
+		v, ok := value.([]string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetSpecialty(v)
+		m.SetComponents(v)
+		return nil
+	case vendor.FieldMarkets:
+		v, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMarkets(v)
 		return nil
 	case vendor.FieldHourlyRateUsd:
 		v, ok := value.(float64)
@@ -7517,8 +7600,11 @@ func (m *VendorMutation) ResetField(name string) error {
 	case vendor.FieldName:
 		m.ResetName()
 		return nil
-	case vendor.FieldSpecialty:
-		m.ResetSpecialty()
+	case vendor.FieldComponents:
+		m.ResetComponents()
+		return nil
+	case vendor.FieldMarkets:
+		m.ResetMarkets()
 		return nil
 	case vendor.FieldHourlyRateUsd:
 		m.ResetHourlyRateUsd()

@@ -18,7 +18,8 @@ func Create(ctx context.Context, client *ent.Client, v *models.Vendor) domainerr
 	builder := client.Vendor.Create().
 		SetID(v.ID).
 		SetName(v.Name).
-		SetSpecialty(v.Specialty).
+		SetComponents(v.Components).
+		SetMarkets(v.Markets).
 		SetHourlyRateUsd(v.HourlyRateUSD).
 		SetTurnaroundHours(v.TurnaroundHours)
 

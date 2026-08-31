@@ -20,8 +20,11 @@ func Update(ctx context.Context, client *ent.Client, id string, input *models.Up
 	if input.Name != nil {
 		builder.SetName(*input.Name)
 	}
-	if input.Specialty != nil {
-		builder.SetSpecialty(*input.Specialty)
+	if input.Components != nil {
+		builder.SetComponents(*input.Components)
+	}
+	if input.Markets != nil {
+		builder.SetMarkets(*input.Markets)
 	}
 	if input.HourlyRateUSD != nil {
 		builder.SetHourlyRateUsd(*input.HourlyRateUSD)

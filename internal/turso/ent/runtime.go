@@ -266,18 +266,14 @@ func init() {
 	vendorDescName := vendorFields[0].Descriptor()
 	// vendor.NameValidator is a validator for the "name" field. It is called by the builders before save.
 	vendor.NameValidator = vendorDescName.Validators[0].(func(string) error)
-	// vendorDescSpecialty is the schema descriptor for specialty field.
-	vendorDescSpecialty := vendorFields[1].Descriptor()
-	// vendor.SpecialtyValidator is a validator for the "specialty" field. It is called by the builders before save.
-	vendor.SpecialtyValidator = vendorDescSpecialty.Validators[0].(func(string) error)
 	// vendorDescHourlyRateUsd is the schema descriptor for hourly_rate_usd field.
-	vendorDescHourlyRateUsd := vendorFields[2].Descriptor()
+	vendorDescHourlyRateUsd := vendorFields[3].Descriptor()
 	// vendor.DefaultHourlyRateUsd holds the default value on creation for the hourly_rate_usd field.
 	vendor.DefaultHourlyRateUsd = vendorDescHourlyRateUsd.Default.(float64)
 	// vendor.HourlyRateUsdValidator is a validator for the "hourly_rate_usd" field. It is called by the builders before save.
 	vendor.HourlyRateUsdValidator = vendorDescHourlyRateUsd.Validators[0].(func(float64) error)
 	// vendorDescTurnaroundHours is the schema descriptor for turnaround_hours field.
-	vendorDescTurnaroundHours := vendorFields[3].Descriptor()
+	vendorDescTurnaroundHours := vendorFields[4].Descriptor()
 	// vendor.DefaultTurnaroundHours holds the default value on creation for the turnaround_hours field.
 	vendor.DefaultTurnaroundHours = vendorDescTurnaroundHours.Default.(int)
 	// vendor.TurnaroundHoursValidator is a validator for the "turnaround_hours" field. It is called by the builders before save.

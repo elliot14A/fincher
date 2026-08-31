@@ -44,8 +44,9 @@ func TestVendors_CRUD(t *testing.T) {
 				"sla_tier":      "tier_1",
 			},
 		},
-		Name:      "Vendor A",
-		Specialty: "AUDIO_DUBBING",
+		Name:       "Vendor A",
+		Components: []string{"AUDIO"},
+		Markets:    []string{"en-US", "de-DE"},
 	}
 
 	createRes := vendors.Create(ctx, client, v1)
@@ -56,6 +57,12 @@ func TestVendors_CRUD(t *testing.T) {
 	if created.Metadata["sla_tier"] != "tier_1" {
 		t.Errorf("expected sla_tier in metadata, got: %v", created.Metadata["sla_tier"])
 	}
+	if len(created.Components) != 1 || created.Components[0] != "AUDIO" {
+		t.Errorf("expected components [AUDIO], got: %v", created.Components)
+	}
+	if len(created.Markets) != 2 || created.Markets[0] != "en-US" {
+		t.Errorf("expected markets [en-US, de-DE], got: %v", created.Markets)
+	}
 
 	// 2. Get Vendor
 	getRes := vendors.Get(ctx, client, "vendor_a")
@@ -65,7 +72,7 @@ func TestVendors_CRUD(t *testing.T) {
 
 	// 3. List Vendors with Pagination
 	p := models.NewPagination(1, 10, "asc", "")
-	listRes := vendors.List(ctx, client, domainerrors.Some("AUDIO_DUBBING"), p)
+	listRes := vendors.List(ctx, client, domainerrors.Some("AUDIO"), p)
 	if listRes.IsErr() {
 		t.Fatalf("failed to list vendors: %v", listRes.Error())
 	}
@@ -76,8 +83,12 @@ func TestVendors_CRUD(t *testing.T) {
 
 	// 4. Update Vendor
 	newName := "Vendor A International"
+	newComponents := []string{"AUDIO", "SUBTITLE"}
+	newMarkets := []string{"en-US", "de-DE", "hi-IN"}
 	upRes := vendors.Update(ctx, client, "vendor_a", &models.UpdateVendorInput{
-		Name: &newName,
+		Name:       &newName,
+		Components: &newComponents,
+		Markets:    &newMarkets,
 		Metadata: map[string]any{
 			"contact_email": "ops@vendor-a.com",
 			"sla_tier":      "tier_1_premium",
@@ -88,6 +99,9 @@ func TestVendors_CRUD(t *testing.T) {
 	}
 	if upRes.Unwrap().Name != newName {
 		t.Errorf("expected updated name %s, got %s", newName, upRes.Unwrap().Name)
+	}
+	if len(upRes.Unwrap().Components) != 2 {
+		t.Errorf("expected 2 components, got %v", upRes.Unwrap().Components)
 	}
 
 	// 5. Delete Vendor
@@ -114,9 +128,10 @@ func TestVendors_FK_DeleteBlockedByDependents(t *testing.T) {
 	})
 
 	_ = vendors.Create(ctx, client, &models.Vendor{
-		Base:      models.Base{ID: "vendor_locked"},
-		Name:      "Vendor Locked",
-		Specialty: "SUBTITLES",
+		Base:       models.Base{ID: "vendor_locked"},
+		Name:       "Vendor Locked",
+		Components: []string{"SUBTITLE"},
+		Markets:    []string{"en-US"},
 	})
 
 	_ = packages.Create(ctx, client, &models.Package{
@@ -164,11 +179,12 @@ func TestVendors_CascadeUploadDelete(t *testing.T) {
 		Base: models.Base{
 			ID: "vendor-with-avatar",
 			Metadata: map[string]any{
-				"avatar_url": "/api/uploads/upload-logo-456",
+				"poster_url": "/api/uploads/upload-logo-456",
 			},
 		},
-		Name:      "Logo Studio",
-		Specialty: "AUDIO_DUBBING",
+		Name:       "Logo Studio",
+		Components: []string{"AUDIO"},
+		Markets:    []string{"en-US"},
 	})
 	if vRes.IsErr() {
 		t.Fatalf("failed to create vendor: %v", vRes.Error())

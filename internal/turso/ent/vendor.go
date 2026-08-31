@@ -26,8 +26,10 @@ type Vendor struct {
 	UpdatedAt time.Time `json:"updated_at,omitempty"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
-	// Specialty holds the value of the "specialty" field.
-	Specialty string `json:"specialty,omitempty"`
+	// Covered media components (VIDEO, AUDIO, SUBTITLE, METADATA)
+	Components []string `json:"components,omitempty"`
+	// Covered language-market tags (e.g. en-US, de-DE, hi-IN, te-IN)
+	Markets []string `json:"markets,omitempty"`
 	// HourlyRateUsd holds the value of the "hourly_rate_usd" field.
 	HourlyRateUsd float64 `json:"hourly_rate_usd,omitempty"`
 	// TurnaroundHours holds the value of the "turnaround_hours" field.
@@ -61,13 +63,13 @@ func (*Vendor) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case vendor.FieldMetadata:
+		case vendor.FieldMetadata, vendor.FieldComponents, vendor.FieldMarkets:
 			values[i] = new([]byte)
 		case vendor.FieldHourlyRateUsd:
 			values[i] = new(sql.NullFloat64)
 		case vendor.FieldTurnaroundHours:
 			values[i] = new(sql.NullInt64)
-		case vendor.FieldID, vendor.FieldName, vendor.FieldSpecialty:
+		case vendor.FieldID, vendor.FieldName:
 			values[i] = new(sql.NullString)
 		case vendor.FieldCreatedAt, vendor.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -118,11 +120,21 @@ func (_m *Vendor) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.Name = value.String
 			}
-		case vendor.FieldSpecialty:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field specialty", values[i])
-			} else if value.Valid {
-				_m.Specialty = value.String
+		case vendor.FieldComponents:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field components", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &_m.Components); err != nil {
+					return fmt.Errorf("unmarshal field components: %w", err)
+				}
+			}
+		case vendor.FieldMarkets:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field markets", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &_m.Markets); err != nil {
+					return fmt.Errorf("unmarshal field markets: %w", err)
+				}
 			}
 		case vendor.FieldHourlyRateUsd:
 			if value, ok := values[i].(*sql.NullFloat64); !ok {
@@ -189,8 +201,11 @@ func (_m *Vendor) String() string {
 	builder.WriteString("name=")
 	builder.WriteString(_m.Name)
 	builder.WriteString(", ")
-	builder.WriteString("specialty=")
-	builder.WriteString(_m.Specialty)
+	builder.WriteString("components=")
+	builder.WriteString(fmt.Sprintf("%v", _m.Components))
+	builder.WriteString(", ")
+	builder.WriteString("markets=")
+	builder.WriteString(fmt.Sprintf("%v", _m.Markets))
 	builder.WriteString(", ")
 	builder.WriteString("hourly_rate_usd=")
 	builder.WriteString(fmt.Sprintf("%v", _m.HourlyRateUsd))

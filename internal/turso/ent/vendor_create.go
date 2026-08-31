@@ -61,9 +61,15 @@ func (_c *VendorCreate) SetName(v string) *VendorCreate {
 	return _c
 }
 
-// SetSpecialty sets the "specialty" field.
-func (_c *VendorCreate) SetSpecialty(v string) *VendorCreate {
-	_c.mutation.SetSpecialty(v)
+// SetComponents sets the "components" field.
+func (_c *VendorCreate) SetComponents(v []string) *VendorCreate {
+	_c.mutation.SetComponents(v)
+	return _c
+}
+
+// SetMarkets sets the "markets" field.
+func (_c *VendorCreate) SetMarkets(v []string) *VendorCreate {
+	_c.mutation.SetMarkets(v)
 	return _c
 }
 
@@ -185,13 +191,11 @@ func (_c *VendorCreate) check() error {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "Vendor.name": %w`, err)}
 		}
 	}
-	if _, ok := _c.mutation.Specialty(); !ok {
-		return &ValidationError{Name: "specialty", err: errors.New(`ent: missing required field "Vendor.specialty"`)}
+	if _, ok := _c.mutation.Components(); !ok {
+		return &ValidationError{Name: "components", err: errors.New(`ent: missing required field "Vendor.components"`)}
 	}
-	if v, ok := _c.mutation.Specialty(); ok {
-		if err := vendor.SpecialtyValidator(v); err != nil {
-			return &ValidationError{Name: "specialty", err: fmt.Errorf(`ent: validator failed for field "Vendor.specialty": %w`, err)}
-		}
+	if _, ok := _c.mutation.Markets(); !ok {
+		return &ValidationError{Name: "markets", err: errors.New(`ent: missing required field "Vendor.markets"`)}
 	}
 	if _, ok := _c.mutation.HourlyRateUsd(); !ok {
 		return &ValidationError{Name: "hourly_rate_usd", err: errors.New(`ent: missing required field "Vendor.hourly_rate_usd"`)}
@@ -265,9 +269,13 @@ func (_c *VendorCreate) createSpec() (*Vendor, *sqlgraph.CreateSpec) {
 		_spec.SetField(vendor.FieldName, field.TypeString, value)
 		_node.Name = value
 	}
-	if value, ok := _c.mutation.Specialty(); ok {
-		_spec.SetField(vendor.FieldSpecialty, field.TypeString, value)
-		_node.Specialty = value
+	if value, ok := _c.mutation.Components(); ok {
+		_spec.SetField(vendor.FieldComponents, field.TypeJSON, value)
+		_node.Components = value
+	}
+	if value, ok := _c.mutation.Markets(); ok {
+		_spec.SetField(vendor.FieldMarkets, field.TypeJSON, value)
+		_node.Markets = value
 	}
 	if value, ok := _c.mutation.HourlyRateUsd(); ok {
 		_spec.SetField(vendor.FieldHourlyRateUsd, field.TypeFloat64, value)

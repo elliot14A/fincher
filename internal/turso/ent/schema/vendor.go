@@ -4,7 +4,6 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
-	"entgo.io/ent/schema/index"
 )
 
 type Vendor struct {
@@ -21,8 +20,10 @@ func (Vendor) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("name").
 			NotEmpty(),
-		field.String("specialty").
-			NotEmpty(),
+		field.JSON("components", []string{}).
+			Comment("Covered media components (VIDEO, AUDIO, SUBTITLE, METADATA)"),
+		field.JSON("markets", []string{}).
+			Comment("Covered language-market tags (e.g. en-US, de-DE, hi-IN, te-IN)"),
 		field.Float("hourly_rate_usd").
 			Default(0.0).
 			Min(0.0),
@@ -39,7 +40,5 @@ func (Vendor) Edges() []ent.Edge {
 }
 
 func (Vendor) Indexes() []ent.Index {
-	return []ent.Index{
-		index.Fields("specialty"),
-	}
+	return []ent.Index{}
 }

@@ -80,11 +80,6 @@ func Name(v string) predicate.Vendor {
 	return predicate.Vendor(sql.FieldEQ(FieldName, v))
 }
 
-// Specialty applies equality check predicate on the "specialty" field. It's identical to SpecialtyEQ.
-func Specialty(v string) predicate.Vendor {
-	return predicate.Vendor(sql.FieldEQ(FieldSpecialty, v))
-}
-
 // HourlyRateUsd applies equality check predicate on the "hourly_rate_usd" field. It's identical to HourlyRateUsdEQ.
 func HourlyRateUsd(v float64) predicate.Vendor {
 	return predicate.Vendor(sql.FieldEQ(FieldHourlyRateUsd, v))
@@ -248,71 +243,6 @@ func NameEqualFold(v string) predicate.Vendor {
 // NameContainsFold applies the ContainsFold predicate on the "name" field.
 func NameContainsFold(v string) predicate.Vendor {
 	return predicate.Vendor(sql.FieldContainsFold(FieldName, v))
-}
-
-// SpecialtyEQ applies the EQ predicate on the "specialty" field.
-func SpecialtyEQ(v string) predicate.Vendor {
-	return predicate.Vendor(sql.FieldEQ(FieldSpecialty, v))
-}
-
-// SpecialtyNEQ applies the NEQ predicate on the "specialty" field.
-func SpecialtyNEQ(v string) predicate.Vendor {
-	return predicate.Vendor(sql.FieldNEQ(FieldSpecialty, v))
-}
-
-// SpecialtyIn applies the In predicate on the "specialty" field.
-func SpecialtyIn(vs ...string) predicate.Vendor {
-	return predicate.Vendor(sql.FieldIn(FieldSpecialty, vs...))
-}
-
-// SpecialtyNotIn applies the NotIn predicate on the "specialty" field.
-func SpecialtyNotIn(vs ...string) predicate.Vendor {
-	return predicate.Vendor(sql.FieldNotIn(FieldSpecialty, vs...))
-}
-
-// SpecialtyGT applies the GT predicate on the "specialty" field.
-func SpecialtyGT(v string) predicate.Vendor {
-	return predicate.Vendor(sql.FieldGT(FieldSpecialty, v))
-}
-
-// SpecialtyGTE applies the GTE predicate on the "specialty" field.
-func SpecialtyGTE(v string) predicate.Vendor {
-	return predicate.Vendor(sql.FieldGTE(FieldSpecialty, v))
-}
-
-// SpecialtyLT applies the LT predicate on the "specialty" field.
-func SpecialtyLT(v string) predicate.Vendor {
-	return predicate.Vendor(sql.FieldLT(FieldSpecialty, v))
-}
-
-// SpecialtyLTE applies the LTE predicate on the "specialty" field.
-func SpecialtyLTE(v string) predicate.Vendor {
-	return predicate.Vendor(sql.FieldLTE(FieldSpecialty, v))
-}
-
-// SpecialtyContains applies the Contains predicate on the "specialty" field.
-func SpecialtyContains(v string) predicate.Vendor {
-	return predicate.Vendor(sql.FieldContains(FieldSpecialty, v))
-}
-
-// SpecialtyHasPrefix applies the HasPrefix predicate on the "specialty" field.
-func SpecialtyHasPrefix(v string) predicate.Vendor {
-	return predicate.Vendor(sql.FieldHasPrefix(FieldSpecialty, v))
-}
-
-// SpecialtyHasSuffix applies the HasSuffix predicate on the "specialty" field.
-func SpecialtyHasSuffix(v string) predicate.Vendor {
-	return predicate.Vendor(sql.FieldHasSuffix(FieldSpecialty, v))
-}
-
-// SpecialtyEqualFold applies the EqualFold predicate on the "specialty" field.
-func SpecialtyEqualFold(v string) predicate.Vendor {
-	return predicate.Vendor(sql.FieldEqualFold(FieldSpecialty, v))
-}
-
-// SpecialtyContainsFold applies the ContainsFold predicate on the "specialty" field.
-func SpecialtyContainsFold(v string) predicate.Vendor {
-	return predicate.Vendor(sql.FieldContainsFold(FieldSpecialty, v))
 }
 
 // HourlyRateUsdEQ applies the EQ predicate on the "hourly_rate_usd" field.

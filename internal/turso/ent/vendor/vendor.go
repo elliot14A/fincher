@@ -22,8 +22,10 @@ const (
 	FieldUpdatedAt = "updated_at"
 	// FieldName holds the string denoting the name field in the database.
 	FieldName = "name"
-	// FieldSpecialty holds the string denoting the specialty field in the database.
-	FieldSpecialty = "specialty"
+	// FieldComponents holds the string denoting the components field in the database.
+	FieldComponents = "components"
+	// FieldMarkets holds the string denoting the markets field in the database.
+	FieldMarkets = "markets"
 	// FieldHourlyRateUsd holds the string denoting the hourly_rate_usd field in the database.
 	FieldHourlyRateUsd = "hourly_rate_usd"
 	// FieldTurnaroundHours holds the string denoting the turnaround_hours field in the database.
@@ -48,7 +50,8 @@ var Columns = []string{
 	FieldCreatedAt,
 	FieldUpdatedAt,
 	FieldName,
-	FieldSpecialty,
+	FieldComponents,
+	FieldMarkets,
 	FieldHourlyRateUsd,
 	FieldTurnaroundHours,
 }
@@ -72,8 +75,6 @@ var (
 	UpdateDefaultUpdatedAt func() time.Time
 	// NameValidator is a validator for the "name" field. It is called by the builders before save.
 	NameValidator func(string) error
-	// SpecialtyValidator is a validator for the "specialty" field. It is called by the builders before save.
-	SpecialtyValidator func(string) error
 	// DefaultHourlyRateUsd holds the default value on creation for the "hourly_rate_usd" field.
 	DefaultHourlyRateUsd float64
 	// HourlyRateUsdValidator is a validator for the "hourly_rate_usd" field. It is called by the builders before save.
@@ -107,11 +108,6 @@ func ByUpdatedAt(opts ...sql.OrderTermOption) OrderOption {
 // ByName orders the results by the name field.
 func ByName(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldName, opts...).ToFunc()
-}
-
-// BySpecialty orders the results by the specialty field.
-func BySpecialty(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldSpecialty, opts...).ToFunc()
 }
 
 // ByHourlyRateUsd orders the results by the hourly_rate_usd field.
