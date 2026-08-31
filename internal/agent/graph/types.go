@@ -44,15 +44,16 @@ type AllocationGraphDeps struct {
 	ClickHouse  *sql.DB
 }
 
-// AllocationInput is the entry payload for vendor partner selection.
+// AllocationInput is the entry payload for holistic vendor allocation.
 type AllocationInput struct {
-	RunID              string  `json:"run_id,omitempty"`
-	TitleSlug          string  `json:"title_slug"`
-	Component          string  `json:"component"`
-	HoursUntilPremiere float64 `json:"hours_until_premiere"`
+	RunID              string                         `json:"run_id,omitempty"`
+	TitleSlug          string                         `json:"title_slug"`
+	Requirements       []models.AllocationRequirement `json:"requirements"`
+	HoursUntilPremiere float64                        `json:"hours_until_premiere"`
 }
 
-// AllocationOutput captures the vendor selection choice and rationale.
+// AllocationOutput captures the holistic staffing plan.
 type AllocationOutput struct {
-	Decision *agent.SelectionDecision `json:"decision"`
+	Plan     *models.AllocationPlan   `json:"plan,omitempty"`
+	Decision *agent.SelectionDecision `json:"decision,omitempty"`
 }

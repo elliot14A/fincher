@@ -90,7 +90,8 @@ func TestExecuteIncident(t *testing.T) {
 				ID: "vendor-berlin",
 			},
 			Name:            "Berlin Synchron",
-			Specialty:       "AUDIO_DUBBING",
+			Components:      []string{"AUDIO"},
+			Markets:         []string{"de-DE"},
 			HourlyRateUSD:   120.0,
 			TurnaroundHours: 24,
 		})
@@ -167,7 +168,7 @@ func TestExecuteIncident(t *testing.T) {
 			Data: map[string]any{
 				"package_id": "pkg-german-dub",
 				"vendor_id":  "vendor-berlin",
-				"component":  "AUDIO_DUBBING",
+				"component":  "AUDIO",
 			},
 		}
 

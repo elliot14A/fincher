@@ -3,6 +3,7 @@ package graph
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -15,16 +16,16 @@ import (
 	"github.com/elliot14A/fincher/pkg/logger"
 )
 
-// ExecuteAllocation evaluates candidate vendors and selects the optimal partner based on
-// SLA turnaround feasibility, quality floor constraints, and commercial rate.
+// ExecuteAllocation evaluates candidate vendors and creates a holistic staffing plan across all requirements
+// based on turnaround feasibility, quality floors, and commercial rates.
 //
 // It persists candidate_gathering and vendor_selection Step and WfResult rows into Turso.
 func ExecuteAllocation(ctx context.Context, deps AllocationGraphDeps, input AllocationInput) (*AllocationOutput, error) {
 	if input.TitleSlug == "" {
 		return nil, domainerrors.NewWithOp("graph.ExecuteAllocation", domainerrors.CodeInvalidInput, "title slug cannot be empty", nil)
 	}
-	if input.Component == "" {
-		return nil, domainerrors.NewWithOp("graph.ExecuteAllocation", domainerrors.CodeInvalidInput, "component cannot be empty", nil)
+	if len(input.Requirements) == 0 {
+		return nil, domainerrors.NewWithOp("graph.ExecuteAllocation", domainerrors.CodeInvalidInput, "requirements cannot be empty", nil)
 	}
 	if deps.TursoClient == nil {
 		return nil, domainerrors.NewWithOp("graph.ExecuteAllocation", domainerrors.CodeInvalidInput, "turso client cannot be nil", nil)
@@ -56,7 +57,6 @@ func ExecuteAllocation(ctx context.Context, deps AllocationGraphDeps, input Allo
 		}
 	}
 
-	// Stage 1: Candidate Gathering
 	candStepID := fmt.Sprintf("step-%s-candidates", runID)
 	sRes := runs.CreateStep(ctx, deps.TursoClient, &models.Step{
 		Base:      models.Base{ID: candStepID},
@@ -74,28 +74,52 @@ func ExecuteAllocation(ctx context.Context, deps AllocationGraphDeps, input Allo
 		)
 	}
 
-	candidates, err := tools.FetchVendorCandidates(ctx, deps.TursoClient, deps.ClickHouse, tools.VendorCandidatesArgs{
-		Component: input.Component,
-		Specialty: input.Component,
-	})
-	now := time.Now().UTC()
-	if err != nil {
-		updStepRes := runs.UpdateStepStatus(ctx, deps.TursoClient, candStepID, models.StepStatusFailed, &now, map[string]any{"error": err.Error()})
-		if updStepRes.IsErr() {
-			logger.Warn("allocation: failed to update step status to failed", "run_id", runID, "step_id", candStepID, "error", updStepRes.Error())
+	type pairKey struct {
+		Component string
+		Market    string
+	}
+	seenPairs := make(map[pairKey]bool)
+	candidatesByRequirement := make(map[string][]models.VendorCandidate)
+	candidateCounts := make(map[string]int)
+
+	for _, req := range input.Requirements {
+		normComp := strings.ToUpper(strings.TrimSpace(req.Component))
+		normMarket := strings.TrimSpace(req.Market)
+		pk := pairKey{Component: normComp, Market: normMarket}
+		key := fmt.Sprintf("%s|%s", normComp, normMarket)
+
+		if seenPairs[pk] {
+			continue
 		}
-		updRunRes := runs.UpdateRunStatus(ctx, deps.TursoClient, runID, models.RunStatusFailed, &now, nil)
-		if updRunRes.IsErr() {
-			logger.Warn("allocation: failed to update run status to failed", "run_id", runID, "error", updRunRes.Error())
+		seenPairs[pk] = true
+
+		cands, err := tools.FetchVendorCandidates(ctx, deps.TursoClient, deps.ClickHouse, tools.VendorCandidatesArgs{
+			Component: normComp,
+			Market:    normMarket,
+		})
+		now := time.Now().UTC()
+		if err != nil {
+			updStepRes := runs.UpdateStepStatus(ctx, deps.TursoClient, candStepID, models.StepStatusFailed, &now, map[string]any{"error": err.Error()})
+			if updStepRes.IsErr() {
+				logger.Warn("allocation: failed to update step status to failed", "run_id", runID, "step_id", candStepID, "error", updStepRes.Error())
+			}
+			updRunRes := runs.UpdateRunStatus(ctx, deps.TursoClient, runID, models.RunStatusFailed, &now, nil)
+			if updRunRes.IsErr() {
+				logger.Warn("allocation: failed to update run status to failed", "run_id", runID, "error", updRunRes.Error())
+			}
+			return nil, domainerrors.NewWithOp("graph.ExecuteAllocation", domainerrors.CodeInternal, "failed to gather vendor candidates", err)
 		}
-		return nil, domainerrors.NewWithOp("graph.ExecuteAllocation", domainerrors.CodeInternal, "failed to gather vendor candidates", err)
+
+		candidatesByRequirement[key] = cands
+		candidateCounts[key] = len(cands)
 	}
 
+	now := time.Now().UTC()
 	runs.UpdateStepStatus(ctx, deps.TursoClient, candStepID, models.StepStatusCompleted, &now, map[string]any{
-		"candidates_count": len(candidates),
+		"requirements_count": len(input.Requirements),
+		"candidate_pools":    candidateCounts,
 	})
 
-	// Stage 2: Vendor Selection
 	selectStepID := fmt.Sprintf("step-%s-selection", runID)
 	selStepRes := runs.CreateStep(ctx, deps.TursoClient, &models.Step{
 		Base:      models.Base{ID: selectStepID},
@@ -113,10 +137,10 @@ func ExecuteAllocation(ctx context.Context, deps AllocationGraphDeps, input Allo
 		)
 	}
 
-	decisionRes := agent.SelectVendor(ctx, deps.Model, input.TitleSlug, input.Component, candidates, input.HoursUntilPremiere)
+	planRes := agent.SelectVendorsForPlan(ctx, deps.Model, input.TitleSlug, input.Requirements, candidatesByRequirement, input.HoursUntilPremiere)
 	now = time.Now().UTC()
-	if decisionRes.IsErr() {
-		updStepRes := runs.UpdateStepStatus(ctx, deps.TursoClient, selectStepID, models.StepStatusFailed, &now, map[string]any{"error": decisionRes.Error().Error()})
+	if planRes.IsErr() {
+		updStepRes := runs.UpdateStepStatus(ctx, deps.TursoClient, selectStepID, models.StepStatusFailed, &now, map[string]any{"error": planRes.Error().Error()})
 		if updStepRes.IsErr() {
 			logger.Warn("allocation: failed to update step status to failed", "run_id", runID, "step_id", selectStepID, "error", updStepRes.Error())
 		}
@@ -124,33 +148,50 @@ func ExecuteAllocation(ctx context.Context, deps AllocationGraphDeps, input Allo
 		if updRunRes.IsErr() {
 			logger.Warn("allocation: failed to update run status to failed", "run_id", runID, "error", updRunRes.Error())
 		}
-		return nil, decisionRes.Error()
+		return nil, planRes.Error()
 	}
-	decision := decisionRes.Unwrap()
+	plan := planRes.Unwrap()
 
-	resRes := runs.CreateResult(ctx, deps.TursoClient, &models.WfResult{
-		Base:      models.Base{ID: fmt.Sprintf("res-%s-selection", runID)},
-		RunID:     runID,
-		StepID:    selectStepID,
-		Judge:     "vendor_selector",
-		Outcome:   decision.WinnerVendorID,
-		Rationale: decision.Rationale,
-		Attempt:   1,
-	})
-	if resRes.IsErr() {
-		logger.Warn("allocation: failed to record wf_result", "run_id", runID, "step_id", selectStepID, "error", resRes.Error())
+	assignedVendors := make([]string, 0, len(plan.Assignments))
+	for i, assignment := range plan.Assignments {
+		assignedVendors = append(assignedVendors, assignment.WinnerVendorID)
+		resRes := runs.CreateResult(ctx, deps.TursoClient, &models.WfResult{
+			Base:      models.Base{ID: fmt.Sprintf("res-%s-sel-%d", runID, i+1)},
+			RunID:     runID,
+			StepID:    selectStepID,
+			Judge:     "vendor_selector",
+			Outcome:   assignment.WinnerVendorID,
+			Rationale: fmt.Sprintf("[%s/%s] %s", assignment.Component, assignment.Market, assignment.Rationale),
+			Attempt:   1,
+		})
+		if resRes.IsErr() {
+			logger.Warn("allocation: failed to record wf_result", "run_id", runID, "step_id", selectStepID, "index", i, "error", resRes.Error())
+		}
 	}
 
 	runs.UpdateStepStatus(ctx, deps.TursoClient, selectStepID, models.StepStatusCompleted, &now, map[string]any{
-		"winner_vendor_id": decision.WinnerVendorID,
-		"hourly_rate_usd":  decision.HourlyRateUSD,
-		"turnaround_hours": decision.TurnaroundHours,
+		"assignments_count": len(plan.Assignments),
+		"overall_summary":   plan.OverallSummary,
 	})
 	runs.UpdateRunStatus(ctx, deps.TursoClient, runID, models.RunStatusCompleted, &now, map[string]any{
-		"winner_vendor_id": decision.WinnerVendorID,
+		"assignments_count": len(plan.Assignments),
+		"vendors":           assignedVendors,
 	})
 
+	var firstDecision *agent.SelectionDecision
+	if len(plan.Assignments) > 0 {
+		first := plan.Assignments[0]
+		firstDecision = &agent.SelectionDecision{
+			WinnerVendorID:   first.WinnerVendorID,
+			WinnerVendorName: first.WinnerVendorName,
+			HourlyRateUSD:    first.HourlyRateUSD,
+			TurnaroundHours:  first.TurnaroundHours,
+			Rationale:        first.Rationale,
+		}
+	}
+
 	return &AllocationOutput{
-		Decision: decision,
+		Plan:     plan,
+		Decision: firstDecision,
 	}, nil
 }

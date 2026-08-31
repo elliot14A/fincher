@@ -132,8 +132,8 @@ func DispatchAllocation(ctx context.Context, deps AllocationGraphDeps, input All
 	if input.TitleSlug == "" {
 		input.TitleSlug = models.DefaultTitleAgnosticSentinel
 	}
-	if input.Component == "" {
-		input.Component = "AUDIO"
+	if len(input.Requirements) == 0 {
+		return nil, false, domainerrors.NewWithOp("graph.DispatchAllocation", domainerrors.CodeInvalidInput, "requirements list cannot be empty", nil)
 	}
 
 	runID := input.RunID

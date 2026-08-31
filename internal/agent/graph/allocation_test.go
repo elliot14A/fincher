@@ -15,7 +15,7 @@ import (
 func TestExecuteAllocation(t *testing.T) {
 	ctx := context.Background()
 
-	t.Run("Evaluates candidates and selects optimal vendor partner", func(t *testing.T) {
+	t.Run("Evaluates multi-requirement candidates and creates holistic staffing plan", func(t *testing.T) {
 		client := tursotest.NewMemoryClient(t)
 
 		vendors.Create(ctx, client, &models.Vendor{
@@ -23,7 +23,8 @@ func TestExecuteAllocation(t *testing.T) {
 				ID: "vendor-deluxe",
 			},
 			Name:            "Deluxe Audio",
-			Specialty:       "AUDIO_DUBBING",
+			Components:      []string{"AUDIO"},
+			Markets:         []string{"en-US", "de-DE"},
 			HourlyRateUSD:   200.0,
 			TurnaroundHours: 12,
 		})
@@ -33,17 +34,26 @@ func TestExecuteAllocation(t *testing.T) {
 				ID: "vendor-berlin",
 			},
 			Name:            "Berlin Synchron",
-			Specialty:       "AUDIO_DUBBING",
+			Components:      []string{"AUDIO"},
+			Markets:         []string{"en-US", "de-DE"},
 			HourlyRateUSD:   120.0,
 			TurnaroundHours: 24,
 		})
 
 		selectorResponse := `{
-			"winner_vendor_id": "vendor-berlin",
-			"winner_vendor_name": "Berlin Synchron",
-			"hourly_rate_usd": 120.0,
-			"turnaround_hours": 24,
-			"rationale": "Meets the 48h turnaround requirement comfortably with the lowest commercial hourly rate ($120/hr)."
+			"assignments": [
+				{
+					"component": "AUDIO",
+					"market": "de-DE",
+					"language": "de-DE",
+					"winner_vendor_id": "vendor-berlin",
+					"winner_vendor_name": "Berlin Synchron",
+					"hourly_rate_usd": 120.0,
+					"turnaround_hours": 24,
+					"rationale": "Meets the 48h turnaround requirement comfortably with lowest rate ($120/hr)."
+				}
+			],
+			"overall_summary": "German dubbing assigned to Berlin Synchron."
 		}`
 
 		llm := &mockLLM{
@@ -56,22 +66,28 @@ func TestExecuteAllocation(t *testing.T) {
 		}
 
 		output, err := graph.ExecuteAllocation(ctx, deps, graph.AllocationInput{
-			TitleSlug:          "eclipse",
-			Component:          "AUDIO_DUBBING",
+			TitleSlug: "eclipse",
+			Requirements: []models.AllocationRequirement{
+				{
+					Component: "AUDIO",
+					Market:    "de-DE",
+					Language:  "de-DE",
+				},
+			},
 			HoursUntilPremiere: 48.0,
 		})
 		if err != nil {
 			t.Fatalf("ExecuteAllocation returned error: %v", err)
 		}
 
-		if output.Decision == nil {
-			t.Fatal("expected non-nil Decision")
+		if output.Plan == nil {
+			t.Fatal("expected non-nil Plan")
 		}
-		if output.Decision.WinnerVendorID != "vendor-berlin" {
-			t.Errorf("expected winner vendor-berlin, got: %s", output.Decision.WinnerVendorID)
+		if len(output.Plan.Assignments) != 1 {
+			t.Fatalf("expected 1 assignment, got: %d", len(output.Plan.Assignments))
 		}
-		if output.Decision.HourlyRateUSD != 120.0 {
-			t.Errorf("expected hourly rate 120.0, got: %f", output.Decision.HourlyRateUSD)
+		if output.Plan.Assignments[0].WinnerVendorID != "vendor-berlin" {
+			t.Errorf("expected winner vendor-berlin, got: %s", output.Plan.Assignments[0].WinnerVendorID)
 		}
 
 		// Verify that candidate_gathering and vendor_selection steps were created
@@ -103,10 +119,25 @@ func TestExecuteAllocation(t *testing.T) {
 		}
 		_, err := graph.ExecuteAllocation(ctx, deps, graph.AllocationInput{
 			TitleSlug: "",
-			Component: "AUDIO_DUBBING",
+			Requirements: []models.AllocationRequirement{
+				{Component: "AUDIO", Market: "en-US"},
+			},
 		})
 		if err == nil {
 			t.Fatal("expected error for empty title slug, got nil")
+		}
+	})
+
+	t.Run("Fails when requirements list is empty", func(t *testing.T) {
+		deps := graph.AllocationGraphDeps{
+			Model: &mockLLM{},
+		}
+		_, err := graph.ExecuteAllocation(ctx, deps, graph.AllocationInput{
+			TitleSlug:    "avatar-fire-ash",
+			Requirements: []models.AllocationRequirement{},
+		})
+		if err == nil {
+			t.Fatal("expected error for empty requirements, got nil")
 		}
 	})
 }

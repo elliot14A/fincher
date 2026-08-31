@@ -207,7 +207,6 @@ func ExecuteIncident(ctx context.Context, deps IncidentGraphDeps, input Incident
 
 	candidates, err := tools.FetchVendorCandidates(ctx, deps.TursoClient, deps.ClickHouse, tools.VendorCandidatesArgs{
 		Component: component,
-		Specialty: component,
 	})
 	if err != nil {
 		failIncidentStage(ctx, deps.TursoClient, runID, titleSlug, contextStepID, "context_vendor_candidates", err)

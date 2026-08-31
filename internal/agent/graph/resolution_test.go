@@ -25,7 +25,8 @@ func TestGraph_ExecuteResolution_EndToEnd(t *testing.T) {
 	_ = tursovendors.Create(ctx, client, &models.Vendor{
 		Base:            models.Base{ID: "vendor-deluxe"},
 		Name:            "Deluxe Audio",
-		Specialty:       "AUDIO_DUBBING",
+		Components:      []string{"AUDIO"},
+		Markets:         []string{"de-DE", "en-US"},
 		HourlyRateUSD:   200.0,
 		TurnaroundHours: 12,
 	})
@@ -160,7 +161,8 @@ func TestGraph_ExecuteResolution_MultiTerritory_1toN_Isolation(t *testing.T) {
 	_ = tursovendors.Create(ctx, client, &models.Vendor{
 		Base:            models.Base{ID: "vendor-deluxe"},
 		Name:            "Deluxe Audio",
-		Specialty:       "AUDIO_DUBBING",
+		Components:      []string{"AUDIO"},
+		Markets:         []string{"de-DE", "en-US"},
 		HourlyRateUSD:   200.0,
 		TurnaroundHours: 12,
 	})
@@ -314,7 +316,8 @@ func TestGraph_ExecuteResolution_MissingSubtitle_StaysHeld(t *testing.T) {
 	_ = tursovendors.Create(ctx, client, &models.Vendor{
 		Base:            models.Base{ID: "vendor-deluxe"},
 		Name:            "Deluxe Audio",
-		Specialty:       "AUDIO_DUBBING",
+		Components:      []string{"AUDIO", "SUBTITLE"},
+		Markets:         []string{"en-US", "de-DE"},
 		HourlyRateUSD:   200.0,
 		TurnaroundHours: 12,
 	})
@@ -407,7 +410,8 @@ func TestGraph_ExecuteResolution_Processing_Branch(t *testing.T) {
 	_ = tursovendors.Create(ctx, client, &models.Vendor{
 		Base:            models.Base{ID: "vendor-deluxe"},
 		Name:            "Deluxe Audio",
-		Specialty:       "AUDIO_DUBBING",
+		Components:      []string{"AUDIO", "SUBTITLE"},
+		Markets:         []string{"en-US", "de-DE"},
 		HourlyRateUSD:   200.0,
 		TurnaroundHours: 12,
 	})
@@ -512,7 +516,8 @@ func TestGraph_ExecuteResolution_EmptyMarket_IsObservable(t *testing.T) {
 	_ = tursovendors.Create(ctx, client, &models.Vendor{
 		Base:            models.Base{ID: "vendor-deluxe"},
 		Name:            "Deluxe Audio",
-		Specialty:       "AUDIO_DUBBING",
+		Components:      []string{"AUDIO", "SUBTITLE"},
+		Markets:         []string{"en-US", "de-DE"},
 		HourlyRateUSD:   200.0,
 		TurnaroundHours: 12,
 	})
