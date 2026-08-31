@@ -121,6 +121,20 @@ func (_c *MediaPackageCreate) SetNillableStatus(v *mediapackage.Status) *MediaPa
 	return _c
 }
 
+// SetMarket sets the "market" field.
+func (_c *MediaPackageCreate) SetMarket(v string) *MediaPackageCreate {
+	_c.mutation.SetMarket(v)
+	return _c
+}
+
+// SetNillableMarket sets the "market" field if the given value is not nil.
+func (_c *MediaPackageCreate) SetNillableMarket(v *string) *MediaPackageCreate {
+	if v != nil {
+		_c.SetMarket(*v)
+	}
+	return _c
+}
+
 // SetID sets the "id" field.
 func (_c *MediaPackageCreate) SetID(v string) *MediaPackageCreate {
 	_c.mutation.SetID(v)
@@ -217,6 +231,10 @@ func (_c *MediaPackageCreate) defaults() {
 	if _, ok := _c.mutation.Status(); !ok {
 		v := mediapackage.DefaultStatus
 		_c.mutation.SetStatus(v)
+	}
+	if _, ok := _c.mutation.Market(); !ok {
+		v := mediapackage.DefaultMarket
+		_c.mutation.SetMarket(v)
 	}
 }
 
@@ -373,6 +391,10 @@ func (_c *MediaPackageCreate) createSpec() (*MediaPackage, *sqlgraph.CreateSpec)
 	if value, ok := _c.mutation.Status(); ok {
 		_spec.SetField(mediapackage.FieldStatus, field.TypeEnum, value)
 		_node.Status = value
+	}
+	if value, ok := _c.mutation.Market(); ok {
+		_spec.SetField(mediapackage.FieldMarket, field.TypeString, value)
+		_node.Market = value
 	}
 	if nodes := _c.mutation.TitleIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

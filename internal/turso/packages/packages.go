@@ -25,6 +25,7 @@ func toDomain(p *ent.MediaPackage) *models.Package {
 		DerivedFromMasterVersion: p.DerivedFromMasterVersion,
 		RedeliveryCount:          p.RedeliveryCount,
 		Status:                   models.PackageStatus(p.Status),
+		Market:                   p.Market,
 	}
 }
 

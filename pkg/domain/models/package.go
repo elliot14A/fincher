@@ -33,6 +33,7 @@ type Package struct {
 	DerivedFromMasterVersion string        `json:"derived_from_master_version" validate:"required"`
 	RedeliveryCount          int           `json:"redelivery_count" validate:"gte=0"`
 	Status                   PackageStatus `json:"status" validate:"required,oneof=PENDING VALID INVALIDATED RE_QC_PENDING"`
+	Market                   string        `json:"market,omitempty"`
 }
 
 // Validate verifies package constraints.
@@ -57,6 +58,7 @@ type UpdatePackageInput struct {
 	DerivedFromMasterVersion *string        `json:"derived_from_master_version,omitempty" validate:"omitempty,min=1"`
 	RedeliveryCount          *int           `json:"redelivery_count,omitempty" validate:"omitempty,gte=0"`
 	Status                   *PackageStatus `json:"status,omitempty" validate:"omitempty,oneof=PENDING VALID INVALIDATED RE_QC_PENDING"`
+	Market                   *string        `json:"market,omitempty"`
 	Metadata                 map[string]any `json:"metadata,omitempty"`
 }
 

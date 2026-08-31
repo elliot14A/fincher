@@ -42,6 +42,8 @@ type MediaPackage struct {
 	RedeliveryCount int `json:"redelivery_count,omitempty"`
 	// Status holds the value of the "status" field.
 	Status mediapackage.Status `json:"status,omitempty"`
+	// Market holds the value of the "market" field.
+	Market string `json:"market,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the MediaPackageQuery when eager-loading is set.
 	Edges        MediaPackageEdges `json:"edges"`
@@ -112,7 +114,7 @@ func (*MediaPackage) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case mediapackage.FieldRedeliveryCount:
 			values[i] = new(sql.NullInt64)
-		case mediapackage.FieldID, mediapackage.FieldTitleID, mediapackage.FieldComponent, mediapackage.FieldLanguage, mediapackage.FieldVersion, mediapackage.FieldVendorID, mediapackage.FieldDerivedFromMasterVersion, mediapackage.FieldStatus:
+		case mediapackage.FieldID, mediapackage.FieldTitleID, mediapackage.FieldComponent, mediapackage.FieldLanguage, mediapackage.FieldVersion, mediapackage.FieldVendorID, mediapackage.FieldDerivedFromMasterVersion, mediapackage.FieldStatus, mediapackage.FieldMarket:
 			values[i] = new(sql.NullString)
 		case mediapackage.FieldCreatedAt, mediapackage.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -205,6 +207,12 @@ func (_m *MediaPackage) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.Status = mediapackage.Status(value.String)
 			}
+		case mediapackage.FieldMarket:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field market", values[i])
+			} else if value.Valid {
+				_m.Market = value.String
+			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
 		}
@@ -293,6 +301,9 @@ func (_m *MediaPackage) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("status=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Status))
+	builder.WriteString(", ")
+	builder.WriteString("market=")
+	builder.WriteString(_m.Market)
 	builder.WriteByte(')')
 	return builder.String()
 }

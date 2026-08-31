@@ -37,6 +37,9 @@ func (MediaPackage) Fields() []ent.Field {
 		field.Enum("status").
 			Values("PENDING", "VALID", "INVALIDATED", "RE_QC_PENDING").
 			Default("PENDING"),
+		field.String("market").
+			Optional().
+			Default(""),
 	}
 }
 
@@ -63,5 +66,6 @@ func (MediaPackage) Indexes() []ent.Index {
 		index.Fields("vendor_id"),
 		index.Fields("status"),
 		index.Fields("component"),
+		index.Fields("market"),
 	}
 }

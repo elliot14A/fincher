@@ -105,6 +105,11 @@ func RedeliveryCount(v int) predicate.MediaPackage {
 	return predicate.MediaPackage(sql.FieldEQ(FieldRedeliveryCount, v))
 }
 
+// Market applies equality check predicate on the "market" field. It's identical to MarketEQ.
+func Market(v string) predicate.MediaPackage {
+	return predicate.MediaPackage(sql.FieldEQ(FieldMarket, v))
+}
+
 // MetadataIsNil applies the IsNil predicate on the "metadata" field.
 func MetadataIsNil() predicate.MediaPackage {
 	return predicate.MediaPackage(sql.FieldIsNull(FieldMetadata))
@@ -598,6 +603,81 @@ func StatusIn(vs ...Status) predicate.MediaPackage {
 // StatusNotIn applies the NotIn predicate on the "status" field.
 func StatusNotIn(vs ...Status) predicate.MediaPackage {
 	return predicate.MediaPackage(sql.FieldNotIn(FieldStatus, vs...))
+}
+
+// MarketEQ applies the EQ predicate on the "market" field.
+func MarketEQ(v string) predicate.MediaPackage {
+	return predicate.MediaPackage(sql.FieldEQ(FieldMarket, v))
+}
+
+// MarketNEQ applies the NEQ predicate on the "market" field.
+func MarketNEQ(v string) predicate.MediaPackage {
+	return predicate.MediaPackage(sql.FieldNEQ(FieldMarket, v))
+}
+
+// MarketIn applies the In predicate on the "market" field.
+func MarketIn(vs ...string) predicate.MediaPackage {
+	return predicate.MediaPackage(sql.FieldIn(FieldMarket, vs...))
+}
+
+// MarketNotIn applies the NotIn predicate on the "market" field.
+func MarketNotIn(vs ...string) predicate.MediaPackage {
+	return predicate.MediaPackage(sql.FieldNotIn(FieldMarket, vs...))
+}
+
+// MarketGT applies the GT predicate on the "market" field.
+func MarketGT(v string) predicate.MediaPackage {
+	return predicate.MediaPackage(sql.FieldGT(FieldMarket, v))
+}
+
+// MarketGTE applies the GTE predicate on the "market" field.
+func MarketGTE(v string) predicate.MediaPackage {
+	return predicate.MediaPackage(sql.FieldGTE(FieldMarket, v))
+}
+
+// MarketLT applies the LT predicate on the "market" field.
+func MarketLT(v string) predicate.MediaPackage {
+	return predicate.MediaPackage(sql.FieldLT(FieldMarket, v))
+}
+
+// MarketLTE applies the LTE predicate on the "market" field.
+func MarketLTE(v string) predicate.MediaPackage {
+	return predicate.MediaPackage(sql.FieldLTE(FieldMarket, v))
+}
+
+// MarketContains applies the Contains predicate on the "market" field.
+func MarketContains(v string) predicate.MediaPackage {
+	return predicate.MediaPackage(sql.FieldContains(FieldMarket, v))
+}
+
+// MarketHasPrefix applies the HasPrefix predicate on the "market" field.
+func MarketHasPrefix(v string) predicate.MediaPackage {
+	return predicate.MediaPackage(sql.FieldHasPrefix(FieldMarket, v))
+}
+
+// MarketHasSuffix applies the HasSuffix predicate on the "market" field.
+func MarketHasSuffix(v string) predicate.MediaPackage {
+	return predicate.MediaPackage(sql.FieldHasSuffix(FieldMarket, v))
+}
+
+// MarketIsNil applies the IsNil predicate on the "market" field.
+func MarketIsNil() predicate.MediaPackage {
+	return predicate.MediaPackage(sql.FieldIsNull(FieldMarket))
+}
+
+// MarketNotNil applies the NotNil predicate on the "market" field.
+func MarketNotNil() predicate.MediaPackage {
+	return predicate.MediaPackage(sql.FieldNotNull(FieldMarket))
+}
+
+// MarketEqualFold applies the EqualFold predicate on the "market" field.
+func MarketEqualFold(v string) predicate.MediaPackage {
+	return predicate.MediaPackage(sql.FieldEqualFold(FieldMarket, v))
+}
+
+// MarketContainsFold applies the ContainsFold predicate on the "market" field.
+func MarketContainsFold(v string) predicate.MediaPackage {
+	return predicate.MediaPackage(sql.FieldContainsFold(FieldMarket, v))
 }
 
 // HasTitle applies the HasEdge predicate on the "title" edge.

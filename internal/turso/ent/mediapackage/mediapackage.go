@@ -37,6 +37,8 @@ const (
 	FieldRedeliveryCount = "redelivery_count"
 	// FieldStatus holds the string denoting the status field in the database.
 	FieldStatus = "status"
+	// FieldMarket holds the string denoting the market field in the database.
+	FieldMarket = "market"
 	// EdgeTitle holds the string denoting the title edge name in mutations.
 	EdgeTitle = "title"
 	// EdgeVendor holds the string denoting the vendor edge name in mutations.
@@ -91,6 +93,7 @@ var Columns = []string{
 	FieldDerivedFromMasterVersion,
 	FieldRedeliveryCount,
 	FieldStatus,
+	FieldMarket,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -124,6 +127,8 @@ var (
 	DefaultRedeliveryCount int
 	// RedeliveryCountValidator is a validator for the "redelivery_count" field. It is called by the builders before save.
 	RedeliveryCountValidator func(int) error
+	// DefaultMarket holds the default value on creation for the "market" field.
+	DefaultMarket string
 	// IDValidator is a validator for the "id" field. It is called by the builders before save.
 	IDValidator func(string) error
 )
@@ -237,6 +242,11 @@ func ByRedeliveryCount(opts ...sql.OrderTermOption) OrderOption {
 // ByStatus orders the results by the status field.
 func ByStatus(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldStatus, opts...).ToFunc()
+}
+
+// ByMarket orders the results by the market field.
+func ByMarket(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldMarket, opts...).ToFunc()
 }
 
 // ByTitleField orders the results by title field.

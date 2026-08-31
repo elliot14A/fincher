@@ -25,7 +25,8 @@ func Create(ctx context.Context, client *ent.Client, p *models.Package) domainer
 		SetVendorID(p.VendorID).
 		SetDerivedFromMasterVersion(p.DerivedFromMasterVersion).
 		SetRedeliveryCount(p.RedeliveryCount).
-		SetStatus(entmediapackage.Status(p.Status))
+		SetStatus(entmediapackage.Status(p.Status)).
+		SetMarket(p.Market)
 
 	if p.Metadata != nil {
 		builder.SetMetadata(p.Metadata)

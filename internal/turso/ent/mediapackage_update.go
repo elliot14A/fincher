@@ -168,6 +168,26 @@ func (_u *MediaPackageUpdate) SetNillableStatus(v *mediapackage.Status) *MediaPa
 	return _u
 }
 
+// SetMarket sets the "market" field.
+func (_u *MediaPackageUpdate) SetMarket(v string) *MediaPackageUpdate {
+	_u.mutation.SetMarket(v)
+	return _u
+}
+
+// SetNillableMarket sets the "market" field if the given value is not nil.
+func (_u *MediaPackageUpdate) SetNillableMarket(v *string) *MediaPackageUpdate {
+	if v != nil {
+		_u.SetMarket(*v)
+	}
+	return _u
+}
+
+// ClearMarket clears the value of the "market" field.
+func (_u *MediaPackageUpdate) ClearMarket() *MediaPackageUpdate {
+	_u.mutation.ClearMarket()
+	return _u
+}
+
 // SetTitle sets the "title" edge to the Title entity.
 func (_u *MediaPackageUpdate) SetTitle(v *Title) *MediaPackageUpdate {
 	return _u.SetTitleID(v.ID)
@@ -395,6 +415,12 @@ func (_u *MediaPackageUpdate) sqlSave(ctx context.Context) (_node int, err error
 	}
 	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(mediapackage.FieldStatus, field.TypeEnum, value)
+	}
+	if value, ok := _u.mutation.Market(); ok {
+		_spec.SetField(mediapackage.FieldMarket, field.TypeString, value)
+	}
+	if _u.mutation.MarketCleared() {
+		_spec.ClearField(mediapackage.FieldMarket, field.TypeString)
 	}
 	if _u.mutation.TitleCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -701,6 +727,26 @@ func (_u *MediaPackageUpdateOne) SetNillableStatus(v *mediapackage.Status) *Medi
 	return _u
 }
 
+// SetMarket sets the "market" field.
+func (_u *MediaPackageUpdateOne) SetMarket(v string) *MediaPackageUpdateOne {
+	_u.mutation.SetMarket(v)
+	return _u
+}
+
+// SetNillableMarket sets the "market" field if the given value is not nil.
+func (_u *MediaPackageUpdateOne) SetNillableMarket(v *string) *MediaPackageUpdateOne {
+	if v != nil {
+		_u.SetMarket(*v)
+	}
+	return _u
+}
+
+// ClearMarket clears the value of the "market" field.
+func (_u *MediaPackageUpdateOne) ClearMarket() *MediaPackageUpdateOne {
+	_u.mutation.ClearMarket()
+	return _u
+}
+
 // SetTitle sets the "title" edge to the Title entity.
 func (_u *MediaPackageUpdateOne) SetTitle(v *Title) *MediaPackageUpdateOne {
 	return _u.SetTitleID(v.ID)
@@ -958,6 +1004,12 @@ func (_u *MediaPackageUpdateOne) sqlSave(ctx context.Context) (_node *MediaPacka
 	}
 	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(mediapackage.FieldStatus, field.TypeEnum, value)
+	}
+	if value, ok := _u.mutation.Market(); ok {
+		_spec.SetField(mediapackage.FieldMarket, field.TypeString, value)
+	}
+	if _u.mutation.MarketCleared() {
+		_spec.ClearField(mediapackage.FieldMarket, field.TypeString)
 	}
 	if _u.mutation.TitleCleared() {
 		edge := &sqlgraph.EdgeSpec{

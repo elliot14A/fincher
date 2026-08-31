@@ -16,6 +16,7 @@ type ListFilter struct {
 	VendorID  domainerrors.Option[string]
 	Component domainerrors.Option[models.ComponentType]
 	Status    domainerrors.Option[models.PackageStatus]
+	Market    domainerrors.Option[string]
 }
 
 // List fetches paginated media packages matching optional filters.
@@ -33,6 +34,9 @@ func List(ctx context.Context, client *ent.Client, filter ListFilter, p models.P
 	}
 	if filter.Status.IsSome() {
 		query = query.Where(entmediapackage.StatusEQ(entmediapackage.Status(filter.Status.Unwrap())))
+	}
+	if filter.Market.IsSome() {
+		query = query.Where(entmediapackage.MarketEQ(filter.Market.Unwrap()))
 	}
 	if p.Search != "" {
 		query = query.Where(entmediapackage.LanguageContainsFold(p.Search))
