@@ -39,8 +39,12 @@ func TestExecuteIncident(t *testing.T) {
 			Data:     map[string]any{"package_id": "pkg-1"},
 		}
 
+		client := tursotest.NewMemoryClient(t)
+		defer client.Close()
+
 		deps := graph.IncidentGraphDeps{
-			Model: llm,
+			Model:       llm,
+			TursoClient: client,
 		}
 
 		output, err := graph.ExecuteIncident(ctx, deps, graph.IncidentInput{
