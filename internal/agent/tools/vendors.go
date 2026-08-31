@@ -23,7 +23,7 @@ type VendorCandidatesArgs struct {
 // FetchVendorCandidates queries candidate vendors from Turso SQLite and enriches with ClickHouse accuracy.
 func FetchVendorCandidates(ctx context.Context, client *ent.Client, chDB *sql.DB, args VendorCandidatesArgs) ([]models.VendorCandidate, error) {
 	if client == nil {
-		return []models.VendorCandidate{}, nil
+		return nil, domainerrors.NewWithOp("tools.FetchVendorCandidates", domainerrors.CodeInvalidInput, "turso client cannot be nil", nil)
 	}
 
 	filter := domainerrors.None[string]()
@@ -68,6 +68,9 @@ func FetchVendorCandidates(ctx context.Context, client *ent.Client, chDB *sql.DB
 
 // NewVendorCandidatesTool creates an ADK tool wrapping FetchVendorCandidates.
 func NewVendorCandidatesTool(client *ent.Client, chDB *sql.DB) (tool.Tool, error) {
+	if client == nil {
+		return nil, domainerrors.NewWithOp("tools.NewVendorCandidatesTool", domainerrors.CodeInvalidInput, "turso client cannot be nil", nil)
+	}
 	return functiontool.New(
 		functiontool.Config{
 			Name:        "list_vendor_candidates",

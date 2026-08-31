@@ -16,6 +16,13 @@ import (
 
 // Create inserts a new title.
 func Create(ctx context.Context, client *ent.Client, t *models.Title) domainerrors.Result[*models.Title] {
+	if client == nil {
+		return domainerrors.Err[*models.Title](turso.NewError("titles.Create", domainerrors.CodeInvalidInput, "turso client cannot be nil", nil))
+	}
+	if t == nil {
+		return domainerrors.Err[*models.Title](turso.NewError("titles.Create", domainerrors.CodeInvalidInput, "title cannot be nil", nil))
+	}
+
 	if t.Slug == "" {
 		if t.ID != "" && strings.HasPrefix(t.ID, "title-") {
 			t.Slug = strings.TrimPrefix(t.ID, "title-")
@@ -27,11 +34,9 @@ func Create(ctx context.Context, client *ent.Client, t *models.Title) domainerro
 	}
 
 	// Ensure slug uniqueness: if slug already exists in Turso, append a random entropy suffix
-	if client != nil {
-		exists, err := client.Title.Query().Where(enttitle.SlugEQ(t.Slug)).Exist(ctx)
-		if err == nil && exists {
-			t.Slug = fmt.Sprintf("%s-%s", t.Slug, uuid.NewString()[:6])
-		}
+	exists, err := client.Title.Query().Where(enttitle.SlugEQ(t.Slug)).Exist(ctx)
+	if err == nil && exists {
+		t.Slug = fmt.Sprintf("%s-%s", t.Slug, uuid.NewString()[:6])
 	}
 
 	if err := t.Validate(); err != nil {

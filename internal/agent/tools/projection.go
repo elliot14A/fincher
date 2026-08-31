@@ -9,6 +9,7 @@ import (
 	"google.golang.org/adk/v2/tool"
 	"google.golang.org/adk/v2/tool/functiontool"
 
+	"github.com/elliot14A/fincher/internal/config"
 	"github.com/elliot14A/fincher/internal/turso/ent"
 	tursopackages "github.com/elliot14A/fincher/internal/turso/packages"
 	tursotitles "github.com/elliot14A/fincher/internal/turso/titles"
@@ -50,11 +51,7 @@ type TitleProjection struct {
 // GetTitleReadyProjection computes critical path and launch margin for a title.
 func GetTitleReadyProjection(ctx context.Context, client *ent.Client, titleSlug string) (*TitleProjection, error) {
 	if client == nil {
-		return &TitleProjection{
-			TitleSlug:  titleSlug,
-			RiskBand:   "SAFE",
-			IsBreached: false,
-		}, nil
+		return nil, domainerrors.NewWithOp("tools.GetTitleReadyProjection", domainerrors.CodeInvalidInput, "turso client cannot be nil", nil)
 	}
 
 	titleRes := tursotitles.FindByIDOrSlug(ctx, client, titleSlug)
@@ -77,21 +74,25 @@ func GetTitleReadyProjection(ctx context.Context, client *ent.Client, titleSlug 
 
 	var repairs []RepairProjection
 	var maxTurnaround float64
+	masterReconformNeeded := false
 
 	for _, pkg := range allPackages {
+		// Detect sequential master reconform dependency
+		if pkg.DerivedFromMasterVersion != "" && titleObj.CurrentMasterVersion != "" && pkg.DerivedFromMasterVersion != titleObj.CurrentMasterVersion {
+			masterReconformNeeded = true
+		}
+
 		// If package is not yet valid, it requires active work or QC
 		if pkg.Status != models.PackageStatusValid {
-			turnaround := 12.0 // domain default
+			turnaround := config.DefaultTurnaroundHours
 			vendorName := "Unassigned"
 
 			if pkg.VendorID != "" {
 				vRes := tursovendors.Get(ctx, client, pkg.VendorID)
-				if vRes.IsOk() {
+				if vRes.IsOk() && vRes.Unwrap().TurnaroundHours > 0 {
 					v := vRes.Unwrap()
 					vendorName = v.Name
-					if v.TurnaroundHours > 0 {
-						turnaround = float64(v.TurnaroundHours)
-					}
+					turnaround = float64(v.TurnaroundHours)
 				}
 			}
 
@@ -111,7 +112,13 @@ func GetTitleReadyProjection(ctx context.Context, client *ent.Client, titleSlug 
 		}
 	}
 
-	criticalRemainingHours := maxTurnaround
+	masterHours := 0.0
+	if masterReconformNeeded {
+		masterHours = config.DefaultMasterReconformHours
+	}
+
+	// Sequential critical path: sequential master reconform + max parallel package turnaround
+	criticalRemainingHours := masterHours + maxTurnaround
 	bufferHours := hoursUntilPremiere - criticalRemainingHours
 
 	var riskBand string
@@ -147,6 +154,9 @@ func GetTitleReadyProjection(ctx context.Context, client *ent.Client, titleSlug 
 
 // NewProjectionTool constructs an ADK Go tool enabling agents to project title readiness.
 func NewProjectionTool(client *ent.Client) (tool.Tool, error) {
+	if client == nil {
+		return nil, domainerrors.NewWithOp("tools.NewProjectionTool", domainerrors.CodeInvalidInput, "turso client cannot be nil", nil)
+	}
 	return functiontool.New(
 		functiontool.Config{
 			Name:        "get_title_ready_projection",

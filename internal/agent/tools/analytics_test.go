@@ -5,39 +5,26 @@ import (
 	"testing"
 
 	"github.com/elliot14A/fincher/internal/agent/tools"
-	"github.com/elliot14A/fincher/pkg/domain/models"
 )
 
 func TestAnalyticsTool(t *testing.T) {
 	ctx := context.Background()
 
-	t.Run("Returns default summary when db is nil", func(t *testing.T) {
-		summary, err := tools.FetchAnalytics(ctx, nil, tools.AnalyticsArgs{
+	t.Run("Rejects nil db with error", func(t *testing.T) {
+		_, err := tools.FetchAnalytics(ctx, nil, tools.AnalyticsArgs{
 			VendorID:  "vendor-1",
 			TitleSlug: "eclipse",
 			Component: "AUDIO",
 		})
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if summary == nil {
-			t.Fatal("expected non-nil summary")
-		}
-		if summary.VendorHistoricalAccuracy != models.UnmeasuredHistoricalAccuracy {
-			t.Errorf("expected unmeasured accuracy %f, got: %f", models.UnmeasuredHistoricalAccuracy, summary.VendorHistoricalAccuracy)
+		if err == nil {
+			t.Fatal("expected error for nil db, got nil")
 		}
 	})
 
-	t.Run("Initializes ADK tool instance cleanly", func(t *testing.T) {
-		adkTool, err := tools.NewAnalyticsTool(nil)
-		if err != nil {
-			t.Fatalf("failed to create analytics tool: %v", err)
-		}
-		if adkTool == nil {
-			t.Fatal("expected non-nil ADK tool")
-		}
-		if adkTool.Name() != "query_analytics" {
-			t.Errorf("expected tool name query_analytics, got: %s", adkTool.Name())
+	t.Run("Rejects nil db in tool constructor", func(t *testing.T) {
+		_, err := tools.NewAnalyticsTool(nil)
+		if err == nil {
+			t.Fatal("expected error for nil db constructor, got nil")
 		}
 	})
 }

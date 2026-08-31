@@ -13,13 +13,17 @@ import (
 func TestVendorCandidatesTool(t *testing.T) {
 	ctx := context.Background()
 
-	t.Run("Returns empty list when client is nil", func(t *testing.T) {
-		candidates, err := tools.FetchVendorCandidates(ctx, nil, nil, tools.VendorCandidatesArgs{})
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
+	t.Run("Rejects nil client with error", func(t *testing.T) {
+		_, err := tools.FetchVendorCandidates(ctx, nil, nil, tools.VendorCandidatesArgs{})
+		if err == nil {
+			t.Fatal("expected error for nil client, got nil")
 		}
-		if len(candidates) != 0 {
-			t.Errorf("expected 0 candidates, got: %d", len(candidates))
+	})
+
+	t.Run("Rejects nil client in tool constructor", func(t *testing.T) {
+		_, err := tools.NewVendorCandidatesTool(nil, nil)
+		if err == nil {
+			t.Fatal("expected error for nil client constructor, got nil")
 		}
 	})
 

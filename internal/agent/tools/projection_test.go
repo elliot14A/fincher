@@ -15,14 +15,16 @@ import (
 	"github.com/elliot14A/fincher/pkg/domain/models"
 )
 
-func TestProjectionTool_ReturnsDefaultWhenClientNil(t *testing.T) {
+func TestProjectionTool_RejectsNilClient(t *testing.T) {
 	ctx := context.Background()
-	proj, err := tools.GetTitleReadyProjection(ctx, nil, "avatar-fire-ash")
-	if err != nil {
-		t.Fatalf("unexpected error with nil client: %v", err)
+	_, err := tools.GetTitleReadyProjection(ctx, nil, "avatar-fire-ash")
+	if err == nil {
+		t.Fatal("expected error with nil client, got nil")
 	}
-	if proj.RiskBand != "SAFE" {
-		t.Errorf("expected default risk band SAFE, got: %s", proj.RiskBand)
+
+	_, err = tools.NewProjectionTool(nil)
+	if err == nil {
+		t.Fatal("expected error with nil client in constructor, got nil")
 	}
 }
 
@@ -130,5 +132,53 @@ func TestProjectionTool_CalculatesBreachBuffer(t *testing.T) {
 	}
 	if proj.BufferHours >= 0 {
 		t.Errorf("expected negative buffer hours, got: %v", proj.BufferHours)
+	}
+}
+
+func TestProjectionTool_SequentialMasterPlusDubbingChaining(t *testing.T) {
+	ctx := context.Background()
+	client := tursotest.NewMemoryClient(t)
+
+	_ = tursovendors.Create(ctx, client, &models.Vendor{
+		Base:            models.Base{ID: "vendor-deluxe"},
+		Name:            "Deluxe Audio",
+		Specialty:       "AUDIO_DUBBING",
+		TurnaroundHours: 12, // 12h dub turnaround
+	})
+
+	titleSlug := "proj-seq-" + uuid.NewString()[:8]
+	titleRes := tursotitles.Create(ctx, client, &models.Title{
+		Base:                 models.Base{ID: "title-" + uuid.NewString()[:8]},
+		Name:                 "Avatar Sequential Test",
+		Slug:                 titleSlug,
+		Type:                 models.TitleTypeFeature,
+		PremiereDate:         time.Now().UTC().Add(48 * time.Hour), // 48h premiere
+		Territories:          1,
+		CurrentMasterVersion: "V02", // Master bumped to V02
+		OverallStatus:        models.StatusHold,
+	})
+	titleObj := titleRes.Unwrap()
+
+	// Localized package derived from V01 (needs 48h master reconform + 12h dub repair = 60h)
+	_ = tursopackages.Create(ctx, client, &models.Package{
+		Base:                     models.Base{ID: "pkg-" + uuid.NewString()[:8]},
+		TitleID:                  titleObj.ID,
+		Component:                models.ComponentAudio,
+		Language:                 "de-DE",
+		Market:                   "DE",
+		Version:                  "V01",
+		VendorID:                 "vendor-deluxe",
+		DerivedFromMasterVersion: "V01", // Mismatch with title's V02
+		Status:                   models.PackageStatusInvalidated,
+	})
+
+	proj, err := tools.GetTitleReadyProjection(ctx, client, titleSlug)
+	if err != nil {
+		t.Fatalf("GetTitleReadyProjection failed: %v", err)
+	}
+
+	// Critical remaining hours should sum 48h master reconform + 12h dubbing = 60h
+	if proj.CriticalRemainingHours != 60.0 {
+		t.Errorf("expected CriticalRemainingHours 60.0 (48h master + 12h dub), got: %v", proj.CriticalRemainingHours)
 	}
 }

@@ -5,6 +5,7 @@ import (
 	"database/sql"
 
 	"github.com/elliot14A/fincher/internal/clickhouse/vendors"
+	domainerrors "github.com/elliot14A/fincher/pkg/domain/errors"
 	"github.com/elliot14A/fincher/pkg/domain/models"
 	"google.golang.org/adk/v2/agent"
 	"google.golang.org/adk/v2/tool"
@@ -21,12 +22,7 @@ type AnalyticsArgs struct {
 // FetchAnalytics compiles historical metrics and defect logs from ClickHouse.
 func FetchAnalytics(ctx context.Context, db *sql.DB, args AnalyticsArgs) (*models.AnalyticsSummary, error) {
 	if db == nil {
-		return &models.AnalyticsSummary{
-			VendorHistoricalAccuracy: models.UnmeasuredHistoricalAccuracy,
-			SimilarDefectOccurrences: 0,
-			PriorIncidentsForVendor:  0,
-			RelevantHistoricalLogs:   []string{},
-		}, nil
+		return nil, domainerrors.NewWithOp("tools.FetchAnalytics", domainerrors.CodeInvalidInput, "clickhouse db cannot be nil", nil)
 	}
 
 	accuracy := models.UnmeasuredHistoricalAccuracy
@@ -88,6 +84,9 @@ func FetchAnalytics(ctx context.Context, db *sql.DB, args AnalyticsArgs) (*model
 
 // NewAnalyticsTool creates an ADK tool wrapping FetchAnalytics.
 func NewAnalyticsTool(db *sql.DB) (tool.Tool, error) {
+	if db == nil {
+		return nil, domainerrors.NewWithOp("tools.NewAnalyticsTool", domainerrors.CodeInvalidInput, "clickhouse db cannot be nil", nil)
+	}
 	return functiontool.New(
 		functiontool.Config{
 			Name:        "query_analytics",

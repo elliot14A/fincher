@@ -17,18 +17,19 @@ import (
 func TestImpactTool(t *testing.T) {
 	ctx := context.Background()
 
-	t.Run("Returns default impact when client is nil", func(t *testing.T) {
-		impact, err := tools.FetchDeliveryImpact(ctx, nil, tools.DeliveryImpactArgs{
+	t.Run("Rejects nil client with error", func(t *testing.T) {
+		_, err := tools.FetchDeliveryImpact(ctx, nil, tools.DeliveryImpactArgs{
 			PackageID: "pkg-1",
 		})
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
+		if err == nil {
+			t.Fatal("expected error for nil client, got nil")
 		}
-		if impact == nil {
-			t.Fatal("expected non-nil impact")
-		}
-		if len(impact.AffectedPackages) != 1 || impact.AffectedPackages[0] != "pkg-1" {
-			t.Errorf("expected affected package pkg-1, got: %v", impact.AffectedPackages)
+	})
+
+	t.Run("Rejects nil client in tool constructor", func(t *testing.T) {
+		_, err := tools.NewDeliveryImpactTool(nil)
+		if err == nil {
+			t.Fatal("expected error for nil client constructor, got nil")
 		}
 	})
 

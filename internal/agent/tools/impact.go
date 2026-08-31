@@ -25,18 +25,7 @@ type DeliveryImpactArgs struct {
 // FetchDeliveryImpact computes affected packages, deliveries, and premiere timeline from Turso.
 func FetchDeliveryImpact(ctx context.Context, client *ent.Client, args DeliveryImpactArgs) (*models.DeliveryImpact, error) {
 	if client == nil {
-		hours := args.HoursUntilPremiere
-		if hours <= 0 {
-			hours = 48.0
-		}
-		return &models.DeliveryImpact{
-			RootPackageID:      args.PackageID,
-			AffectedPackages:   []string{args.PackageID},
-			AffectedDeliveries: []string{},
-			AffectedMarkets:    []string{},
-			HoursUntilPremiere: hours,
-			IsPremiereUrgent:   hours <= 72.0,
-		}, nil
+		return nil, domainerrors.NewWithOp("tools.FetchDeliveryImpact", domainerrors.CodeInvalidInput, "turso client cannot be nil", nil)
 	}
 
 	titleID := args.TitleID
@@ -109,6 +98,9 @@ func FetchDeliveryImpact(ctx context.Context, client *ent.Client, args DeliveryI
 
 // NewDeliveryImpactTool creates an ADK tool wrapping FetchDeliveryImpact.
 func NewDeliveryImpactTool(client *ent.Client) (tool.Tool, error) {
+	if client == nil {
+		return nil, domainerrors.NewWithOp("tools.NewDeliveryImpactTool", domainerrors.CodeInvalidInput, "turso client cannot be nil", nil)
+	}
 	return functiontool.New(
 		functiontool.Config{
 			Name:        "get_delivery_impact",
