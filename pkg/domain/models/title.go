@@ -26,6 +26,7 @@ const (
 type Title struct {
 	Base
 	Name                 string      `json:"name" validate:"required"`
+	Slug                 string      `json:"slug" validate:"required"`
 	Type                 TitleType   `json:"type" validate:"required,oneof=FEATURE SERIES SPECIAL"`
 	PremiereDate         time.Time   `json:"premiere_date" validate:"required"`
 	Territories          int         `json:"territories" validate:"required,gte=1"`
@@ -44,6 +45,7 @@ func (t *Title) Validate() error {
 // UpdateTitleInput represents partial update attributes for a Title.
 type UpdateTitleInput struct {
 	Name                 *string        `json:"name,omitempty" validate:"omitempty,min=1"`
+	Slug                 *string        `json:"slug,omitempty" validate:"omitempty,min=1"`
 	Type                 *TitleType     `json:"type,omitempty" validate:"omitempty,oneof=FEATURE SERIES SPECIAL"`
 	PremiereDate         *time.Time     `json:"premiere_date,omitempty"`
 	Territories          *int           `json:"territories,omitempty" validate:"omitempty,gte=1"`

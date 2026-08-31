@@ -2,6 +2,7 @@ package titles_test
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
 
@@ -62,7 +63,7 @@ func TestTitles_EntCRUD(t *testing.T) {
 		t.Fatalf("unexpected title data: %+v", created)
 	}
 
-	// 2. Get Title
+	// 2. Get Title by ID, Slug, and FindByIDOrSlug
 	getRes := titles.Get(ctx, client, "title-eclipse")
 	if getRes.IsErr() {
 		t.Fatalf("expected title fetch to succeed, got error: %v", getRes.Error())
@@ -70,6 +71,22 @@ func TestTitles_EntCRUD(t *testing.T) {
 	fetched := getRes.Unwrap()
 	if fetched.CurrentMasterVersion != "V12" {
 		t.Errorf("expected CurrentMasterVersion 'V12', got '%s'", fetched.CurrentMasterVersion)
+	}
+
+	slugRes := titles.GetBySlug(ctx, client, "eclipse")
+	if slugRes.IsErr() {
+		t.Fatalf("expected title fetch by slug 'eclipse' to succeed, got error: %v", slugRes.Error())
+	}
+	if slugRes.Unwrap().ID != "title-eclipse" {
+		t.Errorf("expected ID 'title-eclipse', got '%s'", slugRes.Unwrap().ID)
+	}
+
+	findRes := titles.FindByIDOrSlug(ctx, client, "Eclipse")
+	if findRes.IsErr() {
+		t.Fatalf("expected title fetch by name 'Eclipse' to succeed, got error: %v", findRes.Error())
+	}
+	if findRes.Unwrap().Slug != "eclipse" {
+		t.Errorf("expected slug 'eclipse', got '%s'", findRes.Unwrap().Slug)
 	}
 
 	// 3. List Titles (Filter by status + Pagination)
@@ -192,5 +209,76 @@ func TestTitles_CascadeUploadDelete(t *testing.T) {
 	getUpRes := uploads.Get(ctx, client, "upload-poster-123")
 	if getUpRes.IsOk() {
 		t.Fatalf("expected upload blob to be deleted along with title, but it still exists")
+	}
+}
+
+func TestTitles_ResolveHoursUntilPremiere_And_SlugDeduplication(t *testing.T) {
+	client := setupTestDB(t)
+	defer client.Close()
+
+	ctx := context.Background()
+
+	// 1. GLOBAL sentinel returns standard 48h fallback without DB query
+	globalHours := titles.ResolveHoursUntilPremiere(ctx, client, "GLOBAL", 0)
+	if globalHours != 48.0 {
+		t.Errorf("expected 48.0 for GLOBAL, got: %f", globalHours)
+	}
+
+	// 2. Custom explicit hours override is respected
+	overrideHours := titles.ResolveHoursUntilPremiere(ctx, client, "GLOBAL", 12.5)
+	if overrideHours != 12.5 {
+		t.Errorf("expected 12.5 override, got: %f", overrideHours)
+	}
+
+	// 3. Create Title with Slug "avatar-fire-ash"
+	premiere := time.Now().UTC().Add(24 * time.Hour)
+	t1Res := titles.Create(ctx, client, &models.Title{
+		Base: models.Base{
+			ID: "title-avatar-1",
+		},
+		Name:                 "Avatar: Fire & Ash",
+		Slug:                 "avatar-fire-ash",
+		Type:                 models.TitleTypeFeature,
+		PremiereDate:         premiere,
+		Territories:          10,
+		CurrentMasterVersion: "V01",
+		OverallStatus:        models.StatusProcessing,
+	})
+	if t1Res.IsErr() {
+		t.Fatalf("failed to create first title: %v", t1Res.Error())
+	}
+	t1 := t1Res.Unwrap()
+	if t1.Slug != "avatar-fire-ash" {
+		t.Errorf("expected slug avatar-fire-ash, got: %s", t1.Slug)
+	}
+
+	// 4. Create second Title with identical Slug: should automatically deduplicate without 500 collision
+	t2Res := titles.Create(ctx, client, &models.Title{
+		Base: models.Base{
+			ID: "title-avatar-2",
+		},
+		Name:                 "Avatar Fire and Ash Special Edition",
+		Slug:                 "avatar-fire-ash",
+		Type:                 models.TitleTypeFeature,
+		PremiereDate:         premiere,
+		Territories:          10,
+		CurrentMasterVersion: "V01",
+		OverallStatus:        models.StatusProcessing,
+	})
+	if t2Res.IsErr() {
+		t.Fatalf("expected duplicate slug creation to succeed via auto-dedup, got: %v", t2Res.Error())
+	}
+	t2 := t2Res.Unwrap()
+	if t2.Slug == "avatar-fire-ash" {
+		t.Errorf("expected slug to be deduplicated, but got identical: %s", t2.Slug)
+	}
+	if !strings.HasPrefix(t2.Slug, "avatar-fire-ash-") {
+		t.Errorf("expected deduplicated slug prefix avatar-fire-ash-, got: %s", t2.Slug)
+	}
+
+	// 5. Resolve hours dynamically for avatar-fire-ash
+	resolvedHours := titles.ResolveHoursUntilPremiere(ctx, client, "avatar-fire-ash", 0)
+	if resolvedHours < 23.0 || resolvedHours > 25.0 {
+		t.Errorf("expected ~24h for avatar-fire-ash, got: %f", resolvedHours)
 	}
 }

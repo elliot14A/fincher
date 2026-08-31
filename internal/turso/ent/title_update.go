@@ -63,6 +63,20 @@ func (_u *TitleUpdate) SetNillableName(v *string) *TitleUpdate {
 	return _u
 }
 
+// SetSlug sets the "slug" field.
+func (_u *TitleUpdate) SetSlug(v string) *TitleUpdate {
+	_u.mutation.SetSlug(v)
+	return _u
+}
+
+// SetNillableSlug sets the "slug" field if the given value is not nil.
+func (_u *TitleUpdate) SetNillableSlug(v *string) *TitleUpdate {
+	if v != nil {
+		_u.SetSlug(*v)
+	}
+	return _u
+}
+
 // SetType sets the "type" field.
 func (_u *TitleUpdate) SetType(v title.Type) *TitleUpdate {
 	_u.mutation.SetType(v)
@@ -296,6 +310,11 @@ func (_u *TitleUpdate) check() error {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "Title.name": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.Slug(); ok {
+		if err := title.SlugValidator(v); err != nil {
+			return &ValidationError{Name: "slug", err: fmt.Errorf(`ent: validator failed for field "Title.slug": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.GetType(); ok {
 		if err := title.TypeValidator(v); err != nil {
 			return &ValidationError{Name: "type", err: fmt.Errorf(`ent: validator failed for field "Title.type": %w`, err)}
@@ -337,6 +356,9 @@ func (_u *TitleUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(title.FieldName, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.Slug(); ok {
+		_spec.SetField(title.FieldSlug, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.GetType(); ok {
 		_spec.SetField(title.FieldType, field.TypeEnum, value)
@@ -539,6 +561,20 @@ func (_u *TitleUpdateOne) SetName(v string) *TitleUpdateOne {
 func (_u *TitleUpdateOne) SetNillableName(v *string) *TitleUpdateOne {
 	if v != nil {
 		_u.SetName(*v)
+	}
+	return _u
+}
+
+// SetSlug sets the "slug" field.
+func (_u *TitleUpdateOne) SetSlug(v string) *TitleUpdateOne {
+	_u.mutation.SetSlug(v)
+	return _u
+}
+
+// SetNillableSlug sets the "slug" field if the given value is not nil.
+func (_u *TitleUpdateOne) SetNillableSlug(v *string) *TitleUpdateOne {
+	if v != nil {
+		_u.SetSlug(*v)
 	}
 	return _u
 }
@@ -789,6 +825,11 @@ func (_u *TitleUpdateOne) check() error {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "Title.name": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.Slug(); ok {
+		if err := title.SlugValidator(v); err != nil {
+			return &ValidationError{Name: "slug", err: fmt.Errorf(`ent: validator failed for field "Title.slug": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.GetType(); ok {
 		if err := title.TypeValidator(v); err != nil {
 			return &ValidationError{Name: "type", err: fmt.Errorf(`ent: validator failed for field "Title.type": %w`, err)}
@@ -847,6 +888,9 @@ func (_u *TitleUpdateOne) sqlSave(ctx context.Context) (_node *Title, err error)
 	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(title.FieldName, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.Slug(); ok {
+		_spec.SetField(title.FieldSlug, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.GetType(); ok {
 		_spec.SetField(title.FieldType, field.TypeEnum, value)

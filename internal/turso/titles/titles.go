@@ -18,6 +18,7 @@ func toDomain(t *ent.Title) *models.Title {
 			UpdatedAt: t.UpdatedAt,
 		},
 		Name:                 t.Name,
+		Slug:                 t.Slug,
 		Type:                 models.TitleType(t.Type),
 		PremiereDate:         t.PremiereDate,
 		Territories:          t.Territories,

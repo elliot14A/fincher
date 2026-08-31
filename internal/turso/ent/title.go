@@ -26,6 +26,8 @@ type Title struct {
 	UpdatedAt time.Time `json:"updated_at,omitempty"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
+	// Slug holds the value of the "slug" field.
+	Slug string `json:"slug,omitempty"`
 	// Type holds the value of the "type" field.
 	Type title.Type `json:"type,omitempty"`
 	// PremiereDate holds the value of the "premiere_date" field.
@@ -91,7 +93,7 @@ func (*Title) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case title.FieldTerritories:
 			values[i] = new(sql.NullInt64)
-		case title.FieldID, title.FieldName, title.FieldType, title.FieldCurrentMasterVersion, title.FieldOverallStatus:
+		case title.FieldID, title.FieldName, title.FieldSlug, title.FieldType, title.FieldCurrentMasterVersion, title.FieldOverallStatus:
 			values[i] = new(sql.NullString)
 		case title.FieldCreatedAt, title.FieldUpdatedAt, title.FieldPremiereDate:
 			values[i] = new(sql.NullTime)
@@ -141,6 +143,12 @@ func (_m *Title) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field name", values[i])
 			} else if value.Valid {
 				_m.Name = value.String
+			}
+		case title.FieldSlug:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field slug", values[i])
+			} else if value.Valid {
+				_m.Slug = value.String
 			}
 		case title.FieldType:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -234,6 +242,9 @@ func (_m *Title) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("name=")
 	builder.WriteString(_m.Name)
+	builder.WriteString(", ")
+	builder.WriteString("slug=")
+	builder.WriteString(_m.Slug)
 	builder.WriteString(", ")
 	builder.WriteString("type=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Type))

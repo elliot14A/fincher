@@ -63,6 +63,12 @@ func (_c *TitleCreate) SetName(v string) *TitleCreate {
 	return _c
 }
 
+// SetSlug sets the "slug" field.
+func (_c *TitleCreate) SetSlug(v string) *TitleCreate {
+	_c.mutation.SetSlug(v)
+	return _c
+}
+
 // SetType sets the "type" field.
 func (_c *TitleCreate) SetType(v title.Type) *TitleCreate {
 	_c.mutation.SetType(v)
@@ -253,6 +259,14 @@ func (_c *TitleCreate) check() error {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "Title.name": %w`, err)}
 		}
 	}
+	if _, ok := _c.mutation.Slug(); !ok {
+		return &ValidationError{Name: "slug", err: errors.New(`ent: missing required field "Title.slug"`)}
+	}
+	if v, ok := _c.mutation.Slug(); ok {
+		if err := title.SlugValidator(v); err != nil {
+			return &ValidationError{Name: "slug", err: fmt.Errorf(`ent: validator failed for field "Title.slug": %w`, err)}
+		}
+	}
 	if _, ok := _c.mutation.GetType(); !ok {
 		return &ValidationError{Name: "type", err: errors.New(`ent: missing required field "Title.type"`)}
 	}
@@ -338,6 +352,10 @@ func (_c *TitleCreate) createSpec() (*Title, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.Name(); ok {
 		_spec.SetField(title.FieldName, field.TypeString, value)
 		_node.Name = value
+	}
+	if value, ok := _c.mutation.Slug(); ok {
+		_spec.SetField(title.FieldSlug, field.TypeString, value)
+		_node.Slug = value
 	}
 	if value, ok := _c.mutation.GetType(); ok {
 		_spec.SetField(title.FieldType, field.TypeEnum, value)

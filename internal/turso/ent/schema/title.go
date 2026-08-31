@@ -21,6 +21,9 @@ func (Title) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("name").
 			NotEmpty(),
+		field.String("slug").
+			NotEmpty().
+			Unique(),
 		field.Enum("type").
 			Values("FEATURE", "SERIES", "SPECIAL").
 			Default("FEATURE"),

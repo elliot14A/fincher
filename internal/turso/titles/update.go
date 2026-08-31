@@ -21,6 +21,9 @@ func Update(ctx context.Context, client *ent.Client, id string, input *models.Up
 	if input.Name != nil {
 		builder.SetName(*input.Name)
 	}
+	if input.Slug != nil {
+		builder.SetSlug(*input.Slug)
+	}
 	if input.Type != nil {
 		builder.SetType(enttitle.Type(*input.Type))
 	}
