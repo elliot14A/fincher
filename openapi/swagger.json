@@ -406,7 +406,7 @@
         },
         "/events": {
             "post": {
-                "description": "Ingests an array of CloudEvents directly into ClickHouse.",
+                "description": "Ingests an array of CloudEvents directly into ClickHouse and routes actionable events to agent workflows.",
                 "consumes": [
                     "application/json"
                 ],
@@ -441,7 +441,13 @@
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/errors.DomainError"
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     }
                 }
@@ -838,6 +844,152 @@
                 }
             }
         },
+        "/runs": {
+            "get": {
+                "description": "Fetches paginated agent workflow runs, optionally filtered by workflow trigger, status, or title slug.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "runs"
+                ],
+                "summary": "List workflow runs",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Workflow trigger filter (e.g. incident, allocation)",
+                        "name": "wf",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Status filter (PENDING, RUNNING, COMPLETED, FAILED, ESCALATED)",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Title slug filter",
+                        "name": "title_slug",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page number (default: 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Items per page (default: 10, max: 100)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Sort order (asc, desc)",
+                        "name": "sort_order",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Search query",
+                        "name": "search",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.RunPaginationResult"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/runs/{id}": {
+            "get": {
+                "description": "Fetches a single workflow run by ID with all executed steps and policy results.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "runs"
+                ],
+                "summary": "Get workflow run by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Run ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Run"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/runs/{id}/stream": {
+            "get": {
+                "description": "Establishes a Server-Sent Events (SSE) connection streaming real-time step progressions and status transitions for a run.",
+                "produces": [
+                    "text/event-stream"
+                ],
+                "tags": [
+                    "runs"
+                ],
+                "summary": "Stream live run updates via SSE",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Run ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Stream of events: event: update\\\\ndata: {...}\\\\n\\\\n",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/titles": {
             "get": {
                 "description": "Fetches releases in the launch calendar with pagination, optionally filtered by status.",
@@ -1055,7 +1207,7 @@
         },
         "/uploads": {
             "post": {
-                "description": "Uploads a raster image (PNG, JPEG, WebP, GIF \u003c= 1MB) stored directly in SQLite as binary BLOB.",
+                "description": "Uploads a raster image (PNG, JPEG, WebP, GIF \u003c= 1MB)",
                 "consumes": [
                     "multipart/form-data"
                 ],
@@ -1674,6 +1826,12 @@
                 "count": {
                     "type": "integer"
                 },
+                "run_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "status": {
                     "type": "string"
                 }
@@ -1827,6 +1985,9 @@
                 "language": {
                     "type": "string"
                 },
+                "market": {
+                    "type": "string"
+                },
                 "metadata": {
                     "type": "object",
                     "additionalProperties": {}
@@ -1906,6 +2067,164 @@
                 "PackageStatusReQCPending"
             ]
         },
+        "models.Run": {
+            "type": "object",
+            "required": [
+                "id",
+                "status",
+                "trigger"
+            ],
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "ended_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "metadata": {
+                    "type": "object",
+                    "additionalProperties": {}
+                },
+                "results": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.WfResult"
+                    }
+                },
+                "started_at": {
+                    "type": "string"
+                },
+                "status": {
+                    "$ref": "#/definitions/models.RunStatus"
+                },
+                "steps": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.Step"
+                    }
+                },
+                "title_slug": {
+                    "type": "string"
+                },
+                "trigger": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.RunPaginationResult": {
+            "type": "object",
+            "properties": {
+                "has_next_page": {
+                    "type": "boolean"
+                },
+                "has_prev_page": {
+                    "type": "boolean"
+                },
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.Run"
+                    }
+                },
+                "limit": {
+                    "type": "integer"
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "total_items": {
+                    "type": "integer"
+                },
+                "total_pages": {
+                    "type": "integer"
+                }
+            }
+        },
+        "models.RunStatus": {
+            "type": "string",
+            "enum": [
+                "PENDING",
+                "RUNNING",
+                "COMPLETED",
+                "FAILED",
+                "ESCALATED"
+            ],
+            "x-enum-varnames": [
+                "RunStatusPending",
+                "RunStatusRunning",
+                "RunStatusCompleted",
+                "RunStatusFailed",
+                "RunStatusEscalated"
+            ]
+        },
+        "models.Step": {
+            "type": "object",
+            "required": [
+                "id",
+                "name",
+                "run_id",
+                "status"
+            ],
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "ended_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "metadata": {
+                    "type": "object",
+                    "additionalProperties": {}
+                },
+                "name": {
+                    "type": "string"
+                },
+                "results": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.WfResult"
+                    }
+                },
+                "run_id": {
+                    "type": "string"
+                },
+                "started_at": {
+                    "type": "string"
+                },
+                "status": {
+                    "$ref": "#/definitions/models.StepStatus"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.StepStatus": {
+            "type": "string",
+            "enum": [
+                "PENDING",
+                "RUNNING",
+                "COMPLETED",
+                "FAILED",
+                "SKIPPED"
+            ],
+            "x-enum-varnames": [
+                "StepStatusPending",
+                "StepStatusRunning",
+                "StepStatusCompleted",
+                "StepStatusFailed",
+                "StepStatusSkipped"
+            ]
+        },
         "models.Title": {
             "type": "object",
             "required": [
@@ -1914,6 +2233,7 @@
                 "name",
                 "overall_status",
                 "premiere_date",
+                "slug",
                 "territories",
                 "type"
             ],
@@ -1949,6 +2269,9 @@
                     ]
                 },
                 "premiere_date": {
+                    "type": "string"
+                },
+                "slug": {
                     "type": "string"
                 },
                 "territories": {
@@ -2084,6 +2407,9 @@
                     "type": "string",
                     "minLength": 1
                 },
+                "market": {
+                    "type": "string"
+                },
                 "metadata": {
                     "type": "object",
                     "additionalProperties": {}
@@ -2147,6 +2473,10 @@
                 "premiere_date": {
                     "type": "string"
                 },
+                "slug": {
+                    "type": "string",
+                    "minLength": 1
+                },
                 "territories": {
                     "type": "integer",
                     "minimum": 1
@@ -2168,6 +2498,10 @@
         "models.UpdateVendorInput": {
             "type": "object",
             "properties": {
+                "hourly_rate_usd": {
+                    "type": "number",
+                    "minimum": 0
+                },
                 "metadata": {
                     "type": "object",
                     "additionalProperties": {}
@@ -2179,6 +2513,9 @@
                 "specialty": {
                     "type": "string",
                     "minLength": 1
+                },
+                "turnaround_hours": {
+                    "type": "integer"
                 }
             }
         },
@@ -2216,6 +2553,10 @@
                 "created_at": {
                     "type": "string"
                 },
+                "hourly_rate_usd": {
+                    "type": "number",
+                    "minimum": 0
+                },
                 "id": {
                     "type": "string"
                 },
@@ -2228,6 +2569,9 @@
                 },
                 "specialty": {
                     "type": "string"
+                },
+                "turnaround_hours": {
+                    "type": "integer"
                 },
                 "updated_at": {
                     "type": "string"
@@ -2260,6 +2604,48 @@
                 },
                 "total_pages": {
                     "type": "integer"
+                }
+            }
+        },
+        "models.WfResult": {
+            "type": "object",
+            "required": [
+                "id",
+                "judge",
+                "outcome",
+                "run_id"
+            ],
+            "properties": {
+                "attempt": {
+                    "type": "integer"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "judge": {
+                    "type": "string"
+                },
+                "metadata": {
+                    "type": "object",
+                    "additionalProperties": {}
+                },
+                "outcome": {
+                    "type": "string"
+                },
+                "rationale": {
+                    "type": "string"
+                },
+                "run_id": {
+                    "type": "string"
+                },
+                "step_id": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
                 }
             }
         }

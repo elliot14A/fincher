@@ -60,7 +60,8 @@ export function CreateTitleModal({ isOpen, onClose }: CreateTitleModalProps) {
 
   const mutation = useMutation({
     mutationFn: async () => {
-      const finalId = slug ? `title-${slug}` : `title-${slugify(name)}`
+      const finalSlug = slug.trim() || slugify(name)
+      const finalId = `title-${finalSlug}`
       if (!name.trim()) throw new Error('Title name is required')
       if (!finalId.trim()) throw new Error('Title identifier is required')
 
@@ -75,6 +76,7 @@ export function CreateTitleModal({ isOpen, onClose }: CreateTitleModalProps) {
         body: {
           id: finalId,
           name: name.trim(),
+          slug: finalSlug,
           type,
           premiere_date: isoDate,
           territories: territoryCount,

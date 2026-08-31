@@ -22,6 +22,8 @@ export function CreateVendorModal({ isOpen, onClose }: CreateVendorModalProps) {
   const [slug, setSlug] = useState('')
   const [isSlugManual, setIsSlugManual] = useState(false)
   const [specialty, setSpecialty] = useState('AUDIO_DUBBING')
+  const [hourlyRate, setHourlyRate] = useState('120')
+  const [turnaround, setTurnaround] = useState('24')
   const [avatarUrl, setAvatarUrl] = useState<string | undefined>(undefined)
 
   const handleNameChange = (val: string) => {
@@ -41,6 +43,8 @@ export function CreateVendorModal({ isOpen, onClose }: CreateVendorModalProps) {
     setSlug('')
     setIsSlugManual(false)
     setSpecialty('AUDIO_DUBBING')
+    setHourlyRate('120')
+    setTurnaround('24')
     setAvatarUrl(undefined)
   }
 
@@ -55,6 +59,8 @@ export function CreateVendorModal({ isOpen, onClose }: CreateVendorModalProps) {
           id: finalId,
           name: name.trim(),
           specialty,
+          hourly_rate_usd: hourlyRate ? parseFloat(hourlyRate) : 0,
+          turnaround_hours: turnaround ? parseInt(turnaround, 10) : 24,
           metadata: avatarUrl ? { avatar_url: avatarUrl } : {},
         },
       })
@@ -143,6 +149,28 @@ export function CreateVendorModal({ isOpen, onClose }: CreateVendorModalProps) {
               { value: 'METADATA', label: 'Metadata & Packaging House' },
               { value: 'MASTERING', label: 'Master Cut Video Processing' },
             ]}
+          />
+        </FormField>
+
+        <FormField label="Hourly Rate (USD)" required helper="Standard facility billing rate">
+          <TextInput
+            type="number"
+            min="0"
+            step="0.01"
+            placeholder="120.00"
+            value={hourlyRate}
+            onInput={(e) => setHourlyRate((e.target as HTMLInputElement).value)}
+          />
+        </FormField>
+
+        <FormField label="Turnaround Time (Hours)" required helper="Standard delivery lead time">
+          <TextInput
+            type="number"
+            min="1"
+            step="1"
+            placeholder="24"
+            value={turnaround}
+            onInput={(e) => setTurnaround((e.target as HTMLInputElement).value)}
           />
         </FormField>
 

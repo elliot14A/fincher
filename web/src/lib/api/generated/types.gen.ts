@@ -81,6 +81,7 @@ export type ModelsEvent = {
 
 export type ModelsEventBatchResponse = {
     count?: number;
+    run_ids?: Array<string>;
     status?: string;
 };
 
@@ -125,6 +126,7 @@ export type ModelsPackage = {
     derived_from_master_version: string;
     id: string;
     language: string;
+    market?: string;
     metadata?: {
         [key: string]: unknown;
     };
@@ -148,6 +150,51 @@ export type ModelsPackagePaginationResult = {
 
 export type ModelsPackageStatus = 'PENDING' | 'VALID' | 'INVALIDATED' | 'RE_QC_PENDING';
 
+export type ModelsRun = {
+    created_at?: string;
+    ended_at?: string;
+    id: string;
+    metadata?: {
+        [key: string]: unknown;
+    };
+    results?: Array<ModelsWfResult>;
+    started_at?: string;
+    status: ModelsRunStatus;
+    steps?: Array<ModelsStep>;
+    title_slug?: string;
+    trigger: string;
+    updated_at?: string;
+};
+
+export type ModelsRunPaginationResult = {
+    has_next_page?: boolean;
+    has_prev_page?: boolean;
+    items?: Array<ModelsRun>;
+    limit?: number;
+    page?: number;
+    total_items?: number;
+    total_pages?: number;
+};
+
+export type ModelsRunStatus = 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED' | 'ESCALATED';
+
+export type ModelsStep = {
+    created_at?: string;
+    ended_at?: string;
+    id: string;
+    metadata?: {
+        [key: string]: unknown;
+    };
+    name: string;
+    results?: Array<ModelsWfResult>;
+    run_id: string;
+    started_at?: string;
+    status: ModelsStepStatus;
+    updated_at?: string;
+};
+
+export type ModelsStepStatus = 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED' | 'SKIPPED';
+
 export type ModelsTitle = {
     created_at?: string;
     current_master_version: string;
@@ -158,6 +205,7 @@ export type ModelsTitle = {
     name: string;
     overall_status: 'ON_TRACK' | 'AT_RISK' | 'HOLD' | 'PROCESSING' | 'SHIPPED';
     premiere_date: string;
+    slug: string;
     territories: number;
     type: 'FEATURE' | 'SERIES' | 'SPECIAL';
     updated_at?: string;
@@ -190,6 +238,7 @@ export type ModelsUpdatePackageInput = {
     component?: 'VIDEO' | 'AUDIO' | 'SUBTITLE' | 'METADATA';
     derived_from_master_version?: string;
     language?: string;
+    market?: string;
     metadata?: {
         [key: string]: unknown;
     };
@@ -207,16 +256,19 @@ export type ModelsUpdateTitleInput = {
     name?: string;
     overall_status?: 'ON_TRACK' | 'AT_RISK' | 'HOLD' | 'PROCESSING' | 'SHIPPED';
     premiere_date?: string;
+    slug?: string;
     territories?: number;
     type?: 'FEATURE' | 'SERIES' | 'SPECIAL';
 };
 
 export type ModelsUpdateVendorInput = {
+    hourly_rate_usd?: number;
     metadata?: {
         [key: string]: unknown;
     };
     name?: string;
     specialty?: string;
+    turnaround_hours?: number;
 };
 
 export type ModelsUploadResponse = {
@@ -230,12 +282,14 @@ export type ModelsUploadResponse = {
 
 export type ModelsVendor = {
     created_at?: string;
+    hourly_rate_usd?: number;
     id: string;
     metadata?: {
         [key: string]: unknown;
     };
     name: string;
     specialty: string;
+    turnaround_hours?: number;
     updated_at?: string;
 };
 
@@ -247,6 +301,21 @@ export type ModelsVendorPaginationResult = {
     page?: number;
     total_items?: number;
     total_pages?: number;
+};
+
+export type ModelsWfResult = {
+    attempt?: number;
+    created_at?: string;
+    id: string;
+    judge: string;
+    metadata?: {
+        [key: string]: unknown;
+    };
+    outcome: string;
+    rationale?: string;
+    run_id: string;
+    step_id?: string;
+    updated_at?: string;
 };
 
 export type GetDeliveriesData = {
@@ -580,7 +649,11 @@ export type PostEventsErrors = {
     /**
      * Bad Request
      */
-    400: ErrorsDomainError;
+    400: ErrorsErrorResponse;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorsErrorResponse;
 };
 
 export type PostEventsError = PostEventsErrors[keyof PostEventsErrors];
@@ -910,6 +983,124 @@ export type PatchPackagesByIdResponses = {
 };
 
 export type PatchPackagesByIdResponse = PatchPackagesByIdResponses[keyof PatchPackagesByIdResponses];
+
+export type GetRunsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Workflow trigger filter (e.g. incident, allocation)
+         */
+        wf?: string;
+        /**
+         * Status filter (PENDING, RUNNING, COMPLETED, FAILED, ESCALATED)
+         */
+        status?: string;
+        /**
+         * Title slug filter
+         */
+        title_slug?: string;
+        /**
+         * Page number (default: 1)
+         */
+        page?: number;
+        /**
+         * Items per page (default: 10, max: 100)
+         */
+        limit?: number;
+        /**
+         * Sort order (asc, desc)
+         */
+        sort_order?: string;
+        /**
+         * Search query
+         */
+        search?: string;
+    };
+    url: '/runs';
+};
+
+export type GetRunsErrors = {
+    /**
+     * Internal Server Error
+     */
+    500: ErrorsErrorResponse;
+};
+
+export type GetRunsError = GetRunsErrors[keyof GetRunsErrors];
+
+export type GetRunsResponses = {
+    /**
+     * OK
+     */
+    200: ModelsRunPaginationResult;
+};
+
+export type GetRunsResponse = GetRunsResponses[keyof GetRunsResponses];
+
+export type GetRunsByIdData = {
+    body?: never;
+    path: {
+        /**
+         * Run ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/runs/{id}';
+};
+
+export type GetRunsByIdErrors = {
+    /**
+     * Not Found
+     */
+    404: ErrorsErrorResponse;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorsErrorResponse;
+};
+
+export type GetRunsByIdError = GetRunsByIdErrors[keyof GetRunsByIdErrors];
+
+export type GetRunsByIdResponses = {
+    /**
+     * OK
+     */
+    200: ModelsRun;
+};
+
+export type GetRunsByIdResponse = GetRunsByIdResponses[keyof GetRunsByIdResponses];
+
+export type GetRunsByIdStreamData = {
+    body?: never;
+    path: {
+        /**
+         * Run ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/runs/{id}/stream';
+};
+
+export type GetRunsByIdStreamErrors = {
+    /**
+     * Not Found
+     */
+    404: ErrorsErrorResponse;
+};
+
+export type GetRunsByIdStreamError = GetRunsByIdStreamErrors[keyof GetRunsByIdStreamErrors];
+
+export type GetRunsByIdStreamResponses = {
+    /**
+     * Stream of events: event: update\\ndata: {...}\\n\\n
+     */
+    200: string;
+};
+
+export type GetRunsByIdStreamResponse = GetRunsByIdStreamResponses[keyof GetRunsByIdStreamResponses];
 
 export type GetTitlesData = {
     body?: never;

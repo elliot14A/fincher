@@ -112,6 +112,7 @@ export const vModelsEvent = v.object({
 
 export const vModelsEventBatchResponse = v.object({
     count: v.optional(v.pipe(v.number(), v.integer())),
+    run_ids: v.optional(v.array(v.string())),
     status: v.optional(v.string())
 });
 
@@ -150,6 +151,7 @@ export const vModelsPackage = v.object({
     derived_from_master_version: v.string(),
     id: v.string(),
     language: v.string(),
+    market: v.optional(v.string()),
     metadata: v.optional(v.record(v.string(), v.unknown())),
     redelivery_count: v.optional(v.pipe(v.number(), v.integer(), v.minValue(0))),
     status: v.picklist([
@@ -196,6 +198,22 @@ export const vModelsLineageGraph = v.object({
     title_id: v.optional(v.string())
 });
 
+export const vModelsRunStatus = v.picklist([
+    'PENDING',
+    'RUNNING',
+    'COMPLETED',
+    'FAILED',
+    'ESCALATED'
+]);
+
+export const vModelsStepStatus = v.picklist([
+    'PENDING',
+    'RUNNING',
+    'COMPLETED',
+    'FAILED',
+    'SKIPPED'
+]);
+
 export const vModelsTitle = v.object({
     created_at: v.optional(v.string()),
     current_master_version: v.string(),
@@ -210,6 +228,7 @@ export const vModelsTitle = v.object({
         'SHIPPED'
     ]),
     premiere_date: v.string(),
+    slug: v.string(),
     territories: v.pipe(v.number(), v.integer(), v.minValue(1)),
     type: v.picklist([
         'FEATURE',
@@ -264,6 +283,7 @@ export const vModelsUpdatePackageInput = v.object({
     ])),
     derived_from_master_version: v.optional(v.pipe(v.string(), v.minLength(1))),
     language: v.optional(v.pipe(v.string(), v.minLength(1))),
+    market: v.optional(v.string()),
     metadata: v.optional(v.record(v.string(), v.unknown())),
     redelivery_count: v.optional(v.pipe(v.number(), v.integer(), v.minValue(0))),
     status: v.optional(v.picklist([
@@ -288,6 +308,7 @@ export const vModelsUpdateTitleInput = v.object({
         'SHIPPED'
     ])),
     premiere_date: v.optional(v.string()),
+    slug: v.optional(v.pipe(v.string(), v.minLength(1))),
     territories: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1))),
     type: v.optional(v.picklist([
         'FEATURE',
@@ -297,9 +318,11 @@ export const vModelsUpdateTitleInput = v.object({
 });
 
 export const vModelsUpdateVendorInput = v.object({
+    hourly_rate_usd: v.optional(v.pipe(v.number(), v.minValue(0))),
     metadata: v.optional(v.record(v.string(), v.unknown())),
     name: v.optional(v.pipe(v.string(), v.minLength(1))),
-    specialty: v.optional(v.pipe(v.string(), v.minLength(1)))
+    specialty: v.optional(v.pipe(v.string(), v.minLength(1))),
+    turnaround_hours: v.optional(v.pipe(v.number(), v.integer()))
 });
 
 export const vModelsUploadResponse = v.object({
@@ -313,10 +336,12 @@ export const vModelsUploadResponse = v.object({
 
 export const vModelsVendor = v.object({
     created_at: v.optional(v.string()),
+    hourly_rate_usd: v.optional(v.pipe(v.number(), v.minValue(0))),
     id: v.string(),
     metadata: v.optional(v.record(v.string(), v.unknown())),
     name: v.string(),
     specialty: v.string(),
+    turnaround_hours: v.optional(v.pipe(v.number(), v.integer())),
     updated_at: v.optional(v.string())
 });
 
@@ -324,6 +349,56 @@ export const vModelsVendorPaginationResult = v.object({
     has_next_page: v.optional(v.boolean()),
     has_prev_page: v.optional(v.boolean()),
     items: v.optional(v.array(vModelsVendor)),
+    limit: v.optional(v.pipe(v.number(), v.integer())),
+    page: v.optional(v.pipe(v.number(), v.integer())),
+    total_items: v.optional(v.pipe(v.number(), v.integer())),
+    total_pages: v.optional(v.pipe(v.number(), v.integer()))
+});
+
+export const vModelsWfResult = v.object({
+    attempt: v.optional(v.pipe(v.number(), v.integer())),
+    created_at: v.optional(v.string()),
+    id: v.string(),
+    judge: v.string(),
+    metadata: v.optional(v.record(v.string(), v.unknown())),
+    outcome: v.string(),
+    rationale: v.optional(v.string()),
+    run_id: v.string(),
+    step_id: v.optional(v.string()),
+    updated_at: v.optional(v.string())
+});
+
+export const vModelsStep = v.object({
+    created_at: v.optional(v.string()),
+    ended_at: v.optional(v.string()),
+    id: v.string(),
+    metadata: v.optional(v.record(v.string(), v.unknown())),
+    name: v.string(),
+    results: v.optional(v.array(vModelsWfResult)),
+    run_id: v.string(),
+    started_at: v.optional(v.string()),
+    status: vModelsStepStatus,
+    updated_at: v.optional(v.string())
+});
+
+export const vModelsRun = v.object({
+    created_at: v.optional(v.string()),
+    ended_at: v.optional(v.string()),
+    id: v.string(),
+    metadata: v.optional(v.record(v.string(), v.unknown())),
+    results: v.optional(v.array(vModelsWfResult)),
+    started_at: v.optional(v.string()),
+    status: vModelsRunStatus,
+    steps: v.optional(v.array(vModelsStep)),
+    title_slug: v.optional(v.string()),
+    trigger: v.string(),
+    updated_at: v.optional(v.string())
+});
+
+export const vModelsRunPaginationResult = v.object({
+    has_next_page: v.optional(v.boolean()),
+    has_prev_page: v.optional(v.boolean()),
+    items: v.optional(v.array(vModelsRun)),
     limit: v.optional(v.pipe(v.number(), v.integer())),
     page: v.optional(v.pipe(v.number(), v.integer())),
     total_items: v.optional(v.pipe(v.number(), v.integer())),
@@ -517,6 +592,39 @@ export const vPatchPackagesByIdPath = v.object({
  * OK
  */
 export const vPatchPackagesByIdResponse = vModelsPackage;
+
+export const vGetRunsQuery = v.object({
+    wf: v.optional(v.string()),
+    status: v.optional(v.string()),
+    title_slug: v.optional(v.string()),
+    page: v.optional(v.pipe(v.number(), v.integer())),
+    limit: v.optional(v.pipe(v.number(), v.integer())),
+    sort_order: v.optional(v.string()),
+    search: v.optional(v.string())
+});
+
+/**
+ * OK
+ */
+export const vGetRunsResponse = vModelsRunPaginationResult;
+
+export const vGetRunsByIdPath = v.object({
+    id: v.string()
+});
+
+/**
+ * OK
+ */
+export const vGetRunsByIdResponse = vModelsRun;
+
+export const vGetRunsByIdStreamPath = v.object({
+    id: v.string()
+});
+
+/**
+ * Stream of events: event: update\\ndata: {...}\\n\\n
+ */
+export const vGetRunsByIdStreamResponse = v.string();
 
 export const vGetTitlesQuery = v.object({
     status: v.optional(v.string()),
