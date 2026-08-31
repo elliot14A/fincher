@@ -35,7 +35,8 @@ func TestProjectionTool_CalculatesSafeBuffer(t *testing.T) {
 	_ = tursovendors.Create(ctx, client, &models.Vendor{
 		Base:            models.Base{ID: "vendor-deluxe"},
 		Name:            "Deluxe Audio",
-		Specialty:       "AUDIO_DUBBING",
+		Components:      []string{"AUDIO"},
+		Markets:         []string{"de-DE"},
 		TurnaroundHours: 12,
 	})
 
@@ -89,7 +90,8 @@ func TestProjectionTool_CalculatesBreachBuffer(t *testing.T) {
 	_ = tursovendors.Create(ctx, client, &models.Vendor{
 		Base:            models.Base{ID: "vendor-slow"},
 		Name:            "Slow Dubbing",
-		Specialty:       "AUDIO_DUBBING",
+		Components:      []string{"AUDIO"},
+		Markets:         []string{"de-DE"},
 		TurnaroundHours: 24,
 	})
 
@@ -142,7 +144,8 @@ func TestProjectionTool_SequentialMasterPlusDubbingChaining(t *testing.T) {
 	_ = tursovendors.Create(ctx, client, &models.Vendor{
 		Base:            models.Base{ID: "vendor-deluxe"},
 		Name:            "Deluxe Audio",
-		Specialty:       "AUDIO_DUBBING",
+		Components:      []string{"AUDIO"},
+		Markets:         []string{"en-US"},
 		TurnaroundHours: 12, // 12h dub turnaround
 	})
 

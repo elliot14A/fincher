@@ -27,54 +27,93 @@ func TestVendorCandidatesTool(t *testing.T) {
 		}
 	})
 
-	t.Run("Filters vendor candidates by specialty from SQLite", func(t *testing.T) {
+	t.Run("Filters vendor candidates by component and market", func(t *testing.T) {
 		client := tursotest.NewMemoryClient(t)
 		defer client.Close()
 
-		v1Res := vendors.Create(ctx, client, &models.Vendor{
-			Base: models.Base{
-				ID: "v-audio",
-			},
-			Name:            "Audio Labs",
-			Specialty:       "AUDIO",
-			HourlyRateUSD:   110.0,
-			TurnaroundHours: 24,
-		})
-		if v1Res.IsErr() {
-			t.Fatalf("create v-audio failed: %v", v1Res.Error())
-		}
-
-		v2Res := vendors.Create(ctx, client, &models.Vendor{
-			Base: models.Base{
-				ID: "v-subs",
-			},
-			Name:            "Sub World",
-			Specialty:       "SUBTITLE",
-			HourlyRateUSD:   45.0,
+		// 1. Deluxe (Western + Indian, AUDIO + SUBTITLE)
+		_ = vendors.Create(ctx, client, &models.Vendor{
+			Base:            models.Base{ID: "vnd-deluxe"},
+			Name:            "Deluxe Media",
+			Components:      []string{"AUDIO", "SUBTITLE"},
+			Markets:         []string{"en-US", "de-DE", "fr-FR", "hi-IN", "te-IN"},
+			HourlyRateUSD:   200.0,
 			TurnaroundHours: 12,
 		})
-		if v2Res.IsErr() {
-			t.Fatalf("create v-subs failed: %v", v2Res.Error())
-		}
 
-		candidates, err := tools.FetchVendorCandidates(ctx, client, nil, tools.VendorCandidatesArgs{
-			Specialty: "AUDIO",
+		// 2. Iyuno (Western only, AUDIO + SUBTITLE)
+		_ = vendors.Create(ctx, client, &models.Vendor{
+			Base:            models.Base{ID: "vnd-iyuno"},
+			Name:            "Iyuno SDI",
+			Components:      []string{"AUDIO", "SUBTITLE"},
+			Markets:         []string{"en-US", "de-DE", "fr-FR"},
+			HourlyRateUSD:   70.0,
+			TurnaroundHours: 36,
+		})
+
+		// 3. Sound & Vision India (Indian only, AUDIO + SUBTITLE)
+		_ = vendors.Create(ctx, client, &models.Vendor{
+			Base:            models.Base{ID: "vnd-sound-vision-india"},
+			Name:            "Sound & Vision India",
+			Components:      []string{"AUDIO", "SUBTITLE"},
+			Markets:         []string{"hi-IN", "te-IN"},
+			HourlyRateUSD:   90.0,
+			TurnaroundHours: 20,
+		})
+
+		// 4. Technicolor (VIDEO only, global market)
+		_ = vendors.Create(ctx, client, &models.Vendor{
+			Base:            models.Base{ID: "vnd-technicolor"},
+			Name:            "Technicolor",
+			Components:      []string{"VIDEO"},
+			Markets:         []string{},
+			HourlyRateUSD:   185.0,
+			TurnaroundHours: 16,
+		})
+
+		// Query 1: AUDIO for Telugu (te-IN) -> should match Deluxe and Sound & Vision India, EXCLUDE Iyuno and Technicolor
+		teCandidates, err := tools.FetchVendorCandidates(ctx, client, nil, tools.VendorCandidatesArgs{
+			Component: "AUDIO",
+			Market:    "te-IN",
 		})
 		if err != nil {
-			t.Fatalf("FetchVendorCandidates failed: %v", err)
+			t.Fatalf("FetchVendorCandidates te-IN failed: %v", err)
+		}
+		if len(teCandidates) != 2 {
+			t.Fatalf("expected 2 Telugu audio candidates, got: %d", len(teCandidates))
+		}
+		for _, c := range teCandidates {
+			if c.VendorID == "vnd-iyuno" || c.VendorID == "vnd-technicolor" {
+				t.Errorf("unexpected vendor %s for Telugu audio", c.VendorID)
+			}
 		}
 
-		if len(candidates) != 1 {
-			t.Fatalf("expected 1 audio candidate, got: %d", len(candidates))
+		// Query 2: AUDIO for German (de-DE) -> should match Deluxe and Iyuno, EXCLUDE Sound & Vision India
+		deCandidates, err := tools.FetchVendorCandidates(ctx, client, nil, tools.VendorCandidatesArgs{
+			Component: "AUDIO",
+			Market:    "de-DE",
+		})
+		if err != nil {
+			t.Fatalf("FetchVendorCandidates de-DE failed: %v", err)
 		}
-		if candidates[0].VendorID != "v-audio" {
-			t.Errorf("expected v-audio, got: %s", candidates[0].VendorID)
+		if len(deCandidates) != 2 {
+			t.Fatalf("expected 2 German audio candidates, got: %d", len(deCandidates))
 		}
-		if candidates[0].HourlyRateUSD != 110.0 {
-			t.Errorf("expected $110.0 rate, got: %f", candidates[0].HourlyRateUSD)
+		for _, c := range deCandidates {
+			if c.VendorID == "vnd-sound-vision-india" || c.VendorID == "vnd-technicolor" {
+				t.Errorf("unexpected vendor %s for German audio", c.VendorID)
+			}
 		}
-		if candidates[0].TurnaroundHours != 24 {
-			t.Errorf("expected 24h turnaround, got: %d", candidates[0].TurnaroundHours)
+
+		// Query 3: VIDEO (market == "") -> should match Technicolor, EXCLUDE Iyuno and Sound & Vision India
+		videoCandidates, err := tools.FetchVendorCandidates(ctx, client, nil, tools.VendorCandidatesArgs{
+			Component: "VIDEO",
+		})
+		if err != nil {
+			t.Fatalf("FetchVendorCandidates VIDEO failed: %v", err)
+		}
+		if len(videoCandidates) != 1 || videoCandidates[0].VendorID != "vnd-technicolor" {
+			t.Fatalf("expected 1 VIDEO candidate (vnd-technicolor), got: %v", videoCandidates)
 		}
 	})
 }

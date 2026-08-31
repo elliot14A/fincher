@@ -85,7 +85,8 @@ func TestImpactTool(t *testing.T) {
 				ID: "vendor-dub",
 			},
 			Name:            "Dub Studio",
-			Specialty:       "AUDIO",
+			Components:      []string{"AUDIO"},
+			Markets:         []string{"en-US"},
 			HourlyRateUSD:   90.0,
 			TurnaroundHours: 24,
 		})
