@@ -59,7 +59,8 @@ func TestRunActionPlan(t *testing.T) {
 			ID: "vendor-berlin",
 		},
 		Name:            "Berlin Synchron",
-		Specialty:       "AUDIO_DUBBING",
+		Components:      []string{"AUDIO"},
+		Markets:         []string{"de-DE"},
 		HourlyRateUSD:   120.0,
 		TurnaroundHours: 24,
 	})
@@ -73,7 +74,8 @@ func TestRunActionPlan(t *testing.T) {
 			ID: "vendor-old",
 		},
 		Name:            "Old Vendor",
-		Specialty:       "AUDIO_DUBBING",
+		Components:      []string{"AUDIO"},
+		Markets:         []string{"de-DE"},
 		HourlyRateUSD:   80.0,
 		TurnaroundHours: 48,
 	})
@@ -210,7 +212,8 @@ func TestRunActionPlan_ForcedPass_EmitsQCCompleted(t *testing.T) {
 	_ = vendors.Create(ctx, client, &models.Vendor{
 		Base:            models.Base{ID: "vendor-test"},
 		Name:            "Test Vendor",
-		Specialty:       "AUDIO_DUBBING",
+		Components:      []string{"AUDIO"},
+		Markets:         []string{"de-DE"},
 		TurnaroundHours: 1,
 	})
 
@@ -288,7 +291,8 @@ func TestRunActionPlan_ForcedFail_UnderCap_IncrementsRedeliveryAndEmitsDefect(t 
 	_ = vendors.Create(ctx, client, &models.Vendor{
 		Base:            models.Base{ID: "vendor-test"},
 		Name:            "Test Vendor",
-		Specialty:       "AUDIO_DUBBING",
+		Components:      []string{"AUDIO"},
+		Markets:         []string{"de-DE"},
 		TurnaroundHours: 1,
 	})
 
@@ -373,7 +377,8 @@ func TestRunActionPlan_ForcedFail_AtCap_EmitsSLABreach(t *testing.T) {
 	_ = vendors.Create(ctx, client, &models.Vendor{
 		Base:            models.Base{ID: "vendor-test"},
 		Name:            "Test Vendor",
-		Specialty:       "AUDIO_DUBBING",
+		Components:      []string{"AUDIO"},
+		Markets:         []string{"de-DE"},
 		TurnaroundHours: 1,
 	})
 

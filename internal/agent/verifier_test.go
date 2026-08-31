@@ -21,7 +21,8 @@ func TestVerifyPlan(t *testing.T) {
 		{
 			VendorID:           "vendor-berlin",
 			VendorName:         "Berlin Synchron",
-			Specialty:          "AUDIO_DUBBING",
+			Components:         []string{"AUDIO"},
+			Markets:            []string{"de-DE"},
 			HourlyRateUSD:      120.0,
 			TurnaroundHours:    24,
 			HistoricalAccuracy: 0.98,
@@ -29,7 +30,8 @@ func TestVerifyPlan(t *testing.T) {
 		{
 			VendorID:           "vendor-slow",
 			VendorName:         "Slow Dubs Inc",
-			Specialty:          "AUDIO_DUBBING",
+			Components:         []string{"AUDIO"},
+			Markets:            []string{"de-DE"},
 			HourlyRateUSD:      60.0,
 			TurnaroundHours:    72,
 			HistoricalAccuracy: 0.95,
@@ -37,7 +39,8 @@ func TestVerifyPlan(t *testing.T) {
 		{
 			VendorID:           "vendor-sloppy",
 			VendorName:         "Sloppy Audio",
-			Specialty:          "AUDIO_DUBBING",
+			Components:         []string{"AUDIO"},
+			Markets:            []string{"de-DE"},
 			HourlyRateUSD:      40.0,
 			TurnaroundHours:    12,
 			HistoricalAccuracy: 0.75,
@@ -45,7 +48,8 @@ func TestVerifyPlan(t *testing.T) {
 		{
 			VendorID:           "vendor-new",
 			VendorName:         "New Studio",
-			Specialty:          "AUDIO_DUBBING",
+			Components:         []string{"AUDIO"},
+			Markets:            []string{"de-DE"},
 			HourlyRateUSD:      90.0,
 			TurnaroundHours:    24,
 			HistoricalAccuracy: models.UnmeasuredHistoricalAccuracy,

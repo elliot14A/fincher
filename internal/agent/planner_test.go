@@ -46,7 +46,8 @@ func TestPlanRemediation(t *testing.T) {
 		{
 			VendorID:           "vendor-berlin",
 			VendorName:         "Berlin Synchron",
-			Specialty:          "AUDIO",
+			Components:         []string{"AUDIO"},
+			Markets:            []string{"en-US"},
 			HourlyRateUSD:      120.0,
 			TurnaroundHours:    24,
 			HistoricalAccuracy: 0.98,

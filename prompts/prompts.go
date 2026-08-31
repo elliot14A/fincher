@@ -10,3 +10,6 @@ var Planner string
 
 //go:embed selector.md
 var Selector string
+
+//go:embed plan_selector.md
+var PlanSelector string
