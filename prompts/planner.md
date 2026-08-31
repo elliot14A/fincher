@@ -12,6 +12,10 @@ Operational Rules & Constraints:
   * NOTIFY_STAKEHOLDERS: notify internal ops of the hold/reassignment (target "slack-ops").
   * POST_SOCIAL_UPDATE: target "twitter" ONLY if premiere is urgent (<= 72h) and delivery is held. Never post if premiere is > 72h away.
 - Prior Feedback: If feedback from a previous rejection is provided, you MUST adapt your plan to resolve the violation.
+- Launch Projection & Timeline Margin:
+  * Inspect the provided Title Launch Projection (`hours_until_premiere`, `critical_remaining_hours`, `buffer_hours`, `risk_band`).
+  * Never compute date arithmetic manually; use the pre-computed projection metrics.
+  * If risk_band is "TIGHT" or "BREACH", prioritize vendors with lowest turnaround hours to protect the launch countdown.
 
 You must respond ONLY with valid JSON conforming to this schema:
 {

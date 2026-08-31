@@ -5,13 +5,14 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/elliot14A/fincher/internal/agent/tools"
 	domainerrors "github.com/elliot14A/fincher/pkg/domain/errors"
 	"github.com/elliot14A/fincher/pkg/domain/models"
 	"github.com/elliot14A/fincher/prompts"
 	"google.golang.org/adk/v2/model"
 )
 
-// PlanRemediation synthesizes an operational ActionPlan using Gemini Flash based on impact, analytics, and available vendors.
+// PlanRemediation synthesizes an operational ActionPlan using Gemini Flash based on impact, analytics, vendors, and launch projection.
 func PlanRemediation(
 	ctx context.Context,
 	m model.LLM,
@@ -19,6 +20,7 @@ func PlanRemediation(
 	impact *models.DeliveryImpact,
 	analytics *models.AnalyticsSummary,
 	candidates []models.VendorCandidate,
+	projection *tools.TitleProjection,
 	feedback string,
 ) domainerrors.Result[*models.ActionPlan] {
 	if m == nil {
@@ -31,6 +33,7 @@ func PlanRemediation(
 	impactJSON, _ := json.Marshal(impact)
 	analyticsJSON, _ := json.Marshal(analytics)
 	candidatesJSON, _ := json.Marshal(candidates)
+	projectionJSON, _ := json.Marshal(projection)
 	eventDataJSON, _ := json.Marshal(event.Data)
 
 	feedbackContext := ""
@@ -39,13 +42,14 @@ func PlanRemediation(
 	}
 
 	userPrompt := fmt.Sprintf(
-		"Event: %s (Type: %s, Severity: %s, Subject: %s)\nEvent Data: %s\n\nDelivery Impact: %s\n\nHistorical Analytics: %s\n\nVendor Candidates: %s%s\n\nFormulate a compliant remediation action plan.",
+		"Event: %s (Type: %s, Severity: %s, Subject: %s)\nEvent Data: %s\n\nDelivery Impact: %s\n\nTitle Launch Projection: %s\n\nHistorical Analytics: %s\n\nVendor Candidates: %s%s\n\nFormulate a compliant remediation action plan.",
 		event.ID,
 		event.Type,
 		event.Severity,
 		event.Subject,
 		string(eventDataJSON),
 		string(impactJSON),
+		string(projectionJSON),
 		string(analyticsJSON),
 		string(candidatesJSON),
 		feedbackContext,

@@ -54,7 +54,7 @@ func TestPlanRemediation(t *testing.T) {
 	}
 
 	t.Run("Fails when model is nil", func(t *testing.T) {
-		res := agent.PlanRemediation(ctx, nil, event, impact, analytics, candidates, "")
+		res := agent.PlanRemediation(ctx, nil, event, impact, analytics, candidates, nil, "")
 		if res.IsOk() {
 			t.Fatal("expected error for nil model, got Ok")
 		}
@@ -66,7 +66,7 @@ func TestPlanRemediation(t *testing.T) {
 
 	t.Run("Fails when event is nil", func(t *testing.T) {
 		llm := &mockLLM{response: `{}`}
-		res := agent.PlanRemediation(ctx, llm, nil, impact, analytics, candidates, "")
+		res := agent.PlanRemediation(ctx, llm, nil, impact, analytics, candidates, nil, "")
 		if res.IsOk() {
 			t.Fatal("expected error for nil event, got Ok")
 		}
@@ -108,7 +108,7 @@ func TestPlanRemediation(t *testing.T) {
 		}`
 		llm := &mockLLM{response: jsonOutput}
 
-		res := agent.PlanRemediation(ctx, llm, event, impact, analytics, candidates, "")
+		res := agent.PlanRemediation(ctx, llm, event, impact, analytics, candidates, nil, "")
 		if res.IsErr() {
 			t.Fatalf("PlanRemediation returned error: %v", res.Error())
 		}
@@ -139,7 +139,7 @@ func TestPlanRemediation(t *testing.T) {
 	t.Run("Fails when model returns malformed JSON", func(t *testing.T) {
 		llm := &mockLLM{response: "malformed non-json response"}
 
-		res := agent.PlanRemediation(ctx, llm, event, impact, analytics, candidates, "")
+		res := agent.PlanRemediation(ctx, llm, event, impact, analytics, candidates, nil, "")
 		if res.IsOk() {
 			t.Fatal("expected error for malformed JSON, got Ok")
 		}
@@ -152,7 +152,7 @@ func TestPlanRemediation(t *testing.T) {
 	t.Run("Propagates model generation error", func(t *testing.T) {
 		llm := &mockLLM{err: errors.New("upstream quota exceeded")}
 
-		res := agent.PlanRemediation(ctx, llm, event, impact, analytics, candidates, "")
+		res := agent.PlanRemediation(ctx, llm, event, impact, analytics, candidates, nil, "")
 		if res.IsOk() {
 			t.Fatal("expected error when model fails, got Ok")
 		}
