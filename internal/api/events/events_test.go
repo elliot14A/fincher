@@ -15,6 +15,7 @@ import (
 	"google.golang.org/adk/v2/model"
 	genai "google.golang.org/genai"
 
+	"github.com/elliot14A/fincher/internal/agent/scheduler"
 	"github.com/elliot14A/fincher/internal/api/events"
 	"github.com/elliot14A/fincher/internal/clickhouse"
 	tursoruns "github.com/elliot14A/fincher/internal/turso/runs"
@@ -76,9 +77,10 @@ func TestEvents_BatchIngestion_And_Routing(t *testing.T) {
 		},
 	}
 
+	sched := scheduler.NewScheduler(time.Second)
 	e := echo.New()
 	g := e.Group("/api/events")
-	events.RegisterRoutes(g, conn, client, func() model.LLM { return mock })
+	events.RegisterRoutes(g, conn, client, func() model.LLM { return mock }, sched)
 
 	titleSlug := "batch-title-" + uuid.NewString()[:8]
 	anomalyEventID := uuid.NewString()

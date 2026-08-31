@@ -11,6 +11,7 @@ import (
 	"github.com/elliot14A/fincher/internal/turso/ent"
 	tursoruns "github.com/elliot14A/fincher/internal/turso/runs"
 	"github.com/elliot14A/fincher/pkg/domain/models"
+	"github.com/elliot14A/fincher/pkg/logger"
 )
 
 // Stream handles GET /api/runs/:id/stream.
@@ -20,13 +21,16 @@ import (
 //	@Tags			runs
 //	@Produce		text/event-stream
 //	@Param			id	path	string	true	"Run ID"
-//	@Success		200	{string}	string	"Stream of events: event: update\\ndata: {...}\\n\\n"
+//	@Success		200	{string}	string	"Stream of events: event: update\ndata: {...}\n\n"
 //	@Failure		404	{object}	errors.ErrorResponse
 //	@Router			/runs/{id}/stream [get]
 func Stream(client *ent.Client) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		id := c.Param("id")
 		ctx := c.Request().Context()
+
+		logger.Debug("sse: stream opened", "run_id", id, "remote_ip", c.RealIP())
+		defer logger.Debug("sse: stream closed", "run_id", id)
 
 		c.Response().Header().Set(echo.HeaderContentType, "text/event-stream")
 		c.Response().Header().Set(echo.HeaderCacheControl, "no-cache")
@@ -39,6 +43,8 @@ func Stream(client *ent.Client) echo.HandlerFunc {
 
 		var lastStepCount int = -1
 		var lastStatus models.RunStatus = ""
+		consecutiveFailures := 0
+		const maxConsecutiveFailures = 20
 
 		for {
 			select {
@@ -48,8 +54,20 @@ func Stream(client *ent.Client) echo.HandlerFunc {
 			case <-ticker.C:
 				res := tursoruns.GetRun(ctx, client, id)
 				if res.IsErr() {
+					consecutiveFailures++
+					if consecutiveFailures >= maxConsecutiveFailures {
+						logger.Warn("sse: bailing stream after continuous get_run failures",
+							"run_id", id,
+							"consecutive_failures", consecutiveFailures,
+							"error", res.Error(),
+						)
+						fmt.Fprintf(c.Response(), "event: error\ndata: {\"error\":\"run_not_found\"}\n\n")
+						c.Response().Flush()
+						return nil
+					}
 					continue
 				}
+				consecutiveFailures = 0
 				run := res.Unwrap()
 
 				hasChanged := len(run.Steps) != lastStepCount || run.Status != lastStatus
@@ -58,7 +76,9 @@ func Stream(client *ent.Client) echo.HandlerFunc {
 					lastStatus = run.Status
 
 					data, err := json.Marshal(run)
-					if err == nil {
+					if err != nil {
+						logger.Error("sse: failed to marshal run for stream", "run_id", id, "error", err)
+					} else {
 						fmt.Fprintf(c.Response(), "event: update\ndata: %s\n\n", data)
 						c.Response().Flush()
 					}

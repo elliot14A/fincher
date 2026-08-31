@@ -30,15 +30,16 @@ func IngestAndRoute(
 	tursoClient *ent.Client,
 	modelProvider func() model.LLM,
 	events []models.Event,
-	schedulers ...*scheduler.Scheduler,
+	sched *scheduler.Scheduler,
 ) (*models.EventBatchResponse, error) {
+	if db == nil {
+		return nil, domainerrors.NewWithOp("events.IngestAndRoute", domainerrors.CodeInvalidInput, "clickhouse db connection cannot be nil", nil)
+	}
+	if tursoClient == nil {
+		return nil, domainerrors.NewWithOp("events.IngestAndRoute", domainerrors.CodeInvalidInput, "turso client cannot be nil", nil)
+	}
 	if len(events) == 0 {
 		return nil, domainerrors.NewWithOp("events.IngestAndRoute", domainerrors.CodeInvalidInput, "event batch cannot be empty", nil)
-	}
-
-	var sched *scheduler.Scheduler
-	if len(schedulers) > 0 {
-		sched = schedulers[0]
 	}
 
 	// 1. Validate all events upfront before writing to ClickHouse
@@ -79,7 +80,15 @@ func IngestAndRoute(
 				OnScheduleComplete: func(qcEvent models.Event) {
 					bgCtx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 					defer cancel()
-					_, _ = IngestAndRoute(bgCtx, db, tursoClient, modelProvider, []models.Event{qcEvent}, sched)
+					_, err := IngestAndRoute(bgCtx, db, tursoClient, modelProvider, []models.Event{qcEvent}, sched)
+					if err != nil {
+						logger.Error("events: failed to re-ingest scheduled QC completion event",
+							"event_id", qcEvent.ID,
+							"event_type", qcEvent.Type,
+							"subject", qcEvent.Subject,
+							"error", err,
+						)
+					}
 				},
 			}
 			runObj, _, err := graph.DispatchIncident(ctx, incidentDeps, graph.IncidentInput{
@@ -158,11 +167,7 @@ func IngestAndRoute(
 //	@Failure		400		{object}	errors.ErrorResponse
 //	@Failure		500		{object}	errors.ErrorResponse
 //	@Router			/events [post]
-func Create(db *sql.DB, tursoClient *ent.Client, modelProvider func() model.LLM, schedulers ...*scheduler.Scheduler) echo.HandlerFunc {
-	var sched *scheduler.Scheduler
-	if len(schedulers) > 0 {
-		sched = schedulers[0]
-	}
+func Create(db *sql.DB, tursoClient *ent.Client, modelProvider func() model.LLM, sched *scheduler.Scheduler) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var req []models.Event
 		if err := c.Bind(&req); err != nil {

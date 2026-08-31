@@ -11,6 +11,6 @@ import (
 )
 
 // RegisterRoutes registers the event batch ingestion and routing endpoint.
-func RegisterRoutes(g *echo.Group, db *sql.DB, tursoClient *ent.Client, modelProvider func() model.LLM, schedulers ...*scheduler.Scheduler) {
-	g.POST("", Create(db, tursoClient, modelProvider, schedulers...))
+func RegisterRoutes(g *echo.Group, db *sql.DB, tursoClient *ent.Client, modelProvider func() model.LLM, sched *scheduler.Scheduler) {
+	g.POST("", Create(db, tursoClient, modelProvider, sched))
 }
