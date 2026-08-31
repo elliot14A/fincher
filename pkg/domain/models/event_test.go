@@ -83,33 +83,33 @@ func TestEvent_Classify(t *testing.T) {
 			expected: models.CategoryRoutineOutcome,
 		},
 		{
-			name: "qc inspection failed is anomaly signal",
+			name: "qc inspection failed is incident",
 			event: &models.Event{
 				Type: models.TypeQCInspectionCompleted,
 				Data: map[string]any{"status": "FAILED"},
 			},
-			expected: models.CategoryAnomalySignal,
+			expected: models.CategoryIncident,
 		},
 		{
-			name: "audio sync drift detected is anomaly signal",
+			name: "audio sync drift detected is incident",
 			event: &models.Event{
 				Type: models.TypeAudioSyncDriftDetected,
 			},
-			expected: models.CategoryAnomalySignal,
+			expected: models.CategoryIncident,
 		},
 		{
-			name: "master cut revised is anomaly signal",
+			name: "master cut revised is incident",
 			event: &models.Event{
 				Type: models.TypeMasterCutRevised,
 			},
-			expected: models.CategoryAnomalySignal,
+			expected: models.CategoryIncident,
 		},
 		{
-			name: "title created is allocation request",
+			name: "title created is allocation",
 			event: &models.Event{
 				Type: models.TypeTitleCreated,
 			},
-			expected: models.CategoryAllocationRequest,
+			expected: models.CategoryAllocation,
 		},
 		{
 			name: "operator forced is operator forced",

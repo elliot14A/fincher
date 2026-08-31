@@ -31,6 +31,12 @@ const (
 	TypeTitleCreated              = "fincher.title.created"
 	TypePackageRequired           = "fincher.package.required"
 	TypeVendorReconformDispatched = "fincher.vendor.reconform.dispatched"
+	TypeVendorAssigned            = "fincher.vendor.assigned"
+	TypeVendorEmailed             = "fincher.vendor.emailed"
+	TypeStakeholdersNotified      = "fincher.stakeholders.notified"
+	TypeSocialPosted              = "fincher.social.posted"
+	TypeDeliveryHeld              = "fincher.delivery.held"
+	TypeDeliveryReleased          = "fincher.delivery.released"
 	TypeOperatorForced            = "fincher.operator.forced"
 	TypeInvestigationTriggered    = "fincher.investigation.triggered"
 )
@@ -39,11 +45,11 @@ const (
 type EventCategory string
 
 const (
-	CategoryTelemetry         EventCategory = "TELEMETRY"
-	CategoryRoutineOutcome    EventCategory = "ROUTINE_OUTCOME"
-	CategoryAnomalySignal     EventCategory = "ANOMALY_SIGNAL"
-	CategoryAllocationRequest EventCategory = "ALLOCATION_REQUEST"
-	CategoryOperatorForced    EventCategory = "OPERATOR_FORCED"
+	CategoryTelemetry      EventCategory = "TELEMETRY"
+	CategoryRoutineOutcome EventCategory = "ROUTINE_OUTCOME"
+	CategoryIncident       EventCategory = "INCIDENT"
+	CategoryAllocation     EventCategory = "ALLOCATION"
+	CategoryOperatorForced EventCategory = "OPERATOR_FORCED"
 )
 
 // DefaultTitleAgnosticSentinel is used when an event is not scoped to a specific title.
@@ -64,8 +70,9 @@ type Event struct {
 
 // EventBatchResponse represents the response returned after event batch ingestion.
 type EventBatchResponse struct {
-	Status string `json:"status"`
-	Count  int    `json:"count"`
+	Status string   `json:"status"`
+	Count  int      `json:"count"`
+	RunIDs []string `json:"run_ids,omitempty"`
 }
 
 // Validate ensures required event attributes are present and defaults are populated.
@@ -93,6 +100,11 @@ func (e *Event) Validate() error {
 
 // DataJSON serializes the data payload into a JSON string.
 func (e *Event) DataJSON() (string, error) {
+	return e.PayloadJSON()
+}
+
+// PayloadJSON serializes the Data field to a JSON string.
+func (e *Event) PayloadJSON() (string, error) {
 	if e.Data == nil {
 		return "{}", nil
 	}
@@ -109,12 +121,16 @@ func (e *Event) Classify() EventCategory {
 	case TypeVendorHeartbeat, TypePackageDownloadStarted, TypePackageDownloadProgress:
 		return CategoryTelemetry
 
+	case TypeVendorAssigned, TypeVendorEmailed, TypeStakeholdersNotified, TypeSocialPosted,
+		TypeDeliveryHeld, TypeDeliveryReleased:
+		return CategoryRoutineOutcome
+
 	case TypeQCInspectionCompleted:
 		if e.Data != nil {
 			if status, ok := e.Data["status"].(string); ok {
 				upperStatus := strings.ToUpper(status)
 				if upperStatus == "FAILED" || upperStatus == "WARNING" {
-					return CategoryAnomalySignal
+					return CategoryIncident
 				}
 				if upperStatus == "PASSED" {
 					return CategoryRoutineOutcome
@@ -122,22 +138,22 @@ func (e *Event) Classify() EventCategory {
 			}
 		}
 		if e.Severity == SeverityCritical || e.Severity == SeverityWarn {
-			return CategoryAnomalySignal
+			return CategoryIncident
 		}
 		return CategoryRoutineOutcome
 
 	case TypeAudioSyncDriftDetected, TypeMasterCutRevised, TypeVendorSLABreach, TypePackageInvalidated:
-		return CategoryAnomalySignal
+		return CategoryIncident
 
 	case TypeTitleCreated, TypePackageRequired, TypeVendorReconformDispatched:
-		return CategoryAllocationRequest
+		return CategoryAllocation
 
 	case TypeOperatorForced, TypeInvestigationTriggered:
 		return CategoryOperatorForced
 
 	default:
 		if e.Severity == SeverityCritical || e.Severity == SeverityWarn {
-			return CategoryAnomalySignal
+			return CategoryIncident
 		}
 		return CategoryTelemetry
 	}
