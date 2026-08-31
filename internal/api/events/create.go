@@ -6,11 +6,13 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/labstack/echo/v4"
 	"google.golang.org/adk/v2/model"
 
 	"github.com/elliot14A/fincher/internal/agent/graph"
+	"github.com/elliot14A/fincher/internal/agent/scheduler"
 	apierrors "github.com/elliot14A/fincher/internal/api/errors"
 	chEvents "github.com/elliot14A/fincher/internal/clickhouse/events"
 	"github.com/elliot14A/fincher/internal/turso/ent"
@@ -28,9 +30,15 @@ func IngestAndRoute(
 	tursoClient *ent.Client,
 	modelProvider func() model.LLM,
 	events []models.Event,
+	schedulers ...*scheduler.Scheduler,
 ) (*models.EventBatchResponse, error) {
 	if len(events) == 0 {
 		return nil, domainerrors.NewWithOp("events.IngestAndRoute", domainerrors.CodeInvalidInput, "event batch cannot be empty", nil)
+	}
+
+	var sched *scheduler.Scheduler
+	if len(schedulers) > 0 {
+		sched = schedulers[0]
 	}
 
 	// 1. Validate all events upfront before writing to ClickHouse
@@ -53,8 +61,7 @@ func IngestAndRoute(
 		m = modelProvider()
 	}
 
-	for i := range events {
-		ev := events[i]
+	for _, ev := range events {
 		category := ev.Classify()
 
 		switch category {
@@ -68,6 +75,12 @@ func IngestAndRoute(
 				TursoClient: tursoClient,
 				ClickHouse:  db,
 				MaxAttempts: graph.DefaultMaxRemediationAttempts,
+				Scheduler:   sched,
+				OnScheduleComplete: func(qcEvent models.Event) {
+					bgCtx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+					defer cancel()
+					_, _ = IngestAndRoute(bgCtx, db, tursoClient, modelProvider, []models.Event{qcEvent}, sched)
+				},
 			}
 			runObj, _, err := graph.DispatchIncident(ctx, incidentDeps, graph.IncidentInput{
 				Event: &ev,
@@ -145,7 +158,11 @@ func IngestAndRoute(
 //	@Failure		400		{object}	errors.ErrorResponse
 //	@Failure		500		{object}	errors.ErrorResponse
 //	@Router			/events [post]
-func Create(db *sql.DB, tursoClient *ent.Client, modelProvider func() model.LLM) echo.HandlerFunc {
+func Create(db *sql.DB, tursoClient *ent.Client, modelProvider func() model.LLM, schedulers ...*scheduler.Scheduler) echo.HandlerFunc {
+	var sched *scheduler.Scheduler
+	if len(schedulers) > 0 {
+		sched = schedulers[0]
+	}
 	return func(c echo.Context) error {
 		var req []models.Event
 		if err := c.Bind(&req); err != nil {
@@ -156,7 +173,7 @@ func Create(db *sql.DB, tursoClient *ent.Client, modelProvider func() model.LLM)
 		}
 
 		ctx := c.Request().Context()
-		resp, err := IngestAndRoute(ctx, db, tursoClient, modelProvider, req)
+		resp, err := IngestAndRoute(ctx, db, tursoClient, modelProvider, req, sched)
 		if err != nil {
 			return apierrors.Respond(c, err)
 		}

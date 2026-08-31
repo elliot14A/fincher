@@ -6,10 +6,11 @@ import (
 	"github.com/labstack/echo/v4"
 	"google.golang.org/adk/v2/model"
 
+	"github.com/elliot14A/fincher/internal/agent/scheduler"
 	"github.com/elliot14A/fincher/internal/turso/ent"
 )
 
 // RegisterRoutes registers the event batch ingestion and routing endpoint.
-func RegisterRoutes(g *echo.Group, db *sql.DB, tursoClient *ent.Client, modelProvider func() model.LLM) {
-	g.POST("", Create(db, tursoClient, modelProvider))
+func RegisterRoutes(g *echo.Group, db *sql.DB, tursoClient *ent.Client, modelProvider func() model.LLM, schedulers ...*scheduler.Scheduler) {
+	g.POST("", Create(db, tursoClient, modelProvider, schedulers...))
 }

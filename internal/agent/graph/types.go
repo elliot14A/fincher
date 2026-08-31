@@ -4,6 +4,7 @@ import (
 	"database/sql"
 
 	"github.com/elliot14A/fincher/internal/agent"
+	"github.com/elliot14A/fincher/internal/agent/scheduler"
 	"github.com/elliot14A/fincher/internal/turso/ent"
 	"github.com/elliot14A/fincher/pkg/domain/models"
 	"google.golang.org/adk/v2/model"
@@ -11,10 +12,12 @@ import (
 
 // IncidentGraphDeps supplies runtime dependencies to the incident workflow.
 type IncidentGraphDeps struct {
-	Model       model.LLM
-	TursoClient *ent.Client
-	ClickHouse  *sql.DB
-	MaxAttempts int
+	Model              model.LLM
+	TursoClient        *ent.Client
+	ClickHouse         *sql.DB
+	MaxAttempts        int
+	Scheduler          *scheduler.Scheduler
+	OnScheduleComplete func(event models.Event)
 }
 
 // IncidentInput is the entry payload passed to the incident workflow.

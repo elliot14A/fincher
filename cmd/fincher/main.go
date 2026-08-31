@@ -12,6 +12,7 @@ import (
 	"github.com/alecthomas/kong"
 
 	"github.com/elliot14A/fincher/internal/agent"
+	"github.com/elliot14A/fincher/internal/agent/scheduler"
 	"github.com/elliot14A/fincher/internal/api"
 	"github.com/elliot14A/fincher/internal/clickhouse"
 	"github.com/elliot14A/fincher/internal/config"
@@ -71,6 +72,9 @@ func main() {
 	}
 
 	srv := api.NewServer(dbClient, chDB)
+	if cfg.TimeScale > 0 {
+		srv.SetScheduler(scheduler.NewScheduler(cfg.TimeScale))
+	}
 	if cfg.GeminiAPIKey != "" {
 		modelRes := agent.NewModel(ctx, cfg.GeminiAPIKey, cfg.FlashModel)
 		if modelRes.IsErr() {

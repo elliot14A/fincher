@@ -9,6 +9,7 @@ import (
 
 	"google.golang.org/adk/v2/model"
 
+	"github.com/elliot14A/fincher/internal/agent/scheduler"
 	"github.com/elliot14A/fincher/internal/api/deliveries"
 	"github.com/elliot14A/fincher/internal/api/dependencies"
 	"github.com/elliot14A/fincher/internal/api/events"
@@ -25,14 +26,23 @@ import (
 )
 
 type Server struct {
-	echo   *echo.Echo
-	client *ent.Client
-	chDB   *sql.DB
-	llm    model.LLM
+	echo      *echo.Echo
+	client    *ent.Client
+	chDB      *sql.DB
+	llm       model.LLM
+	scheduler *scheduler.Scheduler
 }
 
 func (s *Server) SetModel(m model.LLM) {
 	s.llm = m
+}
+
+func (s *Server) SetScheduler(sched *scheduler.Scheduler) {
+	s.scheduler = sched
+}
+
+func (s *Server) Scheduler() *scheduler.Scheduler {
+	return s.scheduler
 }
 
 func NewServer(client *ent.Client, chDB ...*sql.DB) *Server {
@@ -71,8 +81,9 @@ func NewServer(client *ent.Client, chDB ...*sql.DB) *Server {
 	}))
 
 	s := &Server{
-		echo:   e,
-		client: client,
+		echo:      e,
+		client:    client,
+		scheduler: scheduler.NewScheduler(time.Second),
 	}
 	if len(chDB) > 0 {
 		s.chDB = chDB[0]
@@ -116,7 +127,7 @@ func (s *Server) registerRoutes() {
 	runs.RegisterRoutes(apiGroup.Group("/runs"), s.client, s.chDB, func() model.LLM { return s.llm })
 
 	if s.chDB != nil {
-		events.RegisterRoutes(apiGroup.Group("/events"), s.chDB, s.client, func() model.LLM { return s.llm })
+		events.RegisterRoutes(apiGroup.Group("/events"), s.chDB, s.client, func() model.LLM { return s.llm }, s.scheduler)
 	}
 
 	web.RegisterRoutes(s.echo)

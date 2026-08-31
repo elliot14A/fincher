@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/elliot14A/fincher/internal/agent"
+	"github.com/elliot14A/fincher/internal/agent/scheduler"
 	"github.com/elliot14A/fincher/internal/agent/tools"
 	"github.com/elliot14A/fincher/internal/turso/runs"
 	tursotitles "github.com/elliot14A/fincher/internal/turso/titles"
@@ -283,7 +284,31 @@ func ExecuteIncident(ctx context.Context, deps IncidentGraphDeps, input Incident
 			}
 		}
 
-		execRes := agent.RunActionPlan(ctx, deps.TursoClient, deps.ClickHouse, runID, executorStepID, finalPlan)
+		var scheduleTask func(kind, targetID, titleSlug, vendorID string, turnaroundHours float64, onComplete func()) error
+		if deps.Scheduler != nil {
+			scheduleTask = func(kind, targetID, titleSlug, vendorID string, turnaroundHours float64, onComplete func()) error {
+				_, err := deps.Scheduler.ScheduleTask(
+					scheduler.TaskKind(kind),
+					targetID,
+					titleSlug,
+					vendorID,
+					turnaroundHours,
+					func(t *scheduler.Task) {
+						if onComplete != nil {
+							onComplete()
+						}
+					},
+				)
+				return err
+			}
+		}
+
+		execRes := agent.RunActionPlanWithDeps(ctx, agent.RunnerDeps{
+			TursoClient:        deps.TursoClient,
+			ClickHouse:         deps.ClickHouse,
+			ScheduleTask:       scheduleTask,
+			OnScheduleComplete: deps.OnScheduleComplete,
+		}, runID, executorStepID, finalPlan)
 		if execRes.IsErr() {
 			now = time.Now().UTC()
 			if deps.TursoClient != nil {

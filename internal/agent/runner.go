@@ -13,6 +13,7 @@ import (
 	"github.com/elliot14A/fincher/internal/turso/ent"
 	tursopackages "github.com/elliot14A/fincher/internal/turso/packages"
 	"github.com/elliot14A/fincher/internal/turso/runs"
+	tursovendors "github.com/elliot14A/fincher/internal/turso/vendors"
 	domainerrors "github.com/elliot14A/fincher/pkg/domain/errors"
 	"github.com/elliot14A/fincher/pkg/domain/models"
 )
@@ -25,11 +26,43 @@ type RunnerResult struct {
 	DownstreamEmitted int             `json:"downstream_emitted"`
 }
 
+// SchedulerInterface defines the scheduler contract for background simulation tasks.
+type SchedulerInterface interface {
+	ScheduleTask(
+		kind string,
+		targetID, titleSlug, vendorID string,
+		turnaroundHours float64,
+		onComplete func(t any),
+	) (any, error)
+}
+
+// RunnerDeps supplies dependencies to ActionPlan execution.
+type RunnerDeps struct {
+	TursoClient        *ent.Client
+	ClickHouse         *sql.DB
+	ScheduleTask       func(kind, targetID, titleSlug, vendorID string, turnaroundHours float64, onComplete func()) error
+	OnScheduleComplete func(event models.Event)
+}
+
 // RunActionPlan executes an approved ActionPlan using turso domain actions and emits downstream events to ClickHouse.
 func RunActionPlan(
 	ctx context.Context,
 	tursoClient *ent.Client,
 	chDB *sql.DB,
+	runID string,
+	stepID string,
+	plan *models.ActionPlan,
+) domainerrors.Result[*RunnerResult] {
+	return RunActionPlanWithDeps(ctx, RunnerDeps{
+		TursoClient: tursoClient,
+		ClickHouse:  chDB,
+	}, runID, stepID, plan)
+}
+
+// RunActionPlanWithDeps executes an approved ActionPlan using provided dependencies and schedules background repairs if configured.
+func RunActionPlanWithDeps(
+	ctx context.Context,
+	deps RunnerDeps,
 	runID string,
 	stepID string,
 	plan *models.ActionPlan,
@@ -45,12 +78,14 @@ func RunActionPlan(
 	for _, action := range plan.Actions {
 		switch action.Type {
 		case models.ActionHoldDelivery:
-			holdStatus := models.DeliveryStatusHold
-			updRes := tursodeliveries.Update(ctx, tursoClient, action.TargetID, &models.UpdateDeliveryInput{
-				Status: &holdStatus,
-			})
-			if updRes.IsErr() {
-				return domainerrors.Err[*RunnerResult](updRes.Error())
+			if deps.TursoClient != nil {
+				holdStatus := models.DeliveryStatusHold
+				updRes := tursodeliveries.Update(ctx, deps.TursoClient, action.TargetID, &models.UpdateDeliveryInput{
+					Status: &holdStatus,
+				})
+				if updRes.IsErr() {
+					return domainerrors.Err[*RunnerResult](updRes.Error())
+				}
 			}
 			executed = append(executed, action)
 
@@ -69,12 +104,14 @@ func RunActionPlan(
 			})
 
 		case models.ActionReleaseDelivery:
-			readyStatus := models.DeliveryStatusReadyToShip
-			updRes := tursodeliveries.Update(ctx, tursoClient, action.TargetID, &models.UpdateDeliveryInput{
-				Status: &readyStatus,
-			})
-			if updRes.IsErr() {
-				return domainerrors.Err[*RunnerResult](updRes.Error())
+			if deps.TursoClient != nil {
+				readyStatus := models.DeliveryStatusReadyToShip
+				updRes := tursodeliveries.Update(ctx, deps.TursoClient, action.TargetID, &models.UpdateDeliveryInput{
+					Status: &readyStatus,
+				})
+				if updRes.IsErr() {
+					return domainerrors.Err[*RunnerResult](updRes.Error())
+				}
 			}
 			executed = append(executed, action)
 
@@ -94,14 +131,17 @@ func RunActionPlan(
 
 		case models.ActionReassignVendor:
 			newVendorID := action.TargetID
+			var targetPkgID string
 			if pkgIDVal, ok := action.Payload["package_id"]; ok {
-				pkgID, isStr := pkgIDVal.(string)
-				if isStr && pkgID != "" {
-					updRes := tursopackages.Update(ctx, tursoClient, pkgID, &models.UpdatePackageInput{
-						VendorID: &newVendorID,
-					})
-					if updRes.IsErr() {
-						return domainerrors.Err[*RunnerResult](updRes.Error())
+				if pkgID, isStr := pkgIDVal.(string); isStr && pkgID != "" {
+					targetPkgID = pkgID
+					if deps.TursoClient != nil {
+						updRes := tursopackages.Update(ctx, deps.TursoClient, pkgID, &models.UpdatePackageInput{
+							VendorID: &newVendorID,
+						})
+						if updRes.IsErr() {
+							return domainerrors.Err[*RunnerResult](updRes.Error())
+						}
 					}
 				}
 			}
@@ -116,10 +156,42 @@ func RunActionPlan(
 				Severity:        models.SeverityInfo,
 				DataContentType: "application/json",
 				Data: map[string]any{
-					"vendor_id": action.TargetID,
-					"reason":    action.Reason,
+					"vendor_id":   action.TargetID,
+					"package_id":  targetPkgID,
+					"reason":      action.Reason,
 				},
 			})
+
+			// Schedule background repair task if scheduler hook is attached
+			if deps.ScheduleTask != nil && targetPkgID != "" {
+				turnaroundHours := 12.0
+				if deps.TursoClient != nil {
+					vRes := tursovendors.Get(ctx, deps.TursoClient, newVendorID)
+					if vRes.IsOk() {
+						turnaroundHours = float64(vRes.Unwrap().TurnaroundHours)
+					}
+				}
+				_ = deps.ScheduleTask("package", targetPkgID, plan.TitleSlug, newVendorID, turnaroundHours, func() {
+					qcEvent := models.Event{
+						ID:              "evt-qc-" + uuid.NewString()[:8],
+						Source:          "fincher/qc.agent",
+						Type:            models.TypeQCInspectionCompleted,
+						Subject:         plan.TitleSlug,
+						Time:            time.Now().UTC(),
+						Severity:        models.SeverityInfo,
+						DataContentType: "application/json",
+						Data: map[string]any{
+							"package_id":       targetPkgID,
+							"vendor_id":        newVendorID,
+							"status":           "PASSED",
+							"turnaround_hours": turnaroundHours,
+						},
+					}
+					if deps.OnScheduleComplete != nil {
+						deps.OnScheduleComplete(qcEvent)
+					}
+				})
+			}
 
 		case models.ActionEmailVendor:
 			if action.Payload == nil {
@@ -192,23 +264,23 @@ func RunActionPlan(
 	}
 
 	now := time.Now().UTC()
-	if stepID != "" {
+	if stepID != "" && deps.TursoClient != nil {
 		artifactsJSON, _ := json.Marshal(artifacts)
-		runs.UpdateStepStatus(ctx, tursoClient, stepID, models.StepStatusCompleted, &now, map[string]any{
+		runs.UpdateStepStatus(ctx, deps.TursoClient, stepID, models.StepStatusCompleted, &now, map[string]any{
 			"artifacts_count": len(artifacts),
 			"artifacts_json":  string(artifactsJSON),
 		})
 	}
 
-	if chDB != nil && len(downstreamEvents) > 0 {
-		batchRes := ch.InsertBatch(ctx, chDB, downstreamEvents)
+	if deps.ClickHouse != nil && len(downstreamEvents) > 0 {
+		batchRes := ch.InsertBatch(ctx, deps.ClickHouse, downstreamEvents)
 		if batchRes.IsErr() {
 			return domainerrors.Err[*RunnerResult](batchRes.Error())
 		}
 	}
 
-	if runID != "" {
-		runs.UpdateRunStatus(ctx, tursoClient, runID, models.RunStatusCompleted, &now, nil)
+	if runID != "" && deps.TursoClient != nil {
+		runs.UpdateRunStatus(ctx, deps.TursoClient, runID, models.RunStatusCompleted, &now, nil)
 	}
 
 	return domainerrors.Ok(&RunnerResult{
