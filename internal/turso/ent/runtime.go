@@ -9,10 +9,13 @@ import (
 	"github.com/elliot14A/fincher/internal/turso/ent/dependency"
 	"github.com/elliot14A/fincher/internal/turso/ent/master"
 	"github.com/elliot14A/fincher/internal/turso/ent/mediapackage"
+	"github.com/elliot14A/fincher/internal/turso/ent/run"
 	"github.com/elliot14A/fincher/internal/turso/ent/schema"
+	"github.com/elliot14A/fincher/internal/turso/ent/step"
 	"github.com/elliot14A/fincher/internal/turso/ent/title"
 	"github.com/elliot14A/fincher/internal/turso/ent/upload"
 	"github.com/elliot14A/fincher/internal/turso/ent/vendor"
+	"github.com/elliot14A/fincher/internal/turso/ent/wfresult"
 )
 
 // The init function reads all schema descriptors with runtime code
@@ -123,10 +126,68 @@ func init() {
 	mediapackage.DefaultRedeliveryCount = mediapackageDescRedeliveryCount.Default.(int)
 	// mediapackage.RedeliveryCountValidator is a validator for the "redelivery_count" field. It is called by the builders before save.
 	mediapackage.RedeliveryCountValidator = mediapackageDescRedeliveryCount.Validators[0].(func(int) error)
+	// mediapackageDescMarket is the schema descriptor for market field.
+	mediapackageDescMarket := mediapackageFields[8].Descriptor()
+	// mediapackage.DefaultMarket holds the default value on creation for the market field.
+	mediapackage.DefaultMarket = mediapackageDescMarket.Default.(string)
 	// mediapackageDescID is the schema descriptor for id field.
 	mediapackageDescID := mediapackageMixinFields0[0].Descriptor()
 	// mediapackage.IDValidator is a validator for the "id" field. It is called by the builders before save.
 	mediapackage.IDValidator = mediapackageDescID.Validators[0].(func(string) error)
+	runMixin := schema.Run{}.Mixin()
+	runMixinFields0 := runMixin[0].Fields()
+	_ = runMixinFields0
+	runFields := schema.Run{}.Fields()
+	_ = runFields
+	// runDescCreatedAt is the schema descriptor for created_at field.
+	runDescCreatedAt := runMixinFields0[2].Descriptor()
+	// run.DefaultCreatedAt holds the default value on creation for the created_at field.
+	run.DefaultCreatedAt = runDescCreatedAt.Default.(func() time.Time)
+	// runDescUpdatedAt is the schema descriptor for updated_at field.
+	runDescUpdatedAt := runMixinFields0[3].Descriptor()
+	// run.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	run.DefaultUpdatedAt = runDescUpdatedAt.Default.(func() time.Time)
+	// run.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	run.UpdateDefaultUpdatedAt = runDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// runDescTitleSlug is the schema descriptor for title_slug field.
+	runDescTitleSlug := runFields[0].Descriptor()
+	// run.DefaultTitleSlug holds the default value on creation for the title_slug field.
+	run.DefaultTitleSlug = runDescTitleSlug.Default.(string)
+	// runDescTrigger is the schema descriptor for trigger field.
+	runDescTrigger := runFields[1].Descriptor()
+	// run.TriggerValidator is a validator for the "trigger" field. It is called by the builders before save.
+	run.TriggerValidator = runDescTrigger.Validators[0].(func(string) error)
+	// runDescID is the schema descriptor for id field.
+	runDescID := runMixinFields0[0].Descriptor()
+	// run.IDValidator is a validator for the "id" field. It is called by the builders before save.
+	run.IDValidator = runDescID.Validators[0].(func(string) error)
+	stepMixin := schema.Step{}.Mixin()
+	stepMixinFields0 := stepMixin[0].Fields()
+	_ = stepMixinFields0
+	stepFields := schema.Step{}.Fields()
+	_ = stepFields
+	// stepDescCreatedAt is the schema descriptor for created_at field.
+	stepDescCreatedAt := stepMixinFields0[2].Descriptor()
+	// step.DefaultCreatedAt holds the default value on creation for the created_at field.
+	step.DefaultCreatedAt = stepDescCreatedAt.Default.(func() time.Time)
+	// stepDescUpdatedAt is the schema descriptor for updated_at field.
+	stepDescUpdatedAt := stepMixinFields0[3].Descriptor()
+	// step.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	step.DefaultUpdatedAt = stepDescUpdatedAt.Default.(func() time.Time)
+	// step.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	step.UpdateDefaultUpdatedAt = stepDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// stepDescRunID is the schema descriptor for run_id field.
+	stepDescRunID := stepFields[0].Descriptor()
+	// step.RunIDValidator is a validator for the "run_id" field. It is called by the builders before save.
+	step.RunIDValidator = stepDescRunID.Validators[0].(func(string) error)
+	// stepDescName is the schema descriptor for name field.
+	stepDescName := stepFields[1].Descriptor()
+	// step.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	step.NameValidator = stepDescName.Validators[0].(func(string) error)
+	// stepDescID is the schema descriptor for id field.
+	stepDescID := stepMixinFields0[0].Descriptor()
+	// step.IDValidator is a validator for the "id" field. It is called by the builders before save.
+	step.IDValidator = stepDescID.Validators[0].(func(string) error)
 	titleMixin := schema.Title{}.Mixin()
 	titleMixinFields0 := titleMixin[0].Fields()
 	_ = titleMixinFields0
@@ -146,14 +207,18 @@ func init() {
 	titleDescName := titleFields[0].Descriptor()
 	// title.NameValidator is a validator for the "name" field. It is called by the builders before save.
 	title.NameValidator = titleDescName.Validators[0].(func(string) error)
+	// titleDescSlug is the schema descriptor for slug field.
+	titleDescSlug := titleFields[1].Descriptor()
+	// title.SlugValidator is a validator for the "slug" field. It is called by the builders before save.
+	title.SlugValidator = titleDescSlug.Validators[0].(func(string) error)
 	// titleDescTerritories is the schema descriptor for territories field.
-	titleDescTerritories := titleFields[3].Descriptor()
+	titleDescTerritories := titleFields[4].Descriptor()
 	// title.DefaultTerritories holds the default value on creation for the territories field.
 	title.DefaultTerritories = titleDescTerritories.Default.(int)
 	// title.TerritoriesValidator is a validator for the "territories" field. It is called by the builders before save.
 	title.TerritoriesValidator = titleDescTerritories.Validators[0].(func(int) error)
 	// titleDescCurrentMasterVersion is the schema descriptor for current_master_version field.
-	titleDescCurrentMasterVersion := titleFields[4].Descriptor()
+	titleDescCurrentMasterVersion := titleFields[5].Descriptor()
 	// title.DefaultCurrentMasterVersion holds the default value on creation for the current_master_version field.
 	title.DefaultCurrentMasterVersion = titleDescCurrentMasterVersion.Default.(string)
 	// titleDescID is the schema descriptor for id field.
@@ -205,8 +270,61 @@ func init() {
 	vendorDescSpecialty := vendorFields[1].Descriptor()
 	// vendor.SpecialtyValidator is a validator for the "specialty" field. It is called by the builders before save.
 	vendor.SpecialtyValidator = vendorDescSpecialty.Validators[0].(func(string) error)
+	// vendorDescHourlyRateUsd is the schema descriptor for hourly_rate_usd field.
+	vendorDescHourlyRateUsd := vendorFields[2].Descriptor()
+	// vendor.DefaultHourlyRateUsd holds the default value on creation for the hourly_rate_usd field.
+	vendor.DefaultHourlyRateUsd = vendorDescHourlyRateUsd.Default.(float64)
+	// vendor.HourlyRateUsdValidator is a validator for the "hourly_rate_usd" field. It is called by the builders before save.
+	vendor.HourlyRateUsdValidator = vendorDescHourlyRateUsd.Validators[0].(func(float64) error)
+	// vendorDescTurnaroundHours is the schema descriptor for turnaround_hours field.
+	vendorDescTurnaroundHours := vendorFields[3].Descriptor()
+	// vendor.DefaultTurnaroundHours holds the default value on creation for the turnaround_hours field.
+	vendor.DefaultTurnaroundHours = vendorDescTurnaroundHours.Default.(int)
+	// vendor.TurnaroundHoursValidator is a validator for the "turnaround_hours" field. It is called by the builders before save.
+	vendor.TurnaroundHoursValidator = vendorDescTurnaroundHours.Validators[0].(func(int) error)
 	// vendorDescID is the schema descriptor for id field.
 	vendorDescID := vendorMixinFields0[0].Descriptor()
 	// vendor.IDValidator is a validator for the "id" field. It is called by the builders before save.
 	vendor.IDValidator = vendorDescID.Validators[0].(func(string) error)
+	wfresultMixin := schema.WfResult{}.Mixin()
+	wfresultMixinFields0 := wfresultMixin[0].Fields()
+	_ = wfresultMixinFields0
+	wfresultFields := schema.WfResult{}.Fields()
+	_ = wfresultFields
+	// wfresultDescCreatedAt is the schema descriptor for created_at field.
+	wfresultDescCreatedAt := wfresultMixinFields0[2].Descriptor()
+	// wfresult.DefaultCreatedAt holds the default value on creation for the created_at field.
+	wfresult.DefaultCreatedAt = wfresultDescCreatedAt.Default.(func() time.Time)
+	// wfresultDescUpdatedAt is the schema descriptor for updated_at field.
+	wfresultDescUpdatedAt := wfresultMixinFields0[3].Descriptor()
+	// wfresult.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	wfresult.DefaultUpdatedAt = wfresultDescUpdatedAt.Default.(func() time.Time)
+	// wfresult.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	wfresult.UpdateDefaultUpdatedAt = wfresultDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// wfresultDescRunID is the schema descriptor for run_id field.
+	wfresultDescRunID := wfresultFields[0].Descriptor()
+	// wfresult.RunIDValidator is a validator for the "run_id" field. It is called by the builders before save.
+	wfresult.RunIDValidator = wfresultDescRunID.Validators[0].(func(string) error)
+	// wfresultDescJudge is the schema descriptor for judge field.
+	wfresultDescJudge := wfresultFields[2].Descriptor()
+	// wfresult.JudgeValidator is a validator for the "judge" field. It is called by the builders before save.
+	wfresult.JudgeValidator = wfresultDescJudge.Validators[0].(func(string) error)
+	// wfresultDescOutcome is the schema descriptor for outcome field.
+	wfresultDescOutcome := wfresultFields[3].Descriptor()
+	// wfresult.OutcomeValidator is a validator for the "outcome" field. It is called by the builders before save.
+	wfresult.OutcomeValidator = wfresultDescOutcome.Validators[0].(func(string) error)
+	// wfresultDescRationale is the schema descriptor for rationale field.
+	wfresultDescRationale := wfresultFields[4].Descriptor()
+	// wfresult.DefaultRationale holds the default value on creation for the rationale field.
+	wfresult.DefaultRationale = wfresultDescRationale.Default.(string)
+	// wfresultDescAttempt is the schema descriptor for attempt field.
+	wfresultDescAttempt := wfresultFields[5].Descriptor()
+	// wfresult.DefaultAttempt holds the default value on creation for the attempt field.
+	wfresult.DefaultAttempt = wfresultDescAttempt.Default.(int)
+	// wfresult.AttemptValidator is a validator for the "attempt" field. It is called by the builders before save.
+	wfresult.AttemptValidator = wfresultDescAttempt.Validators[0].(func(int) error)
+	// wfresultDescID is the schema descriptor for id field.
+	wfresultDescID := wfresultMixinFields0[0].Descriptor()
+	// wfresult.IDValidator is a validator for the "id" field. It is called by the builders before save.
+	wfresult.IDValidator = wfresultDescID.Validators[0].(func(string) error)
 }
