@@ -135,30 +135,38 @@
 
 ---
 
-### Unit 5: Non-Dominated Vendors & Realistic Demo Seeder
+### Unit 5: Data-Generation Subsystem (`internal/seed`) & CLI (`cmd/seed`)
 * **Target Files**:
+  * `internal/seed/config.go`
+  * `internal/seed/seed.go`
+  * `internal/seed/rng.go`
+  * `internal/seed/catalog/` (`catalog.go`, `titles.go`, `vendors.go`)
+  * `internal/seed/entities/` (`world.go`, `entities.go`, `entities_test.go`)
+  * `internal/seed/events/` (`builder.go`, `qc.go`, `history.go`, `events_test.go`)
+  * `internal/seed/sink/` (`sink.go`, `turso.go`, `clickhouse.go`)
+  * `internal/seed/reset.go`
+  * `internal/seed/seed_test.go`
   * `cmd/seed/main.go`
-  * `data/seed/events.json`
 * **Details**:
-  1. Data Directory:
-     * Create `data/seed/` and copy the validated 195-event dataset from `/tmp/opencode/fincher_timemodel/events.json`.
-  2. SQLite Vendor Seeding:
-     * Note on accuracy: SQLite `Vendor` schema strictly stores rate cards (`hourly_rate_usd`, `turnaround_hours`, `specialty`). Historical accuracy is NOT a static SQLite field; it is computed by ClickHouse from historical QC events.
-     * Seed non-dominated vendor candidates in Turso:
-       - *Deluxe Audio QC*: $200/hr, 12h turnaround (Rush option)
-       - *Iyuno QC*: $70/hr, 36h turnaround (Economy option)
-       - *Testronic Audio QC*: $120/hr, 24h turnaround (Borderline/failing partner)
-       - *Pixelogic Subtitles*: $80/hr, 8h turnaround
-  3. SQLite Title & Deliveries Seeding:
-     * Seed Title: *Avatar: Fire & Ash* (`slug: avatar-fire-ash`, `overall_status: ON_TRACK`, `premiere_date = now + 72h`).
-     * Seed Master Cut V01.
-     * Seed 6 market storefront deliveries: US, DE, FR, JP, ES, BR.
-     * Seed 11 localized media packages (Audio Dub + Subtitle per territory) with dependencies linking each delivery to its required audio and subtitle packages.
-  4. ClickHouse Historical Ingestion:
-     * Parse `data/seed/events.json` and bulk insert into ClickHouse `fincher.events` table.
-     * This establishes the historical track records (*Deluxe* 99% accuracy, *Iyuno* 93%, *Testronic* 85% with prior sync drift incidents) for the Historian and Vendor Selector agents to query via MCP.
+  1. **Architecture & Boundaries**:
+     * Pure data-generation library in `internal/seed/` with clock-injected, sink-free event builders (reusable by Feature 08 Simulator).
+     * Thin `cmd/seed/main.go` CLI wrapper parsing Kong config and running migrations.
+     * Zero DB schema/ent mutations: poster URLs stored in `Title.Metadata["poster_url"]`.
+  2. **FK Ordering & Entity Invariants**:
+     * Strict FK insert order: Vendors + Titles $\rightarrow$ Masters $\rightarrow$ Packages $\rightarrow$ Dependencies $\rightarrow$ Deliveries.
+     * Every localized package MUST have `Market` populated (`US`, `DE`, `FR`, `JP`, `ES`, `BR`) and global VIDEO MUST be `VALID` with `Market: ""`.
+  3. **Event Generation & ClickHouse Full Fidelity**:
+     * Generate $\sim 10\text{k}$ `fincher.qc.completed` events per vendor across trailing 120 days with recency weighting matching `vendors.DecayHalfLifeDays = 120.0`.
+     * Full-fidelity payload matching `002_qc.sql` MV: `package_id`, `vendor_id`, `component`, `language`, `status`, `sync_drift_ms`, `video_corruption_score`, `defect_category`, `inspector_agent`.
+     * Produces differentiated, mathematically verifiable historical accuracy: Deluxe ($0.99 \pm 0.03$), Iyuno ($0.93 \pm 0.03$), Testronic ($0.85 \pm 0.03$), Pixelogic ($0.96 \pm 0.03$).
+  4. **Preflight Guard & Guarded Reset**:
+     * Preflight checks if Turso rows or ClickHouse events exist. Fails fast unless `--reset` is specified.
+     * Reset truncates Turso tables in reverse FK order and truncates ClickHouse `fincher.events`, `fincher.qc`, `fincher.vendor_metrics`.
 * **Verification**:
-  * `go run ./cmd/seed` populates both Turso and ClickHouse cleanly with zero constraint violations.
+  * `go test -race ./internal/seed/...` passes 100%.
+  * `go run ./cmd/seed --reset` populates SQLite and ClickHouse with $\sim 100\text{k}$ events.
+  * Re-running without `--reset` fails fast with guard message.
+  * `vendors.RecencyWeightedAccuracy` returns expected values within $\pm 0.03$ for all 4 curated vendors.
 
 ---
 

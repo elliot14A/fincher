@@ -121,12 +121,12 @@
   - [x] Workflow schemas (`run.go`, `step.go`, `wf_result.go`) + `internal/turso/runs/` CRUD actions + Title `slug`.
   - [x] Pure Go staged workflows (`ExecuteIncident`, `ExecuteAllocation`) with 4-stage step persistence, `WfResult`, and dynamic deadline computation.
   - [x] Real-time SSE streaming (`GET /api/runs/:id/stream`) emitting updates per stage transition.
-  - [ ] **Unit 1**: Active mock dispatches in `internal/agent/runner.go` (`EMAIL_VENDOR`, `NOTIFY_STAKEHOLDERS`, `POST_SOCIAL_UPDATE` with receipt IDs and ClickHouse events).
-  - [ ] **Unit 2**: Closed-loop resolution workflow & Title self-healing (`ExecuteResolution`).
-  - [ ] **Unit 3**: Single front door ingestion auto-router in `internal/api/events/create.go`.
-  - [ ] **Unit 4**: Title projection tool (`get_title_ready_projection`) & compressed-time scheduler.
-  - [ ] **Unit 5**: Non-dominated vendor & 195-event realistic demo seeder (`cmd/seed/main.go`).
-  - [ ] **Unit 6**: Frontend live operations console & hero simulator (`web/src/features/runs/` + `web/src/routes/runs.tsx`).
+  - [x] **Unit 1**: Active dispatches in `internal/agent/runner.go` (`EMAIL_VENDOR`, `NOTIFY_STAKEHOLDERS`, `POST_SOCIAL_UPDATE` with receipt IDs and ClickHouse events).
+  - [x] **Unit 2**: Closed-loop resolution workflow & Title self-healing (`ExecuteResolution`).
+  - [x] **Unit 3**: Single front door ingestion auto-router in `internal/api/events/create.go`.
+  - [x] **Unit 4**: Title projection tool (`get_title_ready_projection`) & compressed-time scheduler.
+  - [x] **Unit 5**: Data-generation subsystem (`internal/seed/`) & CLI (`cmd/seed/main.go`) with 100k events and non-dominated vendors.
+  - [ ] **Unit 6**: Frontend live operations console, product showcase landing page, packages route, & hero simulator (`web/src/features/runs/` + `web/src/routes/runs.tsx`).
 
 - [ ] **Feature 07: Docent Conversational Assistant (Gemini Chat)**
   - [ ] Natural language operator assistant streaming reasoning over ClickHouse & SQLite.
