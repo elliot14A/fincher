@@ -24,23 +24,8 @@ func markRunFailedOnPanic(client *ent.Client, runID, titleSlug string) func(r an
 		bgCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 
-		// Guard against clobbering an already-terminal run
-		currRes := runs.GetRun(bgCtx, client, runID)
-		if currRes.IsOk() {
-			curr := currRes.Unwrap()
-			if curr.Status == models.RunStatusCompleted || curr.Status == models.RunStatusFailed || curr.Status == models.RunStatusEscalated {
-				logger.Warn("dispatch: run already in terminal state, skipping panic failure transition",
-					"run_id", runID,
-					"title_slug", titleSlug,
-					"current_status", string(curr.Status),
-					"panic", fmt.Sprint(r),
-				)
-				return
-			}
-		}
-
 		now := time.Now().UTC()
-		updRes := runs.UpdateRunStatus(bgCtx, client, runID, models.RunStatusFailed, &now, map[string]any{
+		updRes := runs.UpdateRunStatusIfRunning(bgCtx, client, runID, models.RunStatusFailed, &now, map[string]any{
 			"panic": fmt.Sprint(r),
 		})
 		if updRes.IsErr() {
@@ -49,6 +34,16 @@ func markRunFailedOnPanic(client *ent.Client, runID, titleSlug string) func(r an
 				"title_slug", titleSlug,
 				"error", updRes.Error(),
 			)
+		} else {
+			runObj := updRes.Unwrap()
+			if runObj.Status != models.RunStatusFailed {
+				logger.Warn("dispatch: run already in terminal state, skipping panic failure transition",
+					"run_id", runID,
+					"title_slug", titleSlug,
+					"current_status", string(runObj.Status),
+					"panic", fmt.Sprint(r),
+				)
+			}
 		}
 	}
 }
