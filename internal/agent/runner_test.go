@@ -2,10 +2,12 @@ package agent_test
 
 import (
 	"context"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/elliot14A/fincher/internal/agent"
+	"github.com/elliot14A/fincher/internal/agent/scheduler"
 	"github.com/elliot14A/fincher/internal/turso/deliveries"
 	"github.com/elliot14A/fincher/internal/turso/packages"
 	"github.com/elliot14A/fincher/internal/turso/runs"
@@ -186,5 +188,250 @@ func TestRunActionPlan(t *testing.T) {
 	}
 	if updatedRunRes.Unwrap().Status != models.RunStatusCompleted {
 		t.Errorf("expected run status COMPLETED, got: %s", updatedRunRes.Unwrap().Status)
+	}
+}
+
+func TestRunActionPlan_ForcedPass_EmitsQCCompleted(t *testing.T) {
+	client := tursotest.NewMemoryClient(t)
+	defer client.Close()
+	ctx := context.Background()
+
+	_ = titles.Create(ctx, client, &models.Title{
+		Base:                 models.Base{ID: "title-1"},
+		Name:                 "Test Title",
+		Slug:                 "avatar-fire-ash",
+		Type:                 models.TitleTypeFeature,
+		PremiereDate:         time.Now().Add(48 * time.Hour),
+		Territories:          1,
+		CurrentMasterVersion: "master-v1",
+		OverallStatus:        models.StatusProcessing,
+	})
+
+	_ = vendors.Create(ctx, client, &models.Vendor{
+		Base:            models.Base{ID: "vendor-test"},
+		Name:            "Test Vendor",
+		Specialty:       "AUDIO_DUBBING",
+		TurnaroundHours: 1,
+	})
+
+	_ = packages.Create(ctx, client, &models.Package{
+		Base:                     models.Base{ID: "pkg-pass-test"},
+		TitleID:                  "title-1",
+		Component:                models.ComponentAudio,
+		Language:                 "de-DE",
+		Market:                   "DE",
+		Version:                  "v1.0",
+		DerivedFromMasterVersion: "master-v1",
+		Status:                   models.PackageStatusValid,
+		VendorID:                 "vendor-test",
+		RedeliveryCount:          0,
+	})
+
+	sched := scheduler.NewScheduler(time.Millisecond) // 1ms timescale
+	var emittedEvent models.Event
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	plan := &models.ActionPlan{
+		TitleSlug: "avatar-fire-ash",
+		Actions: []models.Action{
+			{
+				Type:     models.ActionReassignVendor,
+				TargetID: "vendor-test",
+				Payload: map[string]any{
+					"package_id":    "pkg-pass-test",
+					"force_outcome": "PASSED",
+				},
+			},
+		},
+	}
+
+	execRes := agent.RunActionPlanWithDeps(ctx, agent.RunnerDeps{
+		TursoClient: client,
+		Scheduler:   sched,
+		OnScheduleComplete: func(ev models.Event) {
+			emittedEvent = ev
+			wg.Done()
+		},
+	}, "run-pass-1", "step-pass-1", plan)
+
+	if execRes.IsErr() {
+		t.Fatalf("RunActionPlanWithDeps failed: %v", execRes.Error())
+	}
+
+	wg.Wait()
+
+	if emittedEvent.Type != models.TypeQCInspectionCompleted {
+		t.Fatalf("expected TypeQCInspectionCompleted, got: %s", emittedEvent.Type)
+	}
+	if emittedEvent.Data["status"] != "PASSED" {
+		t.Errorf("expected data.status PASSED, got: %v", emittedEvent.Data["status"])
+	}
+}
+
+func TestRunActionPlan_ForcedFail_UnderCap_IncrementsRedeliveryAndEmitsDefect(t *testing.T) {
+	client := tursotest.NewMemoryClient(t)
+	defer client.Close()
+	ctx := context.Background()
+
+	_ = titles.Create(ctx, client, &models.Title{
+		Base:                 models.Base{ID: "title-1"},
+		Name:                 "Test Title",
+		Slug:                 "avatar-fire-ash",
+		Type:                 models.TitleTypeFeature,
+		PremiereDate:         time.Now().Add(48 * time.Hour),
+		Territories:          1,
+		CurrentMasterVersion: "master-v1",
+		OverallStatus:        models.StatusProcessing,
+	})
+
+	_ = vendors.Create(ctx, client, &models.Vendor{
+		Base:            models.Base{ID: "vendor-test"},
+		Name:            "Test Vendor",
+		Specialty:       "AUDIO_DUBBING",
+		TurnaroundHours: 1,
+	})
+
+	_ = packages.Create(ctx, client, &models.Package{
+		Base:                     models.Base{ID: "pkg-fail-test"},
+		TitleID:                  "title-1",
+		Component:                models.ComponentAudio,
+		Language:                 "de-DE",
+		Market:                   "DE",
+		Version:                  "v1.0",
+		DerivedFromMasterVersion: "master-v1",
+		Status:                   models.PackageStatusValid,
+		VendorID:                 "vendor-test",
+		RedeliveryCount:          0,
+	})
+
+	sched := scheduler.NewScheduler(time.Millisecond)
+	var emittedEvent models.Event
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	plan := &models.ActionPlan{
+		TitleSlug: "avatar-fire-ash",
+		Actions: []models.Action{
+			{
+				Type:     models.ActionReassignVendor,
+				TargetID: "vendor-test",
+				Payload: map[string]any{
+					"package_id":    "pkg-fail-test",
+					"force_outcome": "FAILED",
+				},
+			},
+		},
+	}
+
+	execRes := agent.RunActionPlanWithDeps(ctx, agent.RunnerDeps{
+		TursoClient: client,
+		Scheduler:   sched,
+		OnScheduleComplete: func(ev models.Event) {
+			emittedEvent = ev
+			wg.Done()
+		},
+	}, "run-fail-1", "step-fail-1", plan)
+
+	if execRes.IsErr() {
+		t.Fatalf("RunActionPlanWithDeps failed: %v", execRes.Error())
+	}
+
+	wg.Wait()
+
+	// Audio defect emitted
+	if emittedEvent.Type != models.TypeAudioSyncDriftDetected {
+		t.Fatalf("expected TypeAudioSyncDriftDetected on audio failure, got: %s", emittedEvent.Type)
+	}
+	if emittedEvent.Severity != models.SeverityWarn {
+		t.Errorf("expected SeverityWarn, got: %s", emittedEvent.Severity)
+	}
+
+	// Redelivery count incremented in Turso
+	pRes := packages.Get(ctx, client, "pkg-fail-test")
+	if pRes.IsErr() || pRes.Unwrap().RedeliveryCount != 1 {
+		t.Fatalf("expected RedeliveryCount 1, got: %v (err: %v)", pRes.Unwrap().RedeliveryCount, pRes.Error())
+	}
+}
+
+func TestRunActionPlan_ForcedFail_AtCap_EmitsSLABreach(t *testing.T) {
+	client := tursotest.NewMemoryClient(t)
+	defer client.Close()
+	ctx := context.Background()
+
+	_ = titles.Create(ctx, client, &models.Title{
+		Base:                 models.Base{ID: "title-1"},
+		Name:                 "Test Title",
+		Slug:                 "avatar-fire-ash",
+		Type:                 models.TitleTypeFeature,
+		PremiereDate:         time.Now().Add(48 * time.Hour),
+		Territories:          1,
+		CurrentMasterVersion: "master-v1",
+		OverallStatus:        models.StatusProcessing,
+	})
+
+	_ = vendors.Create(ctx, client, &models.Vendor{
+		Base:            models.Base{ID: "vendor-test"},
+		Name:            "Test Vendor",
+		Specialty:       "AUDIO_DUBBING",
+		TurnaroundHours: 1,
+	})
+
+	// Package already at MaxRedeliveryAttempts (3)
+	_ = packages.Create(ctx, client, &models.Package{
+		Base:                     models.Base{ID: "pkg-cap-test"},
+		TitleID:                  "title-1",
+		Component:                models.ComponentAudio,
+		Language:                 "de-DE",
+		Market:                   "DE",
+		Version:                  "v1.0",
+		DerivedFromMasterVersion: "master-v1",
+		Status:                   models.PackageStatusValid,
+		VendorID:                 "vendor-test",
+		RedeliveryCount:          3,
+	})
+
+	sched := scheduler.NewScheduler(time.Millisecond)
+	var emittedEvent models.Event
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	plan := &models.ActionPlan{
+		TitleSlug: "avatar-fire-ash",
+		Actions: []models.Action{
+			{
+				Type:     models.ActionReassignVendor,
+				TargetID: "vendor-test",
+				Payload: map[string]any{
+					"package_id":    "pkg-cap-test",
+					"force_outcome": "FAILED",
+				},
+			},
+		},
+	}
+
+	execRes := agent.RunActionPlanWithDeps(ctx, agent.RunnerDeps{
+		TursoClient: client,
+		Scheduler:   sched,
+		OnScheduleComplete: func(ev models.Event) {
+			emittedEvent = ev
+			wg.Done()
+		},
+	}, "run-cap-1", "step-cap-1", plan)
+
+	if execRes.IsErr() {
+		t.Fatalf("RunActionPlanWithDeps failed: %v", execRes.Error())
+	}
+
+	wg.Wait()
+
+	if emittedEvent.Type != models.TypeVendorSLABreach {
+		t.Fatalf("expected TypeVendorSLABreach on cap exceeded, got: %s", emittedEvent.Type)
+	}
+	if emittedEvent.Severity != models.SeverityCritical {
+		t.Errorf("expected SeverityCritical on SLA breach, got: %s", emittedEvent.Severity)
+	}
+	if emittedEvent.Data["reason"] != "redelivery_cap_exceeded" {
+		t.Errorf("expected reason redelivery_cap_exceeded, got: %v", emittedEvent.Data["reason"])
 	}
 }
