@@ -9,13 +9,14 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/elliot14A/fincher/internal/agent/scheduler"
 	ch "github.com/elliot14A/fincher/internal/clickhouse/events"
 	"github.com/elliot14A/fincher/internal/config"
+	"github.com/elliot14A/fincher/internal/scheduler"
 	tursodeliveries "github.com/elliot14A/fincher/internal/turso/deliveries"
 	"github.com/elliot14A/fincher/internal/turso/ent"
 	tursopackages "github.com/elliot14A/fincher/internal/turso/packages"
 	"github.com/elliot14A/fincher/internal/turso/runs"
+	tursotitles "github.com/elliot14A/fincher/internal/turso/titles"
 	domainerrors "github.com/elliot14A/fincher/pkg/domain/errors"
 	"github.com/elliot14A/fincher/pkg/domain/models"
 	"github.com/elliot14A/fincher/pkg/logger"
@@ -39,6 +40,7 @@ type SchedulerInterface interface {
 		turnaroundHours float64,
 		onComplete func(t *scheduler.Task),
 	) (*scheduler.Task, error)
+	CancelTasksForTitle(titleSlug string) int
 	DecideOutcome(force string, component models.ComponentType) scheduler.QCOutcome
 }
 
@@ -86,6 +88,31 @@ func RunActionPlanWithDeps(
 
 	for _, action := range plan.Actions {
 		switch action.Type {
+		case models.ActionHoldTitle:
+			overdueStatus := models.StatusOverdue
+			updRes := tursotitles.Update(ctx, deps.TursoClient, action.TargetID, &models.UpdateTitleInput{
+				OverallStatus: &overdueStatus,
+			})
+			if updRes.IsErr() {
+				return domainerrors.Err[*RunnerResult](updRes.Error())
+			}
+			executed = append(executed, action)
+
+			downstreamEvents = append(downstreamEvents, models.Event{
+				ID:              "evt-" + action.TargetID + "-hold",
+				Source:          "fincher/runner",
+				Type:            "fincher.title.held",
+				Subject:         plan.TitleSlug,
+				Time:            time.Now().UTC(),
+				Severity:        models.SeverityCritical,
+				DataContentType: "application/json",
+				Data: map[string]any{
+					"title_id": action.TargetID,
+					"reason":   action.Reason,
+					"status":   "OVERDUE",
+				},
+			})
+
 		case models.ActionHoldDelivery:
 			holdStatus := models.DeliveryStatusHold
 			updRes := tursodeliveries.Update(ctx, deps.TursoClient, action.TargetID, &models.UpdateDeliveryInput{
@@ -211,7 +238,25 @@ func RunActionPlanWithDeps(
 						}
 
 						if outcome == scheduler.QCOutcomePass {
-							// PASS path: mark package valid and emit completed QC
+							// PASS path: re-read package and verify it is not stale against Title active master version
+							pRes := tursopackages.Get(ctx, deps.TursoClient, t.TargetID)
+							if pRes.IsOk() {
+								pkg := pRes.Unwrap()
+								tRes := tursotitles.Get(ctx, deps.TursoClient, pkg.TitleID)
+								if tRes.IsOk() {
+									title := tRes.Unwrap()
+									if pkg.IsStaleAgainst(title.CurrentMasterVersion) {
+										logger.Warn("runner: discarding QC pass for stale package against revised master",
+											"package_id", pkg.ID,
+											"derived_from", pkg.DerivedFromMasterVersion,
+											"active_master", title.CurrentMasterVersion,
+										)
+										return
+									}
+								}
+							}
+
+							// Mark package valid and emit completed QC
 							validStatus := models.PackageStatusValid
 							updPkgRes := tursopackages.Update(ctx, deps.TursoClient, t.TargetID, &models.UpdatePackageInput{
 								Status: &validStatus,

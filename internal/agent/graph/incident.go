@@ -157,6 +157,15 @@ func ExecuteIncident(ctx context.Context, deps IncidentGraphDeps, input Incident
 		}, nil
 	}
 
+	// 2.5 Master-revision safety: Cancel existing in-flight tasks for this title upon new master cut
+	if input.Event.Type == models.TypeMasterCutRevised && deps.Scheduler != nil {
+		cancelled := deps.Scheduler.CancelTasksForTitle(input.Event.Subject)
+		logger.Info("incident: cancelled in-flight tasks on master cut revision",
+			"title_slug", input.Event.Subject,
+			"cancelled_count", cancelled,
+		)
+	}
+
 	// 3. Stage 2: Context Gathering
 	contextStepID := fmt.Sprintf("step-%s-context", runID)
 	cRes := runs.CreateStep(ctx, deps.TursoClient, &models.Step{
@@ -267,7 +276,7 @@ func ExecuteIncident(ctx context.Context, deps IncidentGraphDeps, input Incident
 		}
 		currentPlan := planRes.Unwrap()
 
-		verifyRes := agent.VerifyPlan(currentPlan, impact, candidates, attempt)
+		verifyRes := agent.VerifyPlan(currentPlan, impact, candidates, projection, attempt)
 		if verifyRes.IsErr() {
 			failIncidentStage(ctx, deps.TursoClient, runID, titleSlug, remediationStepID, "remediation_verify", verifyRes.Error())
 			return nil, verifyRes.Error()

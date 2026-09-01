@@ -7,6 +7,7 @@ import (
 
 	"github.com/elliot14A/fincher/internal/agent"
 	"github.com/elliot14A/fincher/internal/agent/graph"
+	"github.com/elliot14A/fincher/internal/scheduler"
 	"github.com/elliot14A/fincher/internal/turso/deliveries"
 	"github.com/elliot14A/fincher/internal/turso/packages"
 	"github.com/elliot14A/fincher/internal/turso/runs"
@@ -303,6 +304,101 @@ func TestExecuteIncident(t *testing.T) {
 		}
 		if runCheck.Unwrap().Status != models.RunStatusEscalated {
 			t.Errorf("expected run status ESCALATED, got: %s", runCheck.Unwrap().Status)
+		}
+	})
+
+	t.Run("Cancels in-flight tasks for title when master cut revision event arrives", func(t *testing.T) {
+		client := tursotest.NewMemoryClient(t)
+		defer client.Close()
+
+		premiere := time.Now().Add(48 * time.Hour)
+		tRes := titles.Create(ctx, client, &models.Title{
+			Base:                 models.Base{ID: "title-master-rev"},
+			Name:                 "Master Rev Title",
+			Slug:                 "master-rev-title",
+			Type:                 models.TitleTypeFeature,
+			PremiereDate:         premiere,
+			Territories:          1,
+			CurrentMasterVersion: "V01",
+			OverallStatus:        models.StatusProcessing,
+		})
+		if tRes.IsErr() {
+			t.Fatalf("failed to create title: %v", tRes.Error())
+		}
+
+		sched := scheduler.NewScheduler(time.Hour)
+		defer sched.Stop()
+
+		// Schedule 2 in-flight repair tasks for this title
+		t1, _ := sched.ScheduleTask(scheduler.TaskKindPackage, "pkg-1", "master-rev-title", "vendor-1", models.ComponentAudio, "", 10.0, nil)
+		t2, _ := sched.ScheduleTask(scheduler.TaskKindPackage, "pkg-2", "master-rev-title", "vendor-2", models.ComponentVideo, "", 10.0, nil)
+		// Schedule 1 task for a DIFFERENT title (must not be cancelled)
+		t3, _ := sched.ScheduleTask(scheduler.TaskKindPackage, "pkg-3", "other-title", "vendor-3", models.ComponentSubtitle, "", 10.0, nil)
+
+		filterOutput := `{
+			"actionable": true,
+			"severity": "CRITICAL",
+			"anomaly_type": "MASTER_REVISED",
+			"rationale": "Master cut revised from V01 to V02."
+		}`
+		planOutput := `{
+			"title_slug": "master-rev-title",
+			"summary": "Hold title while master is reconformed.",
+			"actions": [
+				{
+					"type": "HOLD_TITLE",
+					"target_id": "title-master-rev",
+					"reason": "Master cut revised."
+				}
+			]
+		}`
+
+		llm := &mockLLM{
+			responses: []string{filterOutput, planOutput},
+		}
+
+		event := &models.Event{
+			ID:       "evt-master-rev-1",
+			Type:     models.TypeMasterCutRevised,
+			Severity: models.SeverityCritical,
+			Subject:  "master-rev-title",
+			Data: map[string]any{
+				"new_version": "V02",
+				"old_version": "V01",
+			},
+		}
+
+		deps := graph.IncidentGraphDeps{
+			Model:       llm,
+			TursoClient: client,
+			Scheduler:   sched,
+			MaxAttempts: 3,
+		}
+
+		output, err := graph.ExecuteIncident(ctx, deps, graph.IncidentInput{
+			Event:              event,
+			HoursUntilPremiere: 48.0,
+		})
+		if err != nil {
+			t.Fatalf("ExecuteIncident returned error: %v", err)
+		}
+		if !output.Actionable || output.Decision != agent.DecisionApproved {
+			t.Fatalf("expected actionable approved incident, got: %s", output.Decision)
+		}
+
+		// Verify tasks for master-rev-title were moved to CANCELLED
+		s1, _ := sched.GetTask(t1.ID)
+		s2, _ := sched.GetTask(t2.ID)
+		s3, _ := sched.GetTask(t3.ID)
+
+		if s1.Status != scheduler.TaskStatusCancelled {
+			t.Errorf("expected t1 to be CANCELLED, got: %s", s1.Status)
+		}
+		if s2.Status != scheduler.TaskStatusCancelled {
+			t.Errorf("expected t2 to be CANCELLED, got: %s", s2.Status)
+		}
+		if s3.Status != scheduler.TaskStatusRunning {
+			t.Errorf("expected t3 for other-title to remain RUNNING, got: %s", s3.Status)
 		}
 	})
 }

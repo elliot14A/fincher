@@ -30,7 +30,7 @@ type VerificationResult struct {
 }
 
 // VerifyPlan rigorously validates a proposed ActionPlan against operational policies, SLA bounds, and market isolation gates.
-func VerifyPlan(plan *models.ActionPlan, impact *models.DeliveryImpact, vendors []models.VendorCandidate, attempt int) domainerrors.Result[*VerificationResult] {
+func VerifyPlan(plan *models.ActionPlan, impact *models.DeliveryImpact, vendors []models.VendorCandidate, projection *models.TitleProjection, attempt int) domainerrors.Result[*VerificationResult] {
 	if attempt >= MaxRemediationAttempts {
 		return domainerrors.Ok(&VerificationResult{
 			Decision:  DecisionEscalate,
@@ -49,6 +49,21 @@ func VerifyPlan(plan *models.ActionPlan, impact *models.DeliveryImpact, vendors 
 
 	if plan == nil || len(plan.Actions) == 0 {
 		return reject("Action plan is empty; no operational remediation proposed.")
+	}
+
+	// Feasibility gate: If title readiness projection is breached (critical path + reconform exceeds remaining premiere window)
+	// and the plan does not propose holding or alerting, reject it.
+	if projection != nil && projection.IsBreached {
+		hasMitigation := false
+		for _, action := range plan.Actions {
+			if action.Type == models.ActionHoldTitle || action.Type == models.ActionHoldDelivery || action.Type == models.ActionNotifyStakeholders {
+				hasMitigation = true
+				break
+			}
+		}
+		if !hasMitigation {
+			return reject("Feasibility breach: title critical path (%.1fh) exceeds remaining window to premiere (buffer: %.1fh); remediation plan must include HOLD_TITLE, HOLD_DELIVERY, or NOTIFY_STAKEHOLDERS.", projection.CriticalRemainingHours, projection.BufferHours)
+		}
 	}
 
 	affectedDeliveryMap := make(map[string]bool)

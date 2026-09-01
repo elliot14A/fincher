@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/elliot14A/fincher/internal/agent"
-	"github.com/elliot14A/fincher/internal/agent/scheduler"
+	"github.com/elliot14A/fincher/internal/scheduler"
 	"github.com/elliot14A/fincher/internal/turso/deliveries"
 	"github.com/elliot14A/fincher/internal/turso/packages"
 	"github.com/elliot14A/fincher/internal/turso/runs"
@@ -438,5 +438,132 @@ func TestRunActionPlan_ForcedFail_AtCap_EmitsSLABreach(t *testing.T) {
 	}
 	if emittedEvent.Data["reason"] != "redelivery_cap_exceeded" {
 		t.Errorf("expected reason redelivery_cap_exceeded, got: %v", emittedEvent.Data["reason"])
+	}
+}
+
+func TestRunActionPlan_ActionHoldTitle(t *testing.T) {
+	client := tursotest.NewMemoryClient(t)
+	defer client.Close()
+	ctx := context.Background()
+
+	_ = titles.Create(ctx, client, &models.Title{
+		Base:                 models.Base{ID: "title-overdue-test"},
+		Name:                 "Overdue Title",
+		Slug:                 "overdue-title",
+		Type:                 models.TitleTypeFeature,
+		PremiereDate:         time.Now().Add(-1 * time.Hour),
+		Territories:          1,
+		CurrentMasterVersion: "master-v1",
+		OverallStatus:        models.StatusProcessing,
+	})
+
+	plan := &models.ActionPlan{
+		TitleSlug: "overdue-title",
+		Actions: []models.Action{
+			{
+				Type:     models.ActionHoldTitle,
+				TargetID: "title-overdue-test",
+				Reason:   "Premiere deadline passed with unresolved defects",
+			},
+		},
+	}
+
+	execRes := agent.RunActionPlan(ctx, client, nil, "run-hold-1", "step-hold-1", plan)
+	if execRes.IsErr() {
+		t.Fatalf("RunActionPlan failed: %v", execRes.Error())
+	}
+
+	tRes := titles.Get(ctx, client, "title-overdue-test")
+	if tRes.IsErr() {
+		t.Fatalf("get title failed: %v", tRes.Error())
+	}
+	if tRes.Unwrap().OverallStatus != models.StatusOverdue {
+		t.Errorf("expected title status OVERDUE, got: %s", tRes.Unwrap().OverallStatus)
+	}
+}
+
+func TestRunActionPlan_StaleMasterPass_Discarded(t *testing.T) {
+	client := tursotest.NewMemoryClient(t)
+	defer client.Close()
+	ctx := context.Background()
+
+	// Title has current master version "master-v2"
+	_ = titles.Create(ctx, client, &models.Title{
+		Base:                 models.Base{ID: "title-stale-test"},
+		Name:                 "Stale Master Title",
+		Slug:                 "stale-master-title",
+		Type:                 models.TitleTypeFeature,
+		PremiereDate:         time.Now().Add(48 * time.Hour),
+		Territories:          1,
+		CurrentMasterVersion: "master-v2",
+		OverallStatus:        models.StatusProcessing,
+	})
+
+	_ = vendors.Create(ctx, client, &models.Vendor{
+		Base:            models.Base{ID: "vendor-test"},
+		Name:            "Test Vendor",
+		Components:      []string{"AUDIO"},
+		Markets:         []string{"de-DE"},
+		TurnaroundHours: 1,
+	})
+
+	// Package was derived from old "master-v1"
+	_ = packages.Create(ctx, client, &models.Package{
+		Base:                     models.Base{ID: "pkg-stale-test"},
+		TitleID:                  "title-stale-test",
+		Component:                models.ComponentAudio,
+		Language:                 "de-DE",
+		Market:                   "DE",
+		Version:                  "v1.0",
+		DerivedFromMasterVersion: "master-v1",
+		Status:                   models.PackageStatusInvalidated,
+		VendorID:                 "vendor-test",
+	})
+
+	sched := scheduler.NewScheduler(time.Millisecond)
+	var callbackCalled bool
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	plan := &models.ActionPlan{
+		TitleSlug: "stale-master-title",
+		Actions: []models.Action{
+			{
+				Type:     models.ActionReassignVendor,
+				TargetID: "vendor-test",
+				Payload: map[string]any{
+					"package_id":    "pkg-stale-test",
+					"force_outcome": "PASSED",
+				},
+			},
+		},
+	}
+
+	execRes := agent.RunActionPlanWithDeps(ctx, agent.RunnerDeps{
+		TursoClient: client,
+		Scheduler:   sched,
+		OnScheduleComplete: func(ev models.Event) {
+			callbackCalled = true
+		},
+	}, "run-stale-1", "step-stale-1", plan)
+
+	if execRes.IsErr() {
+		t.Fatalf("RunActionPlanWithDeps failed: %v", execRes.Error())
+	}
+
+	// Give compressed task time to fire and verify stale completion was discarded
+	time.Sleep(30 * time.Millisecond)
+
+	if callbackCalled {
+		t.Error("expected stale completion callback NOT to be invoked")
+	}
+
+	// Package should still be INVALIDATED, NOT updated to VALID
+	pRes := packages.Get(ctx, client, "pkg-stale-test")
+	if pRes.IsErr() {
+		t.Fatalf("get package failed: %v", pRes.Error())
+	}
+	if pRes.Unwrap().Status != models.PackageStatusInvalidated {
+		t.Errorf("expected package to remain INVALIDATED, got: %s", pRes.Unwrap().Status)
 	}
 }

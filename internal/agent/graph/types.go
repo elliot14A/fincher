@@ -4,7 +4,7 @@ import (
 	"database/sql"
 
 	"github.com/elliot14A/fincher/internal/agent"
-	"github.com/elliot14A/fincher/internal/agent/scheduler"
+	"github.com/elliot14A/fincher/internal/scheduler"
 	"github.com/elliot14A/fincher/internal/turso/ent"
 	"github.com/elliot14A/fincher/pkg/domain/models"
 	"google.golang.org/adk/v2/model"

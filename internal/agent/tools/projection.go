@@ -23,33 +23,14 @@ type TitleProjectionArgs struct {
 	TitleSlug string `json:"title_slug" jsonschema:"description=The slug or ID of the title to project ready timeline for"`
 }
 
-// RepairProjection captures in-flight or estimated repair work for a package.
-type RepairProjection struct {
-	PackageID       string  `json:"package_id"`
-	Component       string  `json:"component"`
-	Market          string  `json:"market"`
-	VendorID        string  `json:"vendor_id"`
-	VendorName      string  `json:"vendor_name"`
-	TurnaroundHours float64 `json:"turnaround_hours"`
-	Status          string  `json:"status"`
-}
+// TitleProjection aliases models.TitleProjection for convenience.
+type TitleProjection = models.TitleProjection
 
-// TitleProjection provides pre-computed timeline, critical path, buffer hours, and risk band.
-type TitleProjection struct {
-	TitleSlug              string             `json:"title_slug"`
-	TitleName              string             `json:"title_name"`
-	PremiereDate           string             `json:"premiere_date"`
-	HoursUntilPremiere     float64            `json:"hours_until_premiere"`
-	CriticalRemainingHours float64            `json:"critical_remaining_hours"`
-	BufferHours            float64            `json:"buffer_hours"`
-	RiskBand               string             `json:"risk_band"` // BREACH | TIGHT | WATCH | SAFE
-	IsBreached             bool               `json:"is_breached"`
-	IsUrgent               bool               `json:"is_urgent"`
-	Repairs                []RepairProjection `json:"repairs"`
-}
+// RepairProjection aliases models.RepairProjection for convenience.
+type RepairProjection = models.RepairProjection
 
 // GetTitleReadyProjection computes critical path and launch margin for a title.
-func GetTitleReadyProjection(ctx context.Context, client *ent.Client, titleSlug string) (*TitleProjection, error) {
+func GetTitleReadyProjection(ctx context.Context, client *ent.Client, titleSlug string) (*models.TitleProjection, error) {
 	if client == nil {
 		return nil, domainerrors.NewWithOp("tools.GetTitleReadyProjection", domainerrors.CodeInvalidInput, "turso client cannot be nil", nil)
 	}

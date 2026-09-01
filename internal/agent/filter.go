@@ -28,7 +28,8 @@ func IsCandidateTrigger(eventType string) bool {
 		models.TypeVendorSLABreach,
 		models.TypePackageInvalidated,
 		models.TypeOperatorForced,
-		models.TypeInvestigationTriggered:
+		models.TypeInvestigationTriggered,
+		models.TypeTitleDeadlineReached:
 		return true
 	default:
 		return false

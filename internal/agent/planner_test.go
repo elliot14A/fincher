@@ -128,7 +128,7 @@ func TestPlanRemediation(t *testing.T) {
 			t.Errorf("expected second action REASSIGN_VENDOR, got: %s", plan.Actions[1].Type)
 		}
 
-		verifRes := agent.VerifyPlan(plan, impact, candidates, 1)
+		verifRes := agent.VerifyPlan(plan, impact, candidates, nil, 1)
 		if verifRes.IsErr() {
 			t.Fatalf("VerifyPlan error: %v", verifRes.Error())
 		}

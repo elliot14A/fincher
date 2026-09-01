@@ -1,6 +1,7 @@
 package agent_test
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/elliot14A/fincher/internal/agent"
@@ -85,7 +86,7 @@ func TestVerifyPlan(t *testing.T) {
 			},
 		}
 
-		res := agent.VerifyPlan(plan, impact, vendors, 1)
+		res := agent.VerifyPlan(plan, impact, vendors, nil, 1)
 		if res.IsErr() {
 			t.Fatalf("VerifyPlan returned error: %v", res.Error())
 		}
@@ -108,7 +109,7 @@ func TestVerifyPlan(t *testing.T) {
 			},
 		}
 
-		res := agent.VerifyPlan(plan, impact, vendors, 3)
+		res := agent.VerifyPlan(plan, impact, vendors, nil, 3)
 		if res.IsErr() {
 			t.Fatalf("VerifyPlan returned error: %v", res.Error())
 		}
@@ -125,7 +126,7 @@ func TestVerifyPlan(t *testing.T) {
 			Actions:   []models.Action{},
 		}
 
-		res := agent.VerifyPlan(plan, impact, vendors, 1)
+		res := agent.VerifyPlan(plan, impact, vendors, nil, 1)
 		if res.IsErr() {
 			t.Fatalf("VerifyPlan returned error: %v", res.Error())
 		}
@@ -148,7 +149,7 @@ func TestVerifyPlan(t *testing.T) {
 			},
 		}
 
-		res := agent.VerifyPlan(plan, impact, vendors, 1)
+		res := agent.VerifyPlan(plan, impact, vendors, nil, 1)
 		if res.IsErr() {
 			t.Fatalf("VerifyPlan returned error: %v", res.Error())
 		}
@@ -176,7 +177,7 @@ func TestVerifyPlan(t *testing.T) {
 			},
 		}
 
-		res := agent.VerifyPlan(plan, impact, vendors, 1)
+		res := agent.VerifyPlan(plan, impact, vendors, nil, 1)
 		if res.IsErr() {
 			t.Fatalf("VerifyPlan returned error: %v", res.Error())
 		}
@@ -199,7 +200,7 @@ func TestVerifyPlan(t *testing.T) {
 			},
 		}
 
-		res := agent.VerifyPlan(plan, impact, vendors, 1)
+		res := agent.VerifyPlan(plan, impact, vendors, nil, 1)
 		if res.IsErr() {
 			t.Fatalf("VerifyPlan returned error: %v", res.Error())
 		}
@@ -222,7 +223,7 @@ func TestVerifyPlan(t *testing.T) {
 			},
 		}
 
-		res := agent.VerifyPlan(plan, impact, vendors, 1)
+		res := agent.VerifyPlan(plan, impact, vendors, nil, 1)
 		if res.IsErr() {
 			t.Fatalf("VerifyPlan returned error: %v", res.Error())
 		}
@@ -246,7 +247,7 @@ func TestVerifyPlan(t *testing.T) {
 			},
 		}
 
-		res := agent.VerifyPlan(plan, impact, vendors, 1)
+		res := agent.VerifyPlan(plan, impact, vendors, nil, 1)
 		if res.IsErr() {
 			t.Fatalf("VerifyPlan returned error: %v", res.Error())
 		}
@@ -270,7 +271,7 @@ func TestVerifyPlan(t *testing.T) {
 			},
 		}
 
-		res := agent.VerifyPlan(plan, impact, vendors, 1)
+		res := agent.VerifyPlan(plan, impact, vendors, nil, 1)
 		if res.IsErr() {
 			t.Fatalf("VerifyPlan returned error: %v", res.Error())
 		}
@@ -294,7 +295,7 @@ func TestVerifyPlan(t *testing.T) {
 			},
 		}
 
-		res := agent.VerifyPlan(plan, impact, vendors, 1)
+		res := agent.VerifyPlan(plan, impact, vendors, nil, 1)
 		if res.IsErr() {
 			t.Fatalf("VerifyPlan returned error: %v", res.Error())
 		}
@@ -318,7 +319,7 @@ func TestVerifyPlan(t *testing.T) {
 			},
 		}
 
-		res := agent.VerifyPlan(plan, impact, vendors, 1)
+		res := agent.VerifyPlan(plan, impact, vendors, nil, 1)
 		if res.IsErr() {
 			t.Fatalf("VerifyPlan returned error: %v", res.Error())
 		}
@@ -342,7 +343,7 @@ func TestVerifyPlan(t *testing.T) {
 			},
 		}
 
-		res := agent.VerifyPlan(plan, impact, vendors, 1)
+		res := agent.VerifyPlan(plan, impact, vendors, nil, 1)
 		if res.IsErr() {
 			t.Fatalf("VerifyPlan returned error: %v", res.Error())
 		}
@@ -365,7 +366,7 @@ func TestVerifyPlan(t *testing.T) {
 			},
 		}
 
-		res := agent.VerifyPlan(plan, impact, vendors, 1)
+		res := agent.VerifyPlan(plan, impact, vendors, nil, 1)
 		if res.IsErr() {
 			t.Fatalf("VerifyPlan returned error: %v", res.Error())
 		}
@@ -400,7 +401,7 @@ func TestVerifyPlan(t *testing.T) {
 			},
 		}
 
-		res := agent.VerifyPlan(plan, distantImpact, vendors, 1)
+		res := agent.VerifyPlan(plan, distantImpact, vendors, nil, 1)
 		if res.IsErr() {
 			t.Fatalf("VerifyPlan returned error: %v", res.Error())
 		}
@@ -423,13 +424,233 @@ func TestVerifyPlan(t *testing.T) {
 			},
 		}
 
-		res := agent.VerifyPlan(plan, impact, vendors, 1)
+		res := agent.VerifyPlan(plan, impact, vendors, nil, 1)
 		if res.IsErr() {
 			t.Fatalf("VerifyPlan returned error: %v", res.Error())
 		}
 		verdict := res.Unwrap()
 		if verdict.Decision != agent.DecisionRejected {
 			t.Fatalf("expected REJECTED for unjustified social notice, got: %s", verdict.Decision)
+		}
+	})
+
+	t.Run("Rejects reassign without hold/notify when readiness projection is breached and asserts numbers in rationale", func(t *testing.T) {
+		breachedProjection := &models.TitleProjection{
+			TitleSlug:              "eclipse",
+			HoursUntilPremiere:     12.0,
+			CriticalRemainingHours: 36.0,
+			BufferHours:            -24.0,
+			IsBreached:             true,
+		}
+
+		plan := &models.ActionPlan{
+			TitleSlug: "eclipse",
+			Summary:   "Reassign vendor without placing any hold or notifying",
+			Actions: []models.Action{
+				{
+					Type:     models.ActionReassignVendor,
+					TargetID: "vendor-berlin",
+					Reason:   "Reassign despite impossible 12h deadline vs 24h turnaround",
+					Payload:  map[string]any{"package_id": "pkg-german-dub"},
+				},
+			},
+		}
+
+		res := agent.VerifyPlan(plan, impact, vendors, breachedProjection, 1)
+		if res.IsErr() {
+			t.Fatalf("VerifyPlan returned error: %v", res.Error())
+		}
+		verdict := res.Unwrap()
+		if verdict.Decision != agent.DecisionRejected {
+			t.Fatalf("expected REJECTED for feasibility breach, got: %s", verdict.Decision)
+		}
+		if !strings.Contains(verdict.Rationale, "36.0h") || !strings.Contains(verdict.Rationale, "-24.0h") {
+			t.Errorf("expected rationale to contain critical path and buffer numbers, got: %s", verdict.Rationale)
+		}
+	})
+
+	t.Run("Approves breached projection plan when HOLD_TITLE is included", func(t *testing.T) {
+		breachedProjection := &models.TitleProjection{
+			TitleSlug:              "eclipse",
+			HoursUntilPremiere:     12.0,
+			CriticalRemainingHours: 36.0,
+			BufferHours:            -24.0,
+			IsBreached:             true,
+		}
+
+		plan := &models.ActionPlan{
+			TitleSlug: "eclipse",
+			Summary:   "Hold title and notify stakeholders due to missed deadline",
+			Actions: []models.Action{
+				{
+					Type:     models.ActionHoldTitle,
+					TargetID: "title-eclipse",
+					Reason:   "Critical path exceeds remaining time to premiere",
+				},
+				{
+					Type:     models.ActionNotifyStakeholders,
+					TargetID: "slack-ops",
+					Reason:   "Alert operations team to title deadline breach",
+				},
+			},
+		}
+
+		res := agent.VerifyPlan(plan, impact, vendors, breachedProjection, 1)
+		if res.IsErr() {
+			t.Fatalf("VerifyPlan returned error: %v", res.Error())
+		}
+		verdict := res.Unwrap()
+		if verdict.Decision != agent.DecisionApproved {
+			t.Fatalf("expected APPROVED for hold title plan, got: %s (rationale: %s)", verdict.Decision, verdict.Rationale)
+		}
+	})
+
+	t.Run("Approves breached projection plan when HOLD_DELIVERY is included", func(t *testing.T) {
+		breachedProjection := &models.TitleProjection{
+			TitleSlug:              "eclipse",
+			HoursUntilPremiere:     12.0,
+			CriticalRemainingHours: 36.0,
+			BufferHours:            -24.0,
+			IsBreached:             true,
+		}
+
+		plan := &models.ActionPlan{
+			TitleSlug: "eclipse",
+			Summary:   "Hold delivery due to timeline breach",
+			Actions: []models.Action{
+				{
+					Type:     models.ActionHoldDelivery,
+					TargetID: "del-germany",
+					Reason:   "Hold delivery while reassignment proceeds",
+				},
+			},
+		}
+
+		res := agent.VerifyPlan(plan, impact, vendors, breachedProjection, 1)
+		if res.IsErr() {
+			t.Fatalf("VerifyPlan returned error: %v", res.Error())
+		}
+		verdict := res.Unwrap()
+		if verdict.Decision != agent.DecisionApproved {
+			t.Fatalf("expected APPROVED when HOLD_DELIVERY mitigates breach, got: %s", verdict.Decision)
+		}
+	})
+
+	t.Run("Approves breached projection plan when NOTIFY_STAKEHOLDERS is included", func(t *testing.T) {
+		breachedProjection := &models.TitleProjection{
+			TitleSlug:              "eclipse",
+			HoursUntilPremiere:     12.0,
+			CriticalRemainingHours: 36.0,
+			BufferHours:            -24.0,
+			IsBreached:             true,
+		}
+
+		plan := &models.ActionPlan{
+			TitleSlug: "eclipse",
+			Summary:   "Notify stakeholders of impending breach",
+			Actions: []models.Action{
+				{
+					Type:     models.ActionNotifyStakeholders,
+					TargetID: "slack-emergency",
+					Reason:   "Escalate imminent release delay",
+				},
+			},
+		}
+
+		res := agent.VerifyPlan(plan, impact, vendors, breachedProjection, 1)
+		if res.IsErr() {
+			t.Fatalf("VerifyPlan returned error: %v", res.Error())
+		}
+		verdict := res.Unwrap()
+		if verdict.Decision != agent.DecisionApproved {
+			t.Fatalf("expected APPROVED when NOTIFY_STAKEHOLDERS mitigates breach, got: %s", verdict.Decision)
+		}
+	})
+
+	t.Run("Rejects breached projection plan when only EMAIL_VENDOR is included", func(t *testing.T) {
+		breachedProjection := &models.TitleProjection{
+			TitleSlug:              "eclipse",
+			HoursUntilPremiere:     12.0,
+			CriticalRemainingHours: 36.0,
+			BufferHours:            -24.0,
+			IsBreached:             true,
+		}
+
+		plan := &models.ActionPlan{
+			TitleSlug: "eclipse",
+			Summary:   "Email vendor without containment",
+			Actions: []models.Action{
+				{
+					Type:     models.ActionEmailVendor,
+					TargetID: "vendor-berlin",
+					Reason:   "Ask for expedited turn",
+				},
+			},
+		}
+
+		res := agent.VerifyPlan(plan, impact, vendors, breachedProjection, 1)
+		if res.IsErr() {
+			t.Fatalf("VerifyPlan returned error: %v", res.Error())
+		}
+		verdict := res.Unwrap()
+		if verdict.Decision != agent.DecisionRejected {
+			t.Fatalf("expected REJECTED when only EMAIL_VENDOR is proposed during breach, got: %s", verdict.Decision)
+		}
+	})
+
+	t.Run("Does not reject on feasibility when projection is not breached", func(t *testing.T) {
+		safeProjection := &models.TitleProjection{
+			TitleSlug:              "eclipse",
+			HoursUntilPremiere:     48.0,
+			CriticalRemainingHours: 12.0,
+			BufferHours:            36.0,
+			IsBreached:             false,
+		}
+
+		plan := &models.ActionPlan{
+			TitleSlug: "eclipse",
+			Summary:   "Reassign vendor with ample buffer",
+			Actions: []models.Action{
+				{
+					Type:     models.ActionReassignVendor,
+					TargetID: "vendor-berlin",
+					Reason:   "Standard reassignment",
+					Payload:  map[string]any{"package_id": "pkg-german-dub"},
+				},
+			},
+		}
+
+		res := agent.VerifyPlan(plan, impact, vendors, safeProjection, 1)
+		if res.IsErr() {
+			t.Fatalf("VerifyPlan returned error: %v", res.Error())
+		}
+		verdict := res.Unwrap()
+		if verdict.Decision != agent.DecisionApproved {
+			t.Fatalf("expected APPROVED when projection is safe, got: %s (rationale: %s)", verdict.Decision, verdict.Rationale)
+		}
+	})
+
+	t.Run("Handles nil projection safely without panic", func(t *testing.T) {
+		plan := &models.ActionPlan{
+			TitleSlug: "eclipse",
+			Summary:   "Reassign vendor without projection",
+			Actions: []models.Action{
+				{
+					Type:     models.ActionReassignVendor,
+					TargetID: "vendor-berlin",
+					Reason:   "Standard reassignment",
+					Payload:  map[string]any{"package_id": "pkg-german-dub"},
+				},
+			},
+		}
+
+		res := agent.VerifyPlan(plan, impact, vendors, nil, 1)
+		if res.IsErr() {
+			t.Fatalf("VerifyPlan returned error: %v", res.Error())
+		}
+		verdict := res.Unwrap()
+		if verdict.Decision != agent.DecisionApproved {
+			t.Fatalf("expected APPROVED with nil projection, got: %s", verdict.Decision)
 		}
 	})
 }

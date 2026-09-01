@@ -176,6 +176,7 @@ func TestIsCandidateTrigger(t *testing.T) {
 		models.TypePackageInvalidated,
 		models.TypeOperatorForced,
 		models.TypeInvestigationTriggered,
+		models.TypeTitleDeadlineReached,
 	}
 
 	for _, c := range candidates {
