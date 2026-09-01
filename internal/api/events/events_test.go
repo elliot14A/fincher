@@ -15,9 +15,9 @@ import (
 	"google.golang.org/adk/v2/model"
 	genai "google.golang.org/genai"
 
-	"github.com/elliot14A/fincher/internal/agent/scheduler"
 	"github.com/elliot14A/fincher/internal/api/events"
 	"github.com/elliot14A/fincher/internal/clickhouse"
+	"github.com/elliot14A/fincher/internal/scheduler"
 	tursoruns "github.com/elliot14A/fincher/internal/turso/runs"
 	"github.com/elliot14A/fincher/internal/turso/tursotest"
 	"github.com/elliot14A/fincher/pkg/domain/models"
@@ -305,4 +305,86 @@ func TestEvents_BatchIngestion_And_Routing(t *testing.T) {
 	for _, ev := range batch {
 		_, _ = conn.ExecContext(ctx, "alter table fincher.events delete where id = ?", ev.ID)
 	}
+}
+
+func TestEvents_TitleDeadlineReached_DispatchesIncident(t *testing.T) {
+	conn, err := clickhouse.Open("127.0.0.1:9000")
+	if err != nil {
+		t.Skip("skipping integration: clickhouse connection failed:", err)
+		return
+	}
+	defer conn.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	_ = clickhouse.AutoMigrate(ctx, conn)
+
+	client := tursotest.NewMemoryClient(t)
+	titleSlug := "deadline-route-" + uuid.NewString()[:8]
+	deadlineEventID := uuid.NewString()
+
+	_ = client.Title.Create().
+		SetID("title-" + titleSlug).
+		SetName("Deadline Routing Title").
+		SetSlug(titleSlug).
+		SetType("FEATURE").
+		SetPremiereDate(time.Now().UTC().Add(-1 * time.Hour)).
+		SetTerritories(5).
+		SetCurrentMasterVersion("V01").
+		SetOverallStatus("PROCESSING").
+		SaveX(ctx)
+
+	mock := &mockLLM{
+		responses: []string{
+			// Screening / Filter response
+			`{"actionable":true,"anomaly_type":"DEADLINE_BREACH","severity":"CRITICAL","rationale":"Premiere deadline reached with unverified packages."}`,
+			// Planner response
+			`{"title_slug":"` + titleSlug + `","summary":"Hold title and notify stakeholders due to premiere deadline breach.","actions":[{"type":"HOLD_TITLE","target_id":"title-` + titleSlug + `","reason":"Premiere passed"},{"type":"NOTIFY_STAKEHOLDERS","target_id":"slack-ops","reason":"Alert ops lead"}]}`,
+		},
+	}
+
+	sched := scheduler.NewScheduler(time.Millisecond)
+	e := echo.New()
+	g := e.Group("/api/events")
+	events.RegisterRoutes(g, conn, client, func() model.LLM { return mock }, sched)
+
+	event := models.Event{
+		ID:              deadlineEventID,
+		Type:            models.TypeTitleDeadlineReached,
+		Source:          "fincher.scheduler",
+		Subject:         titleSlug,
+		Time:            time.Now().UTC(),
+		Severity:        models.SeverityCritical,
+		DataContentType: "application/json",
+		Data: map[string]any{
+			"title_id":   "title-" + titleSlug,
+			"title_slug": titleSlug,
+		},
+	}
+
+	body, _ := json.Marshal([]models.Event{event})
+	req := httptest.NewRequest(http.MethodPost, "/api/events", bytes.NewReader(body))
+	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	rec := httptest.NewRecorder()
+
+	e.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("expected 201 Created, got: %d (%s)", rec.Code, rec.Body.String())
+	}
+
+	// Give async workflow time to complete
+	time.Sleep(200 * time.Millisecond)
+
+	// Verify incident Run was created in Turso
+	runRecord, err := client.Run.Get(ctx, "run-"+deadlineEventID)
+	if err != nil {
+		t.Fatalf("expected incident run 'run-%s' to be created in Turso: %v", deadlineEventID, err)
+	}
+	if runRecord.Trigger != "incident" && runRecord.Trigger != "ANOMALY_SIGNAL" {
+		t.Errorf("expected incident run trigger, got: %s", runRecord.Trigger)
+	}
+
+	// Cleanup test rows
+	_, _ = conn.ExecContext(ctx, "alter table fincher.events delete where id = ?", deadlineEventID)
 }

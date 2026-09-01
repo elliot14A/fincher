@@ -6,7 +6,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"google.golang.org/adk/v2/model"
 
-	"github.com/elliot14A/fincher/internal/agent/scheduler"
+	"github.com/elliot14A/fincher/internal/scheduler"
 	"github.com/elliot14A/fincher/internal/turso/ent"
 )
 

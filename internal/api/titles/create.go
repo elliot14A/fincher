@@ -13,9 +13,9 @@ import (
 	"google.golang.org/adk/v2/model"
 
 	"github.com/elliot14A/fincher/internal/agent/graph"
-	"github.com/elliot14A/fincher/internal/agent/scheduler"
 	apierrors "github.com/elliot14A/fincher/internal/api/errors"
 	chevents "github.com/elliot14A/fincher/internal/clickhouse/events"
+	"github.com/elliot14A/fincher/internal/scheduler"
 	"github.com/elliot14A/fincher/internal/turso/ent"
 	tursomasters "github.com/elliot14A/fincher/internal/turso/masters"
 	tursotitles "github.com/elliot14A/fincher/internal/turso/titles"
@@ -34,7 +34,7 @@ import (
 //	@Success		201		{object}	models.Title
 //	@Failure		400		{object}	errors.DomainError
 //	@Router			/titles [post]
-func Create(client *ent.Client, chDB *sql.DB, modelProvider func() model.LLM, _ *scheduler.Scheduler) echo.HandlerFunc {
+func Create(client *ent.Client, chDB *sql.DB, modelProvider func() model.LLM, sched *scheduler.Scheduler) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var req models.Title
 		if err := c.Bind(&req); err != nil {
@@ -51,6 +51,7 @@ func Create(client *ent.Client, chDB *sql.DB, modelProvider func() model.LLM, _ 
 			return apierrors.Respond(c, res.Error())
 		}
 		created := res.Unwrap()
+		ArmTitleDeadline(client, chDB, modelProvider, sched, created)
 
 		masterVer := created.CurrentMasterVersion
 		if masterVer == "" {

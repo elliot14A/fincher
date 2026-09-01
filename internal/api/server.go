@@ -9,7 +9,6 @@ import (
 
 	"google.golang.org/adk/v2/model"
 
-	"github.com/elliot14A/fincher/internal/agent/scheduler"
 	"github.com/elliot14A/fincher/internal/api/deliveries"
 	"github.com/elliot14A/fincher/internal/api/dependencies"
 	"github.com/elliot14A/fincher/internal/api/events"
@@ -19,6 +18,7 @@ import (
 	"github.com/elliot14A/fincher/internal/api/titles"
 	"github.com/elliot14A/fincher/internal/api/uploads"
 	"github.com/elliot14A/fincher/internal/api/vendors"
+	"github.com/elliot14A/fincher/internal/scheduler"
 	"github.com/elliot14A/fincher/internal/turso/ent"
 	"github.com/elliot14A/fincher/openapi"
 	"github.com/elliot14A/fincher/pkg/logger"

@@ -12,10 +12,10 @@ import (
 	"github.com/alecthomas/kong"
 
 	"github.com/elliot14A/fincher/internal/agent"
-	"github.com/elliot14A/fincher/internal/agent/scheduler"
 	"github.com/elliot14A/fincher/internal/api"
 	"github.com/elliot14A/fincher/internal/clickhouse"
 	"github.com/elliot14A/fincher/internal/config"
+	"github.com/elliot14A/fincher/internal/scheduler"
 	"github.com/elliot14A/fincher/internal/turso"
 	"github.com/elliot14A/fincher/pkg/logger"
 )
@@ -72,9 +72,7 @@ func main() {
 	}
 
 	srv := api.NewServer(dbClient, chDB)
-	if cfg.TimeScale > 0 {
-		srv.SetScheduler(scheduler.NewScheduler(cfg.TimeScale))
-	}
+	srv.SetScheduler(scheduler.NewScheduler(config.DefaultTimeScale))
 	if cfg.GeminiAPIKey != "" {
 		modelRes := agent.NewModel(ctx, cfg.GeminiAPIKey, cfg.FlashModel)
 		if modelRes.IsErr() {
@@ -106,6 +104,10 @@ func main() {
 
 	<-stop
 	logger.Info("shutting down gracefully...")
+
+	if sched := srv.Scheduler(); sched != nil {
+		sched.Stop()
+	}
 
 	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer shutdownCancel()

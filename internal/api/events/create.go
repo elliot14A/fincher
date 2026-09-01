@@ -12,9 +12,9 @@ import (
 	"google.golang.org/adk/v2/model"
 
 	"github.com/elliot14A/fincher/internal/agent/graph"
-	"github.com/elliot14A/fincher/internal/agent/scheduler"
 	apierrors "github.com/elliot14A/fincher/internal/api/errors"
 	chEvents "github.com/elliot14A/fincher/internal/clickhouse/events"
+	"github.com/elliot14A/fincher/internal/scheduler"
 	"github.com/elliot14A/fincher/internal/turso/ent"
 	domainerrors "github.com/elliot14A/fincher/pkg/domain/errors"
 	"github.com/elliot14A/fincher/pkg/domain/models"

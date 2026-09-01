@@ -316,3 +316,256 @@ func TestTitles_Onboarding_WithAllocation(t *testing.T) {
 		t.Fatalf("expected 3 assignment results, got: %d", len(resultsList))
 	}
 }
+
+func TestTitles_SendToQC(t *testing.T) {
+	server, client := setupTestServer(t)
+	defer client.Close()
+
+	e := server.Router()
+	ctx := context.Background()
+
+	// 1. Create a title in DRAFT status
+	draftStatus := models.StatusDraft
+	tModel := models.Title{
+		Base:                 models.Base{ID: "title-matrix"},
+		Name:                 "The Matrix",
+		Slug:                 "matrix",
+		Type:                 models.TitleTypeFeature,
+		PremiereDate:         time.Now().UTC().Add(48 * time.Hour),
+		Territories:          5,
+		CurrentMasterVersion: "V01",
+		OverallStatus:        draftStatus,
+	}
+	body, _ := json.Marshal(tModel)
+	req := httptest.NewRequest(http.MethodPost, "/api/titles", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	e.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("expected 201 Created, got: %d", rec.Code)
+	}
+
+	// 2. POST /api/titles/title-matrix/qc -> should transition to PROCESSING (200 OK)
+	req = httptest.NewRequest(http.MethodPost, "/api/titles/title-matrix/qc", nil)
+	rec = httptest.NewRecorder()
+	e.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK on send to QC, got: %d (%s)", rec.Code, rec.Body.String())
+	}
+
+	var qcTitle models.Title
+	if err := json.Unmarshal(rec.Body.Bytes(), &qcTitle); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
+	if qcTitle.OverallStatus != models.StatusProcessing {
+		t.Errorf("expected status PROCESSING after QC initiation, got: %s", qcTitle.OverallStatus)
+	}
+
+	// 3. POST /api/titles/title-matrix/qc AGAIN -> should fail with 409 Conflict (Guard)
+	req = httptest.NewRequest(http.MethodPost, "/api/titles/title-matrix/qc", nil)
+	rec = httptest.NewRecorder()
+	e.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusConflict {
+		t.Fatalf("expected 409 Conflict when already in QC, got: %d (%s)", rec.Code, rec.Body.String())
+	}
+
+	// 4. POST /api/titles/non-existent/qc -> should return 404
+	req = httptest.NewRequest(http.MethodPost, "/api/titles/non-existent/qc", nil)
+	rec = httptest.NewRecorder()
+	e.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("expected 404 Not Found for non-existent title, got: %d", rec.Code)
+	}
+
+	_ = ctx
+}
+
+func TestTitles_Update_PremiereDate_ResumesOverdueTitle(t *testing.T) {
+	server, client := setupTestServer(t)
+	defer client.Close()
+
+	e := server.Router()
+
+	// 1. Create an OVERDUE title
+	overdueStatus := models.StatusOverdue
+	pastDate := time.Now().UTC().Add(-2 * time.Hour)
+	tModel := models.Title{
+		Base:                 models.Base{ID: "title-resume-test"},
+		Name:                 "Resume Test Title",
+		Slug:                 "resume-test",
+		Type:                 models.TitleTypeFeature,
+		PremiereDate:         pastDate,
+		Territories:          3,
+		CurrentMasterVersion: "V01",
+		OverallStatus:        overdueStatus,
+	}
+	body, _ := json.Marshal(tModel)
+	req := httptest.NewRequest(http.MethodPost, "/api/titles", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	e.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("expected 201 Created, got: %d (%s)", rec.Code, rec.Body.String())
+	}
+
+	// 2. PATCH /api/titles/title-resume-test with extended future PremiereDate
+	futureDate := time.Now().UTC().Add(72 * time.Hour)
+	patchReq := models.UpdateTitleInput{
+		PremiereDate: &futureDate,
+	}
+	patchBody, _ := json.Marshal(patchReq)
+	req = httptest.NewRequest(http.MethodPatch, "/api/titles/title-resume-test", bytes.NewReader(patchBody))
+	req.Header.Set("Content-Type", "application/json")
+	rec = httptest.NewRecorder()
+	e.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK on premiere date update, got: %d (%s)", rec.Code, rec.Body.String())
+	}
+
+	var updated models.Title
+	if err := json.Unmarshal(rec.Body.Bytes(), &updated); err != nil {
+		t.Fatalf("failed to unmarshal patched title: %v", err)
+	}
+
+	// OVERDUE should automatically transition back to PROCESSING
+	if updated.OverallStatus != models.StatusProcessing {
+		t.Errorf("expected status to transition from OVERDUE to PROCESSING on premiere extension, got: %s", updated.OverallStatus)
+	}
+}
+
+func TestTitles_Update_PremiereDate_NonOverdue_KeepsStatus(t *testing.T) {
+	server, client := setupTestServer(t)
+	defer client.Close()
+
+	e := server.Router()
+
+	// 1. Create a PROCESSING title
+	tModel := models.Title{
+		Base:                 models.Base{ID: "title-keep-status"},
+		Name:                 "Keep Status Title",
+		Slug:                 "keep-status",
+		Type:                 models.TitleTypeFeature,
+		PremiereDate:         time.Now().UTC().Add(24 * time.Hour),
+		Territories:          2,
+		CurrentMasterVersion: "V01",
+		OverallStatus:        models.StatusProcessing,
+	}
+	body, _ := json.Marshal(tModel)
+	req := httptest.NewRequest(http.MethodPost, "/api/titles", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	e.ServeHTTP(rec, req)
+
+	// 2. Extend premiere date
+	futureDate := time.Now().UTC().Add(96 * time.Hour)
+	patchReq := models.UpdateTitleInput{PremiereDate: &futureDate}
+	patchBody, _ := json.Marshal(patchReq)
+	req = httptest.NewRequest(http.MethodPatch, "/api/titles/title-keep-status", bytes.NewReader(patchBody))
+	req.Header.Set("Content-Type", "application/json")
+	rec = httptest.NewRecorder()
+	e.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK, got: %d", rec.Code)
+	}
+
+	var updated models.Title
+	_ = json.Unmarshal(rec.Body.Bytes(), &updated)
+	if updated.OverallStatus != models.StatusProcessing {
+		t.Errorf("expected status to remain PROCESSING, got: %s", updated.OverallStatus)
+	}
+}
+
+func TestTitles_Update_PremiereDate_PastDate_StaysOverdue(t *testing.T) {
+	server, client := setupTestServer(t)
+	defer client.Close()
+
+	e := server.Router()
+
+	// 1. Create OVERDUE title
+	tModel := models.Title{
+		Base:                 models.Base{ID: "title-past-date"},
+		Name:                 "Past Date Title",
+		Slug:                 "past-date",
+		Type:                 models.TitleTypeFeature,
+		PremiereDate:         time.Now().UTC().Add(-4 * time.Hour),
+		Territories:          2,
+		CurrentMasterVersion: "V01",
+		OverallStatus:        models.StatusOverdue,
+	}
+	body, _ := json.Marshal(tModel)
+	req := httptest.NewRequest(http.MethodPost, "/api/titles", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	e.ServeHTTP(rec, req)
+
+	// 2. Update to ANOTHER past date
+	pastDate := time.Now().UTC().Add(-1 * time.Hour)
+	patchReq := models.UpdateTitleInput{PremiereDate: &pastDate}
+	patchBody, _ := json.Marshal(patchReq)
+	req = httptest.NewRequest(http.MethodPatch, "/api/titles/title-past-date", bytes.NewReader(patchBody))
+	req.Header.Set("Content-Type", "application/json")
+	rec = httptest.NewRecorder()
+	e.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK, got: %d", rec.Code)
+	}
+
+	var updated models.Title
+	_ = json.Unmarshal(rec.Body.Bytes(), &updated)
+	if updated.OverallStatus != models.StatusOverdue {
+		t.Errorf("expected status to STAY OVERDUE when updated to a past date, got: %s", updated.OverallStatus)
+	}
+}
+
+func TestTitles_Update_NoPremiereDateChange_ShortCircuits(t *testing.T) {
+	server, client := setupTestServer(t)
+	defer client.Close()
+
+	e := server.Router()
+
+	tModel := models.Title{
+		Base:                 models.Base{ID: "title-non-premiere"},
+		Name:                 "Non Premiere Title",
+		Slug:                 "non-premiere",
+		Type:                 models.TitleTypeFeature,
+		PremiereDate:         time.Now().UTC().Add(48 * time.Hour),
+		Territories:          2,
+		CurrentMasterVersion: "V01",
+		OverallStatus:        models.StatusDraft,
+	}
+	body, _ := json.Marshal(tModel)
+	req := httptest.NewRequest(http.MethodPost, "/api/titles", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	e.ServeHTTP(rec, req)
+
+	// Update only master version, no premiere date change
+	newMaster := "V02"
+	patchReq := models.UpdateTitleInput{CurrentMasterVersion: &newMaster}
+	patchBody, _ := json.Marshal(patchReq)
+	req = httptest.NewRequest(http.MethodPatch, "/api/titles/title-non-premiere", bytes.NewReader(patchBody))
+	req.Header.Set("Content-Type", "application/json")
+	rec = httptest.NewRecorder()
+	e.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK, got: %d", rec.Code)
+	}
+
+	var updated models.Title
+	_ = json.Unmarshal(rec.Body.Bytes(), &updated)
+	if updated.CurrentMasterVersion != "V02" {
+		t.Errorf("expected master V02, got: %s", updated.CurrentMasterVersion)
+	}
+	if updated.OverallStatus != models.StatusDraft {
+		t.Errorf("expected status to remain DRAFT, got: %s", updated.OverallStatus)
+	}
+}

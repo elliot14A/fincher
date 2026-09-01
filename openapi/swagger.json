@@ -1048,7 +1048,7 @@
                 }
             },
             "post": {
-                "description": "Inserts a new release title into the launch calendar.",
+                "description": "Inserts a new release title into the launch calendar, bundles Master V01, and triggers holistic allocation.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1154,7 +1154,7 @@
                 }
             },
             "patch": {
-                "description": "Updates specific fields (overall_status, master version, metadata) on a title.",
+                "description": "Updates specific fields (overall_status, master version, metadata, premiere_date) on a title. When premiere_date is updated, re-arms the deadline timer and re-drives the workflow.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1200,6 +1200,50 @@
                         "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/errors.DomainError"
+                        }
+                    }
+                }
+            }
+        },
+        "/titles/{id}/qc": {
+            "post": {
+                "description": "Initiates master cut quality control inspection for a title. Rejects if the title is already in QC.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "titles"
+                ],
+                "summary": "Send Title for Master QC",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Title ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Title"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.DomainError"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     }
                 }
@@ -2262,11 +2306,13 @@
                 },
                 "overall_status": {
                     "enum": [
+                        "DRAFT",
                         "ON_TRACK",
                         "AT_RISK",
                         "HOLD",
                         "PROCESSING",
-                        "SHIPPED"
+                        "SHIPPED",
+                        "OVERDUE"
                     ],
                     "allOf": [
                         {
@@ -2333,18 +2379,22 @@
         "models.TitleStatus": {
             "type": "string",
             "enum": [
+                "DRAFT",
                 "ON_TRACK",
                 "AT_RISK",
                 "HOLD",
                 "PROCESSING",
-                "SHIPPED"
+                "SHIPPED",
+                "OVERDUE"
             ],
             "x-enum-varnames": [
+                "StatusDraft",
                 "StatusOnTrack",
                 "StatusAtRisk",
                 "StatusHold",
                 "StatusProcessing",
-                "StatusShipped"
+                "StatusShipped",
+                "StatusOverdue"
             ]
         },
         "models.TitleType": {
@@ -2464,11 +2514,13 @@
                 },
                 "overall_status": {
                     "enum": [
+                        "DRAFT",
                         "ON_TRACK",
                         "AT_RISK",
                         "HOLD",
                         "PROCESSING",
-                        "SHIPPED"
+                        "SHIPPED",
+                        "OVERDUE"
                     ],
                     "allOf": [
                         {

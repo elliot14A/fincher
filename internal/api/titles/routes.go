@@ -6,7 +6,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"google.golang.org/adk/v2/model"
 
-	"github.com/elliot14A/fincher/internal/agent/scheduler"
+	"github.com/elliot14A/fincher/internal/scheduler"
 	"github.com/elliot14A/fincher/internal/turso/ent"
 )
 
@@ -15,6 +15,7 @@ func RegisterRoutes(g *echo.Group, client *ent.Client, chDB *sql.DB, modelProvid
 	g.POST("", Create(client, chDB, modelProvider, sched))
 	g.GET("", List(client))
 	g.GET("/:id", Get(client))
-	g.PATCH("/:id", Update(client))
+	g.PATCH("/:id", Update(client, chDB, modelProvider, sched))
 	g.DELETE("/:id", Delete(client))
+	g.POST("/:id/qc", SendToQC(client, chDB, modelProvider, sched))
 }
