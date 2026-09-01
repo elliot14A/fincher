@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/elliot14A/fincher/internal/agent/scheduler"
+	"github.com/elliot14A/fincher/internal/scheduler"
 	"github.com/elliot14A/fincher/pkg/domain/models"
 )
 

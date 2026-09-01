@@ -240,6 +240,169 @@ func (s *Scheduler) CancelTasksForPackage(packageID string) int {
 	return cancelled
 }
 
+// CancelTasksForTitle cancels all in-flight tasks for a specific title slug.
+func (s *Scheduler) CancelTasksForTitle(titleSlug string) int {
+	if s == nil {
+		return 0
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	cancelled := 0
+	for _, t := range s.tasks {
+		if t.TitleSlug == titleSlug && t.Status == TaskStatusRunning {
+			if t.timer != nil {
+				t.timer.Stop()
+			}
+			nowCanc := time.Now().UTC()
+			t.Status = TaskStatusCancelled
+			t.CancelledAt = &nowCanc
+			cancelled++
+		}
+	}
+	return cancelled
+}
+
+// ArmTitleDeadline arms or replaces a one-shot deadline timer for a title.
+// Note: In-memory timers are not rehydrated on process restart (acceptable for hackathon runtime simulation).
+func (s *Scheduler) ArmTitleDeadline(
+	titleID, titleSlug string,
+	premiereDate time.Time,
+	onBreach func(),
+) (*Task, error) {
+	if s == nil {
+		return nil, nil
+	}
+	if titleID == "" {
+		return nil, domainerrors.NewWithOp("scheduler.ArmTitleDeadline", domainerrors.CodeInvalidInput, "title_id cannot be empty", nil)
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	// Cancel existing deadline timer for this titleID (idempotency guard)
+	for _, existing := range s.tasks {
+		if existing.Kind == TaskKindTitleDeadline && existing.TargetID == titleID && existing.Status == TaskStatusRunning {
+			if existing.timer != nil {
+				existing.timer.Stop()
+			}
+			nowCanc := time.Now().UTC()
+			existing.Status = TaskStatusCancelled
+			existing.CancelledAt = &nowCanc
+			logger.Debug("scheduler: cancelled existing deadline timer on title re-arm",
+				"task_id", existing.ID,
+				"title_id", titleID,
+			)
+		}
+	}
+
+	now := time.Now().UTC()
+	hoursUntil := premiereDate.Sub(now).Hours()
+	if hoursUntil < 0 {
+		hoursUntil = 0
+	}
+
+	raw := hoursUntil * float64(s.timeScale)
+	if raw > float64(math.MaxInt64) {
+		raw = float64(math.MaxInt64)
+	}
+	realDuration := time.Duration(math.Round(raw))
+	if realDuration < 0 {
+		realDuration = 0
+	}
+	finishReal := now.Add(realDuration)
+
+	taskID := fmt.Sprintf("task-deadline-%s", uuid.NewString()[:8])
+	task := &Task{
+		ID:              taskID,
+		Kind:            TaskKindTitleDeadline,
+		TargetID:        titleID,
+		TitleSlug:       titleSlug,
+		TurnaroundHours: hoursUntil,
+		StartedAt:       now,
+		FinishReal:      finishReal,
+		Status:          TaskStatusRunning,
+	}
+
+	task.timer = time.AfterFunc(realDuration, func() {
+		recovery.WrapPanic(fmt.Sprintf("scheduler.deadline.task=%s.title=%s", taskID, titleSlug), func() {
+			s.mu.Lock()
+			shouldFire := (task.Status == TaskStatusRunning)
+			if shouldFire {
+				nowComp := time.Now().UTC()
+				task.Status = TaskStatusCompleted
+				task.CompletedAt = &nowComp
+			}
+			s.mu.Unlock()
+
+			if !shouldFire {
+				return
+			}
+
+			if onBreach != nil {
+				onBreach()
+			}
+		}, nil)
+	})
+
+	s.tasks[taskID] = task
+	s.reapLocked()
+
+	logger.Debug("scheduler: armed title deadline timer",
+		"task_id", task.ID,
+		"title_id", titleID,
+		"title_slug", titleSlug,
+		"premiere_date", premiereDate.Format(time.RFC3339),
+		"hours_until", hoursUntil,
+		"real_duration", realDuration.String(),
+	)
+
+	return task.Snapshot(), nil
+}
+
+// CancelDeadlineForTitle cancels active deadline timer for a title.
+func (s *Scheduler) CancelDeadlineForTitle(titleID string) int {
+	if s == nil {
+		return 0
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	cancelled := 0
+	for _, t := range s.tasks {
+		if t.Kind == TaskKindTitleDeadline && t.TargetID == titleID && t.Status == TaskStatusRunning {
+			if t.timer != nil {
+				t.timer.Stop()
+			}
+			nowCanc := time.Now().UTC()
+			t.Status = TaskStatusCancelled
+			t.CancelledAt = &nowCanc
+			cancelled++
+		}
+	}
+	return cancelled
+}
+
+// Stop cancels all running timers and shuts down the scheduler.
+func (s *Scheduler) Stop() {
+	if s == nil {
+		return
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	now := time.Now().UTC()
+	for _, t := range s.tasks {
+		if t.Status == TaskStatusRunning {
+			if t.timer != nil {
+				t.timer.Stop()
+			}
+			t.Status = TaskStatusCancelled
+			t.CancelledAt = &now
+		}
+	}
+}
+
 // GetTask returns a clean snapshot of a task by ID.
 func (s *Scheduler) GetTask(id string) (*Task, bool) {
 	if s == nil {

@@ -10,13 +10,14 @@ var validate = validator.New()
 
 // Operational domain defaults & tolerances.
 const (
+	DefaultTimeScale             = time.Second // 1 real duration unit per domain hour (e.g. 1s = 1h)
 	DefaultMaxSyncDriftMs        = 120.0
 	DefaultVendorDefectThreshold = 0.05
 	DefaultPremiereUrgentHours   = 72.0
 	DefaultTurnaroundHours       = 12.0
 	// DefaultMasterReconformHours: 48h master reconform ensures stale-master titles land in WATCH/TIGHT for a 72h premiere (72h - (48h + 12h) = 12h buffer).
-	DefaultMasterReconformHours  = 48.0
-	MaxRedeliveryAttempts        = 3
+	DefaultMasterReconformHours = 48.0
+	MaxRedeliveryAttempts       = 3
 )
 
 // Config holds runtime infrastructure and service configuration.
@@ -24,7 +25,6 @@ type Config struct {
 	Port        int           `kong:"default=8080,env='FINCHER_PORT',help='HTTP server port'"`
 	Environment string        `kong:"default='development',env='FINCHER_ENV',help='Runtime environment (development, production)'" validate:"oneof=development production staging"`
 	StepTimeout time.Duration `kong:"default='30s',env='FINCHER_STEP_TIMEOUT',help='Workflow execution timeout'"`
-	TimeScale   time.Duration `kong:"default='1s',env='FINCHER_TIME_SCALE',help='Time compression factor: 1 real duration unit per domain hour (e.g. 1s = 1h)'"`
 
 	TursoURL   string `kong:"default='fincher.db',env='FINCHER_TURSO_URL',help='Turso/libSQL database connection URL or local file'"`
 	TursoToken string `kong:"env='FINCHER_TURSO_TOKEN',help='Turso authentication token'"`

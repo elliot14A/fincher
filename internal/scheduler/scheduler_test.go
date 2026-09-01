@@ -1,11 +1,12 @@
 package scheduler_test
 
 import (
+	"fmt"
 	"sync"
 	"testing"
 	"time"
 
-	"github.com/elliot14A/fincher/internal/agent/scheduler"
+	"github.com/elliot14A/fincher/internal/scheduler"
 	"github.com/elliot14A/fincher/pkg/domain/models"
 )
 
@@ -222,4 +223,171 @@ func TestScheduler_SequentialDAG_DurationAddition(t *testing.T) {
 	if totalDuration < 80*time.Millisecond || totalDuration > 150*time.Millisecond {
 		t.Errorf("expected total sequential duration ~90ms (range [80ms, 150ms]), got: %v", totalDuration)
 	}
+}
+
+func TestScheduler_ArmTitleDeadline_FiresCallback(t *testing.T) {
+	timeScale := 5 * time.Millisecond // 5ms per hour
+	sched := scheduler.NewScheduler(timeScale)
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	fired := false
+	premiere := time.Now().UTC().Add(4 * time.Hour) // 4h => 20ms real
+
+	_, err := sched.ArmTitleDeadline("title-dead-1", "dead-title", premiere, func() {
+		fired = true
+		wg.Done()
+	})
+	if err != nil {
+		t.Fatalf("ArmTitleDeadline failed: %v", err)
+	}
+
+	wg.Wait()
+
+	if !fired {
+		t.Error("expected deadline callback to fire")
+	}
+}
+
+func TestScheduler_ArmTitleDeadline_ReArmsAndCancelsOld(t *testing.T) {
+	timeScale := 20 * time.Millisecond
+	sched := scheduler.NewScheduler(timeScale)
+
+	fired1 := false
+	fired2 := false
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	// Arm title for 10h (200ms)
+	_, _ = sched.ArmTitleDeadline("title-rearm", "rearm-title", time.Now().UTC().Add(10*time.Hour), func() {
+		fired1 = true
+	})
+
+	time.Sleep(10 * time.Millisecond)
+
+	// Re-arm for 2h (40ms)
+	_, _ = sched.ArmTitleDeadline("title-rearm", "rearm-title", time.Now().UTC().Add(2*time.Hour), func() {
+		fired2 = true
+		wg.Done()
+	})
+
+	wg.Wait()
+
+	if !fired2 {
+		t.Error("expected second deadline callback to fire")
+	}
+
+	// Sleep past first timer
+	time.Sleep(250 * time.Millisecond)
+	if fired1 {
+		t.Error("first deadline callback fired even though it was re-armed and cancelled")
+	}
+}
+
+func TestScheduler_CancelTasksForTitle(t *testing.T) {
+	sched := scheduler.NewScheduler(time.Hour)
+
+	_, _ = sched.ScheduleTask(scheduler.TaskKindPackage, "pkg-1", "title-slug-a", "vendor-1", models.ComponentAudio, "", 10.0, nil)
+	_, _ = sched.ScheduleTask(scheduler.TaskKindPackage, "pkg-2", "title-slug-a", "vendor-2", models.ComponentVideo, "", 10.0, nil)
+	_, _ = sched.ScheduleTask(scheduler.TaskKindPackage, "pkg-3", "title-slug-b", "vendor-3", models.ComponentSubtitle, "", 10.0, nil)
+
+	cancelled := sched.CancelTasksForTitle("title-slug-a")
+	if cancelled != 2 {
+		t.Errorf("expected 2 tasks cancelled for title-slug-a, got: %d", cancelled)
+	}
+
+	tasksA := sched.GetTasksForTitle("title-slug-a")
+	for _, task := range tasksA {
+		if task.Status != scheduler.TaskStatusCancelled {
+			t.Errorf("expected task %s to be CANCELLED, got: %s", task.ID, task.Status)
+		}
+	}
+}
+
+func TestScheduler_Stop_CancelsAllRunning(t *testing.T) {
+	sched := scheduler.NewScheduler(time.Hour)
+
+	_, _ = sched.ScheduleTask(scheduler.TaskKindPackage, "pkg-stop-1", "title-a", "vendor-1", models.ComponentAudio, "", 10.0, nil)
+	_, _ = sched.ScheduleTask(scheduler.TaskKindPackage, "pkg-stop-2", "title-b", "vendor-2", models.ComponentVideo, "", 10.0, nil)
+
+	if len(sched.GetActiveTasks()) != 2 {
+		t.Fatalf("expected 2 active tasks before stop")
+	}
+
+	sched.Stop()
+
+	if len(sched.GetActiveTasks()) != 0 {
+		t.Errorf("expected 0 active tasks after Stop(), got: %d", len(sched.GetActiveTasks()))
+	}
+}
+
+func TestScheduler_Deadline_ConcurrencyStorm(t *testing.T) {
+	// Stresses shared mutex map across deadlines, tasks, cancellations, and queries under -race
+	sched := scheduler.NewScheduler(10 * time.Millisecond)
+	defer sched.Stop()
+
+	const numGoroutines = 30
+	const numIterations = 50
+
+	var wg sync.WaitGroup
+	wg.Add(numGoroutines)
+
+	for g := 0; g < numGoroutines; g++ {
+		go func(gid int) {
+			defer wg.Done()
+			titleSlug := fmt.Sprintf("title-storm-%d", gid%5)
+			titleID := fmt.Sprintf("id-storm-%d", gid%5)
+
+			for i := 0; i < numIterations; i++ {
+				switch (gid + i) % 6 {
+				case 0:
+					_, _ = sched.ArmTitleDeadline(titleID, titleSlug, time.Now().UTC().Add(time.Duration(i)*time.Hour), func() {})
+				case 1:
+					_ = sched.CancelDeadlineForTitle(titleID)
+				case 2:
+					_, _ = sched.ScheduleTask(scheduler.TaskKindPackage, fmt.Sprintf("pkg-%d-%d", gid, i), titleSlug, "vendor-1", models.ComponentAudio, "PASSED", 5.0, nil)
+				case 3:
+					_ = sched.CancelTasksForTitle(titleSlug)
+				case 4:
+					_ = sched.GetActiveTasks()
+				case 5:
+					_ = sched.GetTasksForTitle(titleSlug)
+				}
+			}
+		}(g)
+	}
+
+	wg.Wait()
+}
+
+func TestScheduler_Stop_IdempotencyAndPostStopSafety(t *testing.T) {
+	sched := scheduler.NewScheduler(time.Hour)
+
+	_, _ = sched.ScheduleTask(scheduler.TaskKindPackage, "pkg-post-1", "title-1", "vendor-1", models.ComponentAudio, "", 10.0, nil)
+	_, _ = sched.ArmTitleDeadline("id-post-1", "title-1", time.Now().UTC().Add(time.Hour), func() {})
+
+	// First Stop()
+	sched.Stop()
+	if len(sched.GetActiveTasks()) != 0 {
+		t.Errorf("expected 0 active tasks after first Stop(), got: %d", len(sched.GetActiveTasks()))
+	}
+
+	// Calling Stop() a second time must be completely safe (idempotent)
+	sched.Stop()
+
+	// Post-Stop operations must not panic
+	_, errTask := sched.ScheduleTask(scheduler.TaskKindPackage, "pkg-post-2", "title-1", "vendor-1", models.ComponentAudio, "", 10.0, nil)
+	if errTask != nil {
+		t.Logf("post-stop schedule task safely handled: %v", errTask)
+	}
+
+	_, errDeadline := sched.ArmTitleDeadline("id-post-2", "title-1", time.Now().UTC().Add(time.Hour), func() {})
+	if errDeadline != nil {
+		t.Logf("post-stop arm deadline safely handled: %v", errDeadline)
+	}
+
+	_ = sched.CancelDeadlineForTitle("id-post-1")
+	_ = sched.CancelTasksForTitle("title-1")
+	_ = sched.GetActiveTasks()
 }

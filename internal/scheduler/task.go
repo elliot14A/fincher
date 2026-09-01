@@ -10,8 +10,10 @@ import (
 type TaskKind string
 
 const (
-	TaskKindPackage TaskKind = "package"
-	TaskKindMaster  TaskKind = "master"
+	TaskKindPackage       TaskKind = "package"
+	TaskKindMaster        TaskKind = "master"
+	TaskKindMasterQC      TaskKind = "master_qc"
+	TaskKindTitleDeadline TaskKind = "title_deadline"
 )
 
 // TaskStatus represents the lifecycle of a compressed-time simulation task.
