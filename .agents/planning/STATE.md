@@ -7,6 +7,16 @@
 * **Next Milestone**: Feature 07: Docent Conversational Assistant (Gemini Chat)
 * **Timestamp**: 2026-08-30T17:10:00+05:30
 
+## Key Decision Log (2026-09-01)
+* **Unified Event-Driven Scheduler & Deadline Enforcement**:
+  Moved scheduler to top-level `internal/scheduler`, merged deadline watchers with zero-polling compressed-time timers, and implemented automated breach emission (`TypeTitleDeadlineReached`).
+* **Policy Verifier Feasibility Gate & Master-Revision Safety**:
+  Integrated `TitleProjection` feasibility gate rejecting uncontained plans when launch windows breach, wired `CancelTasksForTitle` on master cut revisions, and added the stale-PASS guard discarding late passes on superseded masters.
+
+## Known Gaps & Conscious Deferrals
+* **Operator "Release Hold" & "Re-run Workflow" UI Controls**:
+  Backend endpoints for manual delivery hold releases (`PATCH /api/deliveries/:id`) and workflow restarts (`POST /api/runs` / `POST /api/events`) are fully operational. Automated self-healing (via QC return events) and operator resume via premiere date extension (`PATCH /api/titles/:id`) work end-to-end. Explicit button-level triggers in the UI console (`runs.tsx`, `deliveries.tsx`) are intentionally deferred to the console UI refinement milestone.
+
 ## Key Decision Log (2026-08-30)
 * **Validated compressed-time model and multi-package delivery dependencies**:
   Built and verified a standalone Python reference harness in `/tmp/opencode/fincher_timemodel/` (46 tests, 0 failures). Proved that tasks elapsing in ~8–12s with decoupled linear domain clocks keep ClickHouse history honest across any time scale.
