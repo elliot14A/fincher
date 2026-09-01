@@ -282,7 +282,7 @@ var (
 		{Name: "premiere_date", Type: field.TypeTime},
 		{Name: "territories", Type: field.TypeInt, Default: 1},
 		{Name: "current_master_version", Type: field.TypeString, Default: ""},
-		{Name: "overall_status", Type: field.TypeEnum, Enums: []string{"ON_TRACK", "AT_RISK", "HOLD", "PROCESSING", "SHIPPED"}, Default: "PROCESSING"},
+		{Name: "overall_status", Type: field.TypeEnum, Enums: []string{"DRAFT", "ON_TRACK", "AT_RISK", "HOLD", "PROCESSING", "SHIPPED", "OVERDUE"}, Default: "DRAFT"},
 	}
 	// TitlesTable holds the schema information for the "titles" table.
 	TitlesTable = &schema.Table{

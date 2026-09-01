@@ -142,16 +142,18 @@ func TypeValidator(_type Type) error {
 // OverallStatus defines the type for the "overall_status" enum field.
 type OverallStatus string
 
-// OverallStatusPROCESSING is the default value of the OverallStatus enum.
-const DefaultOverallStatus = OverallStatusPROCESSING
+// OverallStatusDRAFT is the default value of the OverallStatus enum.
+const DefaultOverallStatus = OverallStatusDRAFT
 
 // OverallStatus values.
 const (
+	OverallStatusDRAFT      OverallStatus = "DRAFT"
 	OverallStatusON_TRACK   OverallStatus = "ON_TRACK"
 	OverallStatusAT_RISK    OverallStatus = "AT_RISK"
 	OverallStatusHOLD       OverallStatus = "HOLD"
 	OverallStatusPROCESSING OverallStatus = "PROCESSING"
 	OverallStatusSHIPPED    OverallStatus = "SHIPPED"
+	OverallStatusOVERDUE    OverallStatus = "OVERDUE"
 )
 
 func (os OverallStatus) String() string {
@@ -161,7 +163,7 @@ func (os OverallStatus) String() string {
 // OverallStatusValidator is a validator for the "overall_status" field enum values. It is called by the builders before save.
 func OverallStatusValidator(os OverallStatus) error {
 	switch os {
-	case OverallStatusON_TRACK, OverallStatusAT_RISK, OverallStatusHOLD, OverallStatusPROCESSING, OverallStatusSHIPPED:
+	case OverallStatusDRAFT, OverallStatusON_TRACK, OverallStatusAT_RISK, OverallStatusHOLD, OverallStatusPROCESSING, OverallStatusSHIPPED, OverallStatusOVERDUE:
 		return nil
 	default:
 		return fmt.Errorf("title: invalid enum value for overall_status field: %q", os)

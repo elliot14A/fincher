@@ -44,8 +44,8 @@ func TestBuildWorld(t *testing.T) {
 		t.Fatal("expected hero title 'avatar-fire-ash' in world")
 	}
 
-	if heroTitle.OverallStatus != models.StatusOnTrack {
-		t.Errorf("expected hero title status ON_TRACK, got %s", heroTitle.OverallStatus)
+	if heroTitle.OverallStatus != models.StatusDraft {
+		t.Errorf("expected hero title status DRAFT, got %s", heroTitle.OverallStatus)
 	}
 
 	// Check poster_url and markets in title metadata

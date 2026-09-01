@@ -126,6 +126,13 @@ func TestEvent_Classify(t *testing.T) {
 			expected: models.CategoryAllocation,
 		},
 		{
+			name: "title deadline reached is incident",
+			event: &models.Event{
+				Type: models.TypeTitleDeadlineReached,
+			},
+			expected: models.CategoryIncident,
+		},
+		{
 			name: "operator forced is operator forced",
 			event: &models.Event{
 				Type: models.TypeOperatorForced,

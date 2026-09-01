@@ -6,11 +6,13 @@ import "time"
 type TitleStatus string
 
 const (
+	StatusDraft      TitleStatus = "DRAFT"
 	StatusOnTrack    TitleStatus = "ON_TRACK"
 	StatusAtRisk     TitleStatus = "AT_RISK"
 	StatusHold       TitleStatus = "HOLD"
 	StatusProcessing TitleStatus = "PROCESSING"
 	StatusShipped    TitleStatus = "SHIPPED"
+	StatusOverdue    TitleStatus = "OVERDUE"
 )
 
 // TitleType denotes the category of media release.
@@ -31,7 +33,7 @@ type Title struct {
 	PremiereDate         time.Time   `json:"premiere_date" validate:"required"`
 	Territories          int         `json:"territories" validate:"required,gte=1"`
 	CurrentMasterVersion string      `json:"current_master_version" validate:"required"`
-	OverallStatus        TitleStatus `json:"overall_status" validate:"required,oneof=ON_TRACK AT_RISK HOLD PROCESSING SHIPPED"`
+	OverallStatus        TitleStatus `json:"overall_status" validate:"required,oneof=DRAFT ON_TRACK AT_RISK HOLD PROCESSING SHIPPED OVERDUE"`
 }
 
 // Validate verifies title attributes.
@@ -50,7 +52,7 @@ type UpdateTitleInput struct {
 	PremiereDate         *time.Time     `json:"premiere_date,omitempty"`
 	Territories          *int           `json:"territories,omitempty" validate:"omitempty,gte=1"`
 	CurrentMasterVersion *string        `json:"current_master_version,omitempty" validate:"omitempty,min=1"`
-	OverallStatus        *TitleStatus   `json:"overall_status,omitempty" validate:"omitempty,oneof=ON_TRACK AT_RISK HOLD PROCESSING SHIPPED"`
+	OverallStatus        *TitleStatus   `json:"overall_status,omitempty" validate:"omitempty,oneof=DRAFT ON_TRACK AT_RISK HOLD PROCESSING SHIPPED OVERDUE"`
 	Metadata             map[string]any `json:"metadata,omitempty"`
 }
 

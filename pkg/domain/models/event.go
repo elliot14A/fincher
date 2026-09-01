@@ -39,6 +39,7 @@ const (
 	TypeDeliveryReleased          = "fincher.delivery.released"
 	TypeOperatorForced            = "fincher.operator.forced"
 	TypeInvestigationTriggered    = "fincher.investigation.triggered"
+	TypeTitleDeadlineReached      = "fincher.title.deadline_reached"
 )
 
 // EventCategory classifies events for downstream routing.
@@ -142,7 +143,7 @@ func (e *Event) Classify() EventCategory {
 		}
 		return CategoryRoutineOutcome
 
-	case TypeAudioSyncDriftDetected, TypeMasterCutRevised, TypeVendorSLABreach, TypePackageInvalidated:
+	case TypeAudioSyncDriftDetected, TypeMasterCutRevised, TypeVendorSLABreach, TypePackageInvalidated, TypeTitleDeadlineReached:
 		return CategoryIncident
 
 	case TypePackageRequired, TypeVendorReconformDispatched:

@@ -7,6 +7,7 @@ const (
 	ActionHoldDelivery    ActionType = "HOLD_DELIVERY"
 	ActionReleaseDelivery ActionType = "RELEASE_DELIVERY"
 	ActionReassignVendor  ActionType = "REASSIGN_VENDOR"
+	ActionHoldTitle       ActionType = "HOLD_TITLE"
 
 	ActionEmailVendor        ActionType = "EMAIL_VENDOR"
 	ActionNotifyStakeholders ActionType = "NOTIFY_STAKEHOLDERS"

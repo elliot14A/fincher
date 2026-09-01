@@ -34,8 +34,8 @@ func (Title) Fields() []ent.Field {
 		field.String("current_master_version").
 			Default(""),
 		field.Enum("overall_status").
-			Values("ON_TRACK", "AT_RISK", "HOLD", "PROCESSING", "SHIPPED").
-			Default("PROCESSING"),
+			Values("DRAFT", "ON_TRACK", "AT_RISK", "HOLD", "PROCESSING", "SHIPPED", "OVERDUE").
+			Default("DRAFT"),
 	}
 }
 
