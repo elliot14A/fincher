@@ -1,12 +1,16 @@
 import { useEffect, useState } from 'preact/hooks'
 
+// Compressed time factor: 1 real second = 1 domain hour (3600x compression).
+// IMPORTANT: This constant is tightly coupled to Go backend config.DefaultTimeScale (time.Second).
+// If the backend timescale changes, this constant must be synchronized accordingly.
+export const TIME_COMPRESSION_FACTOR = 3600
+
 export interface CountdownResult {
   label: string
   timecode: string
   scheduled: boolean
   isPast: boolean
   diffMs: number
-  days: number
   hours: number
   minutes: number
   seconds: number
@@ -23,7 +27,6 @@ export function calculateCountdown(
       scheduled: false,
       isPast: false,
       diffMs: 0,
-      days: 0,
       hours: 0,
       minutes: 0,
       seconds: 0,
@@ -38,7 +41,6 @@ export function calculateCountdown(
       scheduled: false,
       isPast: false,
       diffMs: 0,
-      days: 0,
       hours: 0,
       minutes: 0,
       seconds: 0,
@@ -53,7 +55,6 @@ export function calculateCountdown(
       scheduled: true,
       isPast: true,
       diffMs,
-      days: 0,
       hours: 0,
       minutes: 0,
       seconds: 0,
@@ -61,8 +62,7 @@ export function calculateCountdown(
   }
 
   const totalSeconds = Math.floor(diffMs / 1000)
-  const days = Math.floor(totalSeconds / 86400)
-  const hours = Math.floor((totalSeconds % 86400) / 3600)
+  const totalHours = Math.floor(totalSeconds / 3600)
   const minutes = Math.floor((totalSeconds % 3600) / 60)
   const seconds = totalSeconds % 60
 
@@ -71,12 +71,9 @@ export function calculateCountdown(
   let label: string
   let timecode: string
 
-  if (days > 0) {
-    label = hours > 0 ? `${days}d ${hours}h left` : `${days}d left`
-    timecode = `${days}d ${pad(hours)}h ${pad(minutes)}m ${pad(seconds)}s`
-  } else if (hours > 0) {
-    label = `${hours}h ${minutes}m left`
-    timecode = `${pad(hours)}h ${pad(minutes)}m ${pad(seconds)}s`
+  if (totalHours > 0) {
+    label = minutes > 0 ? `${totalHours}h ${minutes}m left` : `${totalHours}h left`
+    timecode = `${totalHours}h ${pad(minutes)}m ${pad(seconds)}s`
   } else if (minutes > 0) {
     label = `${minutes}m ${seconds}s left`
     timecode = `${pad(minutes)}m ${pad(seconds)}s`
@@ -91,8 +88,7 @@ export function calculateCountdown(
     scheduled: true,
     isPast: false,
     diffMs,
-    days,
-    hours,
+    hours: totalHours,
     minutes,
     seconds,
   }
@@ -100,9 +96,10 @@ export function calculateCountdown(
 
 export function useCountdown(
   targetDateStr: string | undefined,
-  intervalMs: number = 1000,
+  intervalMs: number = 100,
 ): CountdownResult {
-  const [now, setNow] = useState(() => Date.now())
+  const [mountTime] = useState(() => Date.now())
+  const [currentDomainTime, setCurrentDomainTime] = useState(() => Date.now())
 
   useEffect(() => {
     if (!targetDateStr) return
@@ -111,15 +108,17 @@ export function useCountdown(
     if (Number.isNaN(target)) return
 
     const timer = setInterval(() => {
-      const current = Date.now()
-      setNow(current)
-      if (target - current <= 0) {
+      const elapsedRealMs = Date.now() - mountTime
+      const simulatedDomainMs = mountTime + elapsedRealMs * TIME_COMPRESSION_FACTOR
+      setCurrentDomainTime(simulatedDomainMs)
+
+      if (target - simulatedDomainMs <= 0) {
         clearInterval(timer)
       }
     }, intervalMs)
 
     return () => clearInterval(timer)
-  }, [targetDateStr, intervalMs])
+  }, [targetDateStr, intervalMs, mountTime])
 
-  return calculateCountdown(targetDateStr, now)
+  return calculateCountdown(targetDateStr, currentDomainTime)
 }

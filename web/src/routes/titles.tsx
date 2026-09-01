@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { Film, Layers, MessageSquare, Plus, Trash2 } from 'lucide-preact'
+import { CheckCircle2, Film, Layers, MessageSquare, Plus, Trash2 } from 'lucide-preact'
 import { useState } from 'preact/hooks'
 import { toast } from 'sonner'
 import { Badge, type BadgeProps } from '#/components/ui/badge'
@@ -11,7 +11,7 @@ import { PaginationControls } from '#/components/ui/pagination'
 import { CreateTitleModal } from '#/features/titles/components/modals'
 import { titlesKeys } from '#/features/titles/queryKeys'
 import { titlesQueryOptions } from '#/features/titles/queryOptions'
-import { deleteTitlesById, type ModelsTitle } from '#/lib/api'
+import { deleteTitlesById, type ModelsTitle, postTitlesByIdQc } from '#/lib/api'
 import { useCountdown, useDisclosure, useSelectableRow, useTabbedQueryList } from '#/lib/hooks'
 import {
   actions,
@@ -53,9 +53,11 @@ export const Route = createFileRoute('/titles')({
 
 const TABS = [
   { id: 'ALL', label: 'All' },
-  { id: 'HOLD', label: 'Holds' },
-  { id: 'PROCESSING', label: 'QC' },
+  { id: 'DRAFT', label: 'Drafts' },
+  { id: 'PROCESSING', label: 'In QC' },
   { id: 'ON_TRACK', label: 'Ready' },
+  { id: 'HOLD', label: 'Holds' },
+  { id: 'OVERDUE', label: 'Overdue' },
 ] as const
 
 type TabId = (typeof TABS)[number]['id']
@@ -65,8 +67,12 @@ function mapTitleStatus(status: ModelsTitle['overall_status'] | undefined): {
   variant: BadgeProps['variant']
 } {
   switch (status) {
+    case 'DRAFT':
+      return { label: 'Draft', variant: 'neutral' }
     case 'HOLD':
       return { label: 'Hold', variant: 'danger' }
+    case 'OVERDUE':
+      return { label: 'Overdue', variant: 'danger' }
     case 'AT_RISK':
       return { label: 'At Risk', variant: 'warning' }
     case 'PROCESSING':
@@ -82,8 +88,12 @@ function mapTitleStatus(status: ModelsTitle['overall_status'] | undefined): {
 
 function getTitleStatusNote(status: ModelsTitle['overall_status'] | undefined): string {
   switch (status) {
+    case 'DRAFT':
+      return 'Awaiting Master QC'
     case 'HOLD':
       return 'Delivery hold active'
+    case 'OVERDUE':
+      return 'Premiere window breached'
     case 'AT_RISK':
       return 'High risk package drift'
     case 'PROCESSING':
@@ -121,11 +131,15 @@ function TitleRow({
   titleItem,
   isSelected,
   onSelect,
+  onSendToQC,
+  isSendingQC,
   onDelete,
 }: {
   titleItem: ModelsTitle
   isSelected: boolean
   onSelect: () => void
+  onSendToQC: () => void
+  isSendingQC: boolean
   onDelete: () => void
 }) {
   const navigate = useNavigate()
@@ -143,6 +157,7 @@ function TitleRow({
   const masterText = `Master ${titleItem.current_master_version || 'V01'}`
   const noteText = getTitleStatusNote(titleItem.overall_status)
   const posterUrl = (titleItem.metadata as Record<string, string> | undefined)?.poster_url
+  const isInQC = titleItem.overall_status === 'PROCESSING'
 
   return (
     <div {...rowProps}>
@@ -176,6 +191,14 @@ function TitleRow({
         <ActionMenu
           ariaLabel={`Actions for ${titleItem.name}`}
           items={[
+            {
+              type: 'action',
+              key: 'qc',
+              label: isInQC ? 'In QC Inspection' : 'Send for Master QC',
+              icon: CheckCircle2,
+              disabled: isInQC || isSendingQC,
+              onClick: onSendToQC,
+            },
             {
               type: 'action',
               key: 'chat',
@@ -239,6 +262,22 @@ function TitlesPage() {
         limit,
         sort_order,
       }),
+  })
+
+  const sendToQcMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await postTitlesByIdQc({ path: { id } })
+      if (error) {
+        throw new Error((error as { message?: string }).message || 'Failed to send title to QC')
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: titlesKeys.all })
+      toast.success('Master QC initiated successfully')
+    },
+    onError: (err) => {
+      toast.error(err instanceof Error ? err.message : 'Failed to initiate QC')
+    },
   })
 
   const deleteMutation = useMutation({
@@ -315,6 +354,8 @@ function TitlesPage() {
               titleItem={titleItem}
               isSelected={titleItem.id === currentSelectedId}
               onSelect={() => setSelectedId(titleItem.id)}
+              onSendToQC={() => sendToQcMutation.mutate(titleItem.id)}
+              isSendingQC={sendToQcMutation.isPending}
               onDelete={() => {
                 setDeletingTitle(titleItem)
                 deleteModal.open()

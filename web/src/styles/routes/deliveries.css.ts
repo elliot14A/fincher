@@ -33,6 +33,50 @@ export const pageSubtitle = style({
   display: 'block',
 })
 
+export const viewModeBar = style({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  padding: `${vars.space.xs} ${vars.space['2xl']}`,
+  backgroundColor: vars.color.surface,
+  borderBottom: `1px solid ${vars.color.borderSubtle}`,
+  flexShrink: 0,
+})
+
+export const viewModeGroup = style({
+  display: 'flex',
+  gap: vars.space.xs,
+  backgroundColor: vars.color.surfaceElevated,
+  padding: vars.space['3xs'],
+  borderRadius: vars.radii.xs,
+  border: `1px solid ${vars.color.border}`,
+})
+
+export const viewModeButton = style({
+  display: 'flex',
+  alignItems: 'center',
+  gap: vars.space.xs,
+  padding: `${vars.space['2xs']} ${vars.space.sm}`,
+  fontSize: vars.fontSize.xs,
+  fontWeight: 500,
+  color: vars.color.textSecondary,
+  borderRadius: vars.radii.xs,
+  border: 'none',
+  background: 'none',
+  cursor: 'pointer',
+  transition: 'all 0.15s ease',
+  ':hover': {
+    color: vars.color.textPrimary,
+  },
+})
+
+export const viewModeButtonActive = style({
+  backgroundColor: vars.color.surfaceActive,
+  color: vars.color.textPrimary,
+  fontWeight: 600,
+  boxShadow: '0 1px 2px rgba(0, 0, 0, 0.2)',
+})
+
 export const toolbar = style({
   display: 'flex',
   alignItems: 'center',
@@ -117,11 +161,30 @@ export const countryBadge = style({
   flexShrink: 0,
 })
 
+export const componentIcon = style({
+  width: '36px',
+  height: '36px',
+  borderRadius: vars.radii.xs,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  backgroundColor: vars.color.surfaceElevated,
+  border: `1px solid ${vars.color.border}`,
+  color: vars.color.textSecondary,
+  flexShrink: 0,
+})
+
 export const nameStack = style({
   display: 'flex',
   flexDirection: 'column',
   gap: '4px',
   minWidth: 0,
+})
+
+export const cardTitleRow = style({
+  display: 'flex',
+  alignItems: 'center',
+  gap: vars.space.xs,
 })
 
 export const cardName = style({
@@ -145,6 +208,20 @@ export const metaText = style({
   overflow: 'hidden',
   whiteSpace: 'nowrap',
   textOverflow: 'ellipsis',
+})
+
+export const metaVersion = style({
+  fontFamily: fonts.mono,
+  fontSize: vars.fontSize['2xs'],
+  color: vars.color.textSecondary,
+  letterSpacing: '0.02em',
+  flexShrink: 0,
+})
+
+export const metaDivider = style({
+  color: vars.color.textTertiary,
+  fontSize: vars.fontSize.xs,
+  flexShrink: 0,
 })
 
 export const statusStack = style({
@@ -179,6 +256,70 @@ export const actions = style({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
+})
+
+// Expanded Constituent Packages Sub-view
+export const subListContainer = style({
+  gridColumn: '1 / -1',
+  backgroundColor: vars.color.surfaceElevated,
+  borderRadius: vars.radii.sm,
+  padding: `${vars.space.md} ${vars.space.lg}`,
+  marginTop: vars.space.xs,
+  marginBottom: vars.space.xs,
+  border: `1px solid ${vars.color.border}`,
+  display: 'flex',
+  flexDirection: 'column',
+  gap: vars.space.xs,
+})
+
+export const subListHeader = style({
+  fontSize: vars.fontSize['2xs'],
+  fontWeight: 600,
+  textTransform: 'uppercase',
+  letterSpacing: '0.05em',
+  color: vars.color.textTertiary,
+  marginBottom: '4px',
+})
+
+export const subListEmptyText = style({
+  fontSize: vars.fontSize.xs,
+  color: vars.color.textTertiary,
+})
+
+export const subItemRow = style({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  padding: `${vars.space.xs} 0`,
+  borderBottom: `1px solid ${vars.color.borderSubtle}`,
+  fontSize: vars.fontSize.xs,
+  ':last-child': {
+    borderBottom: 'none',
+  },
+})
+
+export const subItemLeft = style({
+  display: 'flex',
+  alignItems: 'center',
+  gap: vars.space.sm,
+})
+
+export const subItemIcon = style({
+  color: vars.color.textSecondary,
+})
+
+export const subItemId = style({
+  fontFamily: fonts.mono,
+  fontWeight: 600,
+  color: vars.color.textPrimary,
+})
+
+export const subItemComp = style({
+  color: vars.color.textTertiary,
+})
+
+export const subItemVendor = style({
+  color: vars.color.textSecondary,
 })
 
 export const emptyState = style({

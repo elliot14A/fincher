@@ -203,7 +203,7 @@ export type ModelsTitle = {
         [key: string]: unknown;
     };
     name: string;
-    overall_status: 'ON_TRACK' | 'AT_RISK' | 'HOLD' | 'PROCESSING' | 'SHIPPED';
+    overall_status: 'DRAFT' | 'ON_TRACK' | 'AT_RISK' | 'HOLD' | 'PROCESSING' | 'SHIPPED' | 'OVERDUE';
     premiere_date: string;
     slug: string;
     territories: number;
@@ -221,7 +221,7 @@ export type ModelsTitlePaginationResult = {
     total_pages?: number;
 };
 
-export type ModelsTitleStatus = 'ON_TRACK' | 'AT_RISK' | 'HOLD' | 'PROCESSING' | 'SHIPPED';
+export type ModelsTitleStatus = 'DRAFT' | 'ON_TRACK' | 'AT_RISK' | 'HOLD' | 'PROCESSING' | 'SHIPPED' | 'OVERDUE';
 
 export type ModelsTitleType = 'FEATURE' | 'SERIES' | 'SPECIAL';
 
@@ -254,7 +254,7 @@ export type ModelsUpdateTitleInput = {
         [key: string]: unknown;
     };
     name?: string;
-    overall_status?: 'ON_TRACK' | 'AT_RISK' | 'HOLD' | 'PROCESSING' | 'SHIPPED';
+    overall_status?: 'DRAFT' | 'ON_TRACK' | 'AT_RISK' | 'HOLD' | 'PROCESSING' | 'SHIPPED' | 'OVERDUE';
     premiere_date?: string;
     slug?: string;
     territories?: number;
@@ -1276,6 +1276,40 @@ export type PatchTitlesByIdResponses = {
 };
 
 export type PatchTitlesByIdResponse = PatchTitlesByIdResponses[keyof PatchTitlesByIdResponses];
+
+export type PostTitlesByIdQcData = {
+    body?: never;
+    path: {
+        /**
+         * Title ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/titles/{id}/qc';
+};
+
+export type PostTitlesByIdQcErrors = {
+    /**
+     * Not Found
+     */
+    404: ErrorsDomainError;
+    /**
+     * Conflict
+     */
+    409: ErrorsErrorResponse;
+};
+
+export type PostTitlesByIdQcError = PostTitlesByIdQcErrors[keyof PostTitlesByIdQcErrors];
+
+export type PostTitlesByIdQcResponses = {
+    /**
+     * OK
+     */
+    200: ModelsTitle;
+};
+
+export type PostTitlesByIdQcResponse = PostTitlesByIdQcResponses[keyof PostTitlesByIdQcResponses];
 
 export type PostUploadsData = {
     body: {

@@ -2,7 +2,7 @@
 
 import { type Client, type ClientMeta, formDataBodySerializer, type Options as Options2, type RequestResult, type ServerSentEventsResult, type TDataShape } from './client';
 import { client } from './client.gen';
-import type { DeleteDeliveriesByIdData, DeleteDeliveriesByIdErrors, DeleteDeliveriesByIdResponses, DeleteDependenciesByIdData, DeleteDependenciesByIdErrors, DeleteDependenciesByIdResponses, DeleteMastersByIdData, DeleteMastersByIdErrors, DeleteMastersByIdResponses, DeletePackagesByIdData, DeletePackagesByIdErrors, DeletePackagesByIdResponses, DeleteTitlesByIdData, DeleteTitlesByIdErrors, DeleteTitlesByIdResponses, DeleteUploadsByIdData, DeleteUploadsByIdErrors, DeleteUploadsByIdResponses, DeleteVendorsByIdData, DeleteVendorsByIdErrors, DeleteVendorsByIdResponses, GetDeliveriesByIdData, GetDeliveriesByIdErrors, GetDeliveriesByIdResponses, GetDeliveriesData, GetDeliveriesErrors, GetDeliveriesResponses, GetDependenciesData, GetDependenciesErrors, GetDependenciesGraphByTitleIdData, GetDependenciesGraphByTitleIdErrors, GetDependenciesGraphByTitleIdResponses, GetDependenciesResponses, GetMastersByIdData, GetMastersByIdErrors, GetMastersByIdResponses, GetMastersData, GetMastersErrors, GetMastersResponses, GetPackagesByIdData, GetPackagesByIdErrors, GetPackagesByIdResponses, GetPackagesData, GetPackagesErrors, GetPackagesResponses, GetRunsByIdData, GetRunsByIdErrors, GetRunsByIdResponses, GetRunsByIdStreamData, GetRunsByIdStreamErrors, GetRunsByIdStreamResponse, GetRunsByIdStreamResponses, GetRunsData, GetRunsErrors, GetRunsResponses, GetTitlesByIdData, GetTitlesByIdErrors, GetTitlesByIdResponses, GetTitlesData, GetTitlesErrors, GetTitlesResponses, GetUploadsByIdData, GetUploadsByIdErrors, GetUploadsByIdResponses, GetVendorsByIdData, GetVendorsByIdErrors, GetVendorsByIdResponses, GetVendorsData, GetVendorsErrors, GetVendorsResponses, PatchDeliveriesByIdData, PatchDeliveriesByIdErrors, PatchDeliveriesByIdResponses, PatchPackagesByIdData, PatchPackagesByIdErrors, PatchPackagesByIdResponses, PatchTitlesByIdData, PatchTitlesByIdErrors, PatchTitlesByIdResponses, PatchVendorsByIdData, PatchVendorsByIdErrors, PatchVendorsByIdResponses, PostDeliveriesData, PostDeliveriesErrors, PostDeliveriesResponses, PostDependenciesData, PostDependenciesErrors, PostDependenciesResponses, PostEventsData, PostEventsErrors, PostEventsResponses, PostMastersData, PostMastersErrors, PostMastersResponses, PostPackagesData, PostPackagesErrors, PostPackagesResponses, PostTitlesData, PostTitlesErrors, PostTitlesResponses, PostUploadsData, PostUploadsErrors, PostUploadsResponses, PostVendorsData, PostVendorsErrors, PostVendorsResponses } from './types.gen';
+import type { DeleteDeliveriesByIdData, DeleteDeliveriesByIdErrors, DeleteDeliveriesByIdResponses, DeleteDependenciesByIdData, DeleteDependenciesByIdErrors, DeleteDependenciesByIdResponses, DeleteMastersByIdData, DeleteMastersByIdErrors, DeleteMastersByIdResponses, DeletePackagesByIdData, DeletePackagesByIdErrors, DeletePackagesByIdResponses, DeleteTitlesByIdData, DeleteTitlesByIdErrors, DeleteTitlesByIdResponses, DeleteUploadsByIdData, DeleteUploadsByIdErrors, DeleteUploadsByIdResponses, DeleteVendorsByIdData, DeleteVendorsByIdErrors, DeleteVendorsByIdResponses, GetDeliveriesByIdData, GetDeliveriesByIdErrors, GetDeliveriesByIdResponses, GetDeliveriesData, GetDeliveriesErrors, GetDeliveriesResponses, GetDependenciesData, GetDependenciesErrors, GetDependenciesGraphByTitleIdData, GetDependenciesGraphByTitleIdErrors, GetDependenciesGraphByTitleIdResponses, GetDependenciesResponses, GetMastersByIdData, GetMastersByIdErrors, GetMastersByIdResponses, GetMastersData, GetMastersErrors, GetMastersResponses, GetPackagesByIdData, GetPackagesByIdErrors, GetPackagesByIdResponses, GetPackagesData, GetPackagesErrors, GetPackagesResponses, GetRunsByIdData, GetRunsByIdErrors, GetRunsByIdResponses, GetRunsByIdStreamData, GetRunsByIdStreamErrors, GetRunsByIdStreamResponse, GetRunsByIdStreamResponses, GetRunsData, GetRunsErrors, GetRunsResponses, GetTitlesByIdData, GetTitlesByIdErrors, GetTitlesByIdResponses, GetTitlesData, GetTitlesErrors, GetTitlesResponses, GetUploadsByIdData, GetUploadsByIdErrors, GetUploadsByIdResponses, GetVendorsByIdData, GetVendorsByIdErrors, GetVendorsByIdResponses, GetVendorsData, GetVendorsErrors, GetVendorsResponses, PatchDeliveriesByIdData, PatchDeliveriesByIdErrors, PatchDeliveriesByIdResponses, PatchPackagesByIdData, PatchPackagesByIdErrors, PatchPackagesByIdResponses, PatchTitlesByIdData, PatchTitlesByIdErrors, PatchTitlesByIdResponses, PatchVendorsByIdData, PatchVendorsByIdErrors, PatchVendorsByIdResponses, PostDeliveriesData, PostDeliveriesErrors, PostDeliveriesResponses, PostDependenciesData, PostDependenciesErrors, PostDependenciesResponses, PostEventsData, PostEventsErrors, PostEventsResponses, PostMastersData, PostMastersErrors, PostMastersResponses, PostPackagesData, PostPackagesErrors, PostPackagesResponses, PostTitlesByIdQcData, PostTitlesByIdQcErrors, PostTitlesByIdQcResponses, PostTitlesData, PostTitlesErrors, PostTitlesResponses, PostUploadsData, PostUploadsErrors, PostUploadsResponses, PostVendorsData, PostVendorsErrors, PostVendorsResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -231,7 +231,7 @@ export const getTitles = <ThrowOnError extends boolean = false>(options?: Option
 /**
  * Create a media title
  *
- * Inserts a new release title into the launch calendar.
+ * Inserts a new release title into the launch calendar, bundles Master V01, and triggers holistic allocation.
  */
 export const postTitles = <ThrowOnError extends boolean = false>(options: Options<PostTitlesData, ThrowOnError>): RequestResult<PostTitlesResponses, PostTitlesErrors, ThrowOnError> => (options.client ?? client).post<PostTitlesResponses, PostTitlesErrors, ThrowOnError>({
     url: '/titles',
@@ -259,7 +259,7 @@ export const getTitlesById = <ThrowOnError extends boolean = false>(options: Opt
 /**
  * Partial update of a media title
  *
- * Updates specific fields (overall_status, master version, metadata) on a title.
+ * Updates specific fields (overall_status, master version, metadata, premiere_date) on a title. When premiere_date is updated, re-arms the deadline timer and re-drives the workflow.
  */
 export const patchTitlesById = <ThrowOnError extends boolean = false>(options: Options<PatchTitlesByIdData, ThrowOnError>): RequestResult<PatchTitlesByIdResponses, PatchTitlesByIdErrors, ThrowOnError> => (options.client ?? client).patch<PatchTitlesByIdResponses, PatchTitlesByIdErrors, ThrowOnError>({
     url: '/titles/{id}',
@@ -269,6 +269,13 @@ export const patchTitlesById = <ThrowOnError extends boolean = false>(options: O
         ...options.headers
     }
 });
+
+/**
+ * Send Title for Master QC
+ *
+ * Initiates master cut quality control inspection for a title. Rejects if the title is already in QC.
+ */
+export const postTitlesByIdQc = <ThrowOnError extends boolean = false>(options: Options<PostTitlesByIdQcData, ThrowOnError>): RequestResult<PostTitlesByIdQcResponses, PostTitlesByIdQcErrors, ThrowOnError> => (options.client ?? client).post<PostTitlesByIdQcResponses, PostTitlesByIdQcErrors, ThrowOnError>({ url: '/titles/{id}/qc', ...options });
 
 /**
  * Upload an image asset

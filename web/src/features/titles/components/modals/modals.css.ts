@@ -53,3 +53,34 @@ export const bareInput = style({
     color: vars.color.textTertiary,
   },
 })
+
+export const pillGroup = style({
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: vars.space.xs,
+})
+
+export const pill = style({
+  display: 'inline-flex',
+  alignItems: 'center',
+  padding: `${vars.space.xs} ${vars.space.sm}`,
+  borderRadius: vars.radii.sm,
+  border: `1px solid ${vars.color.borderSubtle}`,
+  backgroundColor: vars.color.surface,
+  color: vars.color.textSecondary,
+  fontSize: vars.fontSize.xs,
+  cursor: 'pointer',
+  userSelect: 'none',
+  transition: 'all 0.15s ease',
+  ':hover': {
+    backgroundColor: vars.color.surfaceHover,
+    color: vars.color.textPrimary,
+  },
+})
+
+export const pillActive = style({
+  backgroundColor: vars.color.primaryMuted,
+  borderColor: vars.color.primaryBorder,
+  color: vars.color.textInverse,
+  fontWeight: 500,
+})

@@ -76,6 +76,11 @@ export const menuItem = style({
     color: vars.color.textPrimary,
     outline: 'none',
   },
+  ':disabled': {
+    opacity: 0.45,
+    cursor: 'not-allowed',
+    pointerEvents: 'none',
+  },
 })
 
 export const menuItemDanger = style({

@@ -221,11 +221,13 @@ export const vModelsTitle = v.object({
     metadata: v.optional(v.record(v.string(), v.unknown())),
     name: v.string(),
     overall_status: v.picklist([
+        'DRAFT',
         'ON_TRACK',
         'AT_RISK',
         'HOLD',
         'PROCESSING',
-        'SHIPPED'
+        'SHIPPED',
+        'OVERDUE'
     ]),
     premiere_date: v.string(),
     slug: v.string(),
@@ -249,11 +251,13 @@ export const vModelsTitlePaginationResult = v.object({
 });
 
 export const vModelsTitleStatus = v.picklist([
+    'DRAFT',
     'ON_TRACK',
     'AT_RISK',
     'HOLD',
     'PROCESSING',
-    'SHIPPED'
+    'SHIPPED',
+    'OVERDUE'
 ]);
 
 export const vModelsTitleType = v.picklist([
@@ -301,11 +305,13 @@ export const vModelsUpdateTitleInput = v.object({
     metadata: v.optional(v.record(v.string(), v.unknown())),
     name: v.optional(v.pipe(v.string(), v.minLength(1))),
     overall_status: v.optional(v.picklist([
+        'DRAFT',
         'ON_TRACK',
         'AT_RISK',
         'HOLD',
         'PROCESSING',
-        'SHIPPED'
+        'SHIPPED',
+        'OVERDUE'
     ])),
     premiere_date: v.optional(v.string()),
     slug: v.optional(v.pipe(v.string(), v.minLength(1))),
@@ -677,6 +683,15 @@ export const vPatchTitlesByIdPath = v.object({
  * OK
  */
 export const vPatchTitlesByIdResponse = vModelsTitle;
+
+export const vPostTitlesByIdQcPath = v.object({
+    id: v.string()
+});
+
+/**
+ * OK
+ */
+export const vPostTitlesByIdQcResponse = vModelsTitle;
 
 export const vPostUploadsBody = v.object({
     file: v.string()

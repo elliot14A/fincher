@@ -9,12 +9,29 @@ import { titlesKeys } from '#/features/titles/queryKeys'
 import { postTitles } from '#/lib/api'
 import type { ModelsTitleType } from '#/lib/api/generated'
 import { slugify } from '#/lib/utils/slugify'
-import { bareInput, form, formRow, inputWithPrefix, prefix } from './modals.css'
+import {
+  bareInput,
+  form,
+  formRow,
+  inputWithPrefix,
+  pill,
+  pillActive,
+  pillGroup,
+  prefix,
+} from './modals.css'
 
 export type CreateTitleModalProps = {
   isOpen: boolean
   onClose: () => void
 }
+
+const AVAILABLE_MARKETS = [
+  { id: 'en-US', label: 'en-US (English)' },
+  { id: 'de-DE', label: 'de-DE (German)' },
+  { id: 'fr-FR', label: 'fr-FR (French)' },
+  { id: 'hi-IN', label: 'hi-IN (Hindi)' },
+  { id: 'te-IN', label: 'te-IN (Telugu)' },
+] as const
 
 function getDefaultPremiereDate(): string {
   const d = new Date()
@@ -31,9 +48,19 @@ export function CreateTitleModal({ isOpen, onClose }: CreateTitleModalProps) {
   const [isSlugManual, setIsSlugManual] = useState(false)
   const [type, setType] = useState<ModelsTitleType>('FEATURE')
   const [premiereDate, setPremiereDate] = useState(getDefaultPremiereDate())
-  const [territories, setTerritories] = useState('35')
+  const [selectedMarkets, setSelectedMarkets] = useState<string[]>(['en-US'])
   const [masterVersion, setMasterVersion] = useState('V01')
   const [posterUrl, setPosterUrl] = useState<string | undefined>()
+
+  const toggleMarket = (id: string) => {
+    if (selectedMarkets.includes(id)) {
+      if (selectedMarkets.length > 1) {
+        setSelectedMarkets(selectedMarkets.filter((m) => m !== id))
+      }
+    } else {
+      setSelectedMarkets([...selectedMarkets, id])
+    }
+  }
 
   const handleNameChange = (val: string) => {
     setName(val)
@@ -53,7 +80,7 @@ export function CreateTitleModal({ isOpen, onClose }: CreateTitleModalProps) {
     setIsSlugManual(false)
     setType('FEATURE')
     setPremiereDate(getDefaultPremiereDate())
-    setTerritories('35')
+    setSelectedMarkets(['en-US'])
     setMasterVersion('V01')
     setPosterUrl(undefined)
   }
@@ -64,13 +91,14 @@ export function CreateTitleModal({ isOpen, onClose }: CreateTitleModalProps) {
       const finalId = `title-${finalSlug}`
       if (!name.trim()) throw new Error('Title name is required')
       if (!finalId.trim()) throw new Error('Title identifier is required')
+      if (selectedMarkets.length === 0) throw new Error('At least one market must be selected')
 
       const dateObj = new Date(premiereDate)
       const isoDate = Number.isNaN(dateObj.getTime())
         ? new Date().toISOString()
         : dateObj.toISOString()
 
-      const territoryCount = Number.parseInt(territories, 10) || 1
+      const territoryCount = selectedMarkets.length
 
       const { data, error } = await postTitles({
         body: {
@@ -81,8 +109,11 @@ export function CreateTitleModal({ isOpen, onClose }: CreateTitleModalProps) {
           premiere_date: isoDate,
           territories: territoryCount,
           current_master_version: masterVersion.trim() || 'V01',
-          overall_status: 'PROCESSING',
-          metadata: posterUrl ? { poster_url: posterUrl } : {},
+          overall_status: 'DRAFT',
+          metadata: {
+            ...(posterUrl ? { poster_url: posterUrl } : {}),
+            markets: selectedMarkets,
+          },
         },
       })
 
@@ -118,7 +149,7 @@ export function CreateTitleModal({ isOpen, onClose }: CreateTitleModalProps) {
             variant="primary"
             size="sm"
             onClick={() => mutation.mutate()}
-            disabled={mutation.isPending || !name.trim()}
+            disabled={mutation.isPending || !name.trim() || selectedMarkets.length === 0}
           >
             <Plus size={14} />
             <span>{mutation.isPending ? 'Creating...' : 'Create Title'}</span>
@@ -176,26 +207,6 @@ export function CreateTitleModal({ isOpen, onClose }: CreateTitleModalProps) {
             />
           </FormField>
 
-          <FormField label="Markets Count" required helper="Number of global release markets">
-            <TextInput
-              type="number"
-              min="1"
-              max="250"
-              value={territories}
-              onInput={(e) => setTerritories((e.target as HTMLInputElement).value)}
-            />
-          </FormField>
-        </div>
-
-        <div class={formRow}>
-          <FormField label="Premiere Schedule" required>
-            <TextInput
-              type="datetime-local"
-              value={premiereDate}
-              onInput={(e) => setPremiereDate((e.target as HTMLInputElement).value)}
-            />
-          </FormField>
-
           <FormField label="Initial Master Cut" required helper="e.g. V01">
             <TextInput
               placeholder="V01"
@@ -204,6 +215,36 @@ export function CreateTitleModal({ isOpen, onClose }: CreateTitleModalProps) {
             />
           </FormField>
         </div>
+
+        <FormField
+          label="Target Markets"
+          required
+          helper="Select targeted language-market territories for localization"
+        >
+          <div class={pillGroup}>
+            {AVAILABLE_MARKETS.map((m) => {
+              const active = selectedMarkets.includes(m.id)
+              return (
+                <button
+                  key={m.id}
+                  type="button"
+                  class={`${pill} ${active ? pillActive : ''}`}
+                  onClick={() => toggleMarket(m.id)}
+                >
+                  {m.label}
+                </button>
+              )
+            })}
+          </div>
+        </FormField>
+
+        <FormField label="Premiere Schedule" required helper="Target global launch timestamp">
+          <TextInput
+            type="datetime-local"
+            value={premiereDate}
+            onInput={(e) => setPremiereDate((e.target as HTMLInputElement).value)}
+          />
+        </FormField>
 
         <FormField label="Poster Thumbnail" optional helper="Max 1MB PNG, JPEG, WebP, or GIF">
           <ImageUpload value={posterUrl} onChange={setPosterUrl} disabled={mutation.isPending} />

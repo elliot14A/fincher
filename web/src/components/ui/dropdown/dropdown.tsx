@@ -19,6 +19,7 @@ export interface DropdownActionItem {
   // biome-ignore lint/suspicious/noExplicitAny: supports Lucide icons and custom svg components
   icon?: ComponentType<any>
   danger?: boolean
+  disabled?: boolean
   onClick: () => void
 }
 
@@ -94,9 +95,11 @@ export function ActionMenu({ items, ariaLabel = 'Row actions' }: ActionMenuProps
                 key={item.key}
                 type="button"
                 role="menuitem"
+                disabled={item.disabled}
                 class={itemClass}
                 onClick={(e) => {
                   e.stopPropagation()
+                  if (item.disabled) return
                   setIsOpen(false)
                   item.onClick()
                 }}
