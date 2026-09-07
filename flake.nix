@@ -44,6 +44,7 @@
               bun
               curl
               jq
+              just
             ];
 
             shellHook = ''
