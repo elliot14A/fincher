@@ -89,5 +89,18 @@ func BuildWorld(cfg *types.SeedConfig, rng *types.RNG, now time.Time) (*World, e
 		world.Titles = append(world.Titles, title)
 	}
 
+	// 3. Build Masters for Curated Titles
+	world.Masters = make([]*models.Master, 0, len(world.Titles))
+
+	for _, title := range world.Titles {
+		masterID := models.MasterIDFor(title.Slug, "v01")
+		world.Masters = append(world.Masters, &models.Master{
+			ID:        masterID,
+			TitleID:   title.ID,
+			Version:   "V01",
+			CreatedAt: now,
+		})
+	}
+
 	return world, nil
 }

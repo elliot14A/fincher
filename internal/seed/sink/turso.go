@@ -6,6 +6,7 @@ import (
 
 	"github.com/elliot14A/fincher/internal/seed/entities"
 	"github.com/elliot14A/fincher/internal/turso/ent"
+	"github.com/elliot14A/fincher/internal/turso/masters"
 	"github.com/elliot14A/fincher/internal/turso/titles"
 	"github.com/elliot14A/fincher/internal/turso/vendors"
 	"github.com/elliot14A/fincher/pkg/logger"
@@ -42,6 +43,17 @@ func (s *tursoEntitySink) WriteWorld(ctx context.Context, world *entities.World)
 		}
 	}
 	logger.Info("seeded titles", "count", len(world.Titles))
+
+	// 3. Masters
+	for _, m := range world.Masters {
+		res := masters.Create(ctx, s.client, m)
+		if res.IsErr() {
+			return fmt.Errorf("failed to persist master %s: %w", m.ID, res.Error())
+		}
+	}
+	if len(world.Masters) > 0 {
+		logger.Info("seeded masters", "count", len(world.Masters))
+	}
 
 	return nil
 }

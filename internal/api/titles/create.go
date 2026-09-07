@@ -3,9 +3,7 @@ package titles
 import (
 	"database/sql"
 	"encoding/json"
-	"fmt"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -57,7 +55,7 @@ func Create(client *ent.Client, chDB *sql.DB, modelProvider func() model.LLM, sc
 		if masterVer == "" {
 			masterVer = "V01"
 		}
-		masterID := fmt.Sprintf("mst-%s-%s", created.Slug, strings.ToLower(masterVer))
+		masterID := models.MasterIDFor(created.Slug, masterVer)
 		master := &models.Master{
 			ID:      masterID,
 			TitleID: created.ID,

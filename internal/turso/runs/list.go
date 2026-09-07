@@ -25,7 +25,7 @@ func ListRuns(ctx context.Context, client *ent.Client, filter ListFilter, p mode
 		query = query.Where(entrun.TitleSlugEQ(filter.TitleSlug.Unwrap()))
 	}
 	if filter.Workflow.IsSome() {
-		query = query.Where(entrun.TriggerEQ(filter.Workflow.Unwrap()))
+		query = query.Where(entrun.TriggerEqualFold(filter.Workflow.Unwrap()))
 	}
 	if filter.Status.IsSome() {
 		query = query.Where(entrun.StatusEQ(entrun.Status(filter.Status.Unwrap())))
