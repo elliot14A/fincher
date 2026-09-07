@@ -7,7 +7,7 @@ export const page = style({
   flexDirection: 'column',
   flex: 1,
   height: '100%',
-  overflowY: 'auto',
+  overflow: 'hidden',
 })
 
 export const header = style({
@@ -67,16 +67,34 @@ export const toolbarTabActive = style({
   borderBottom: `2px solid ${vars.color.primary}`,
 })
 
+export const contentLayout = style({
+  display: 'flex',
+  flex: 1,
+  minHeight: 0,
+  overflow: 'hidden',
+})
+
+export const mainListContainer = style({
+  display: 'flex',
+  flexDirection: 'column',
+  flex: 1,
+  minWidth: 0,
+  height: '100%',
+  overflow: 'hidden',
+})
+
 export const list = style({
   display: 'flex',
   flexDirection: 'column',
   padding: `${vars.space.xs} ${vars.space['2xl']}`,
+  flex: 1,
+  overflowY: 'auto',
 })
 
 export const row = style({
   position: 'relative',
   display: 'grid',
-  gridTemplateColumns: '40px minmax(0, 1fr) 140px minmax(210px, auto) 36px',
+  gridTemplateColumns: '40px minmax(0, 1fr) 140px minmax(180px, auto) 36px',
   alignItems: 'center',
   columnGap: vars.space.lg,
   padding: `${vars.space.md} ${vars.space.sm}`,

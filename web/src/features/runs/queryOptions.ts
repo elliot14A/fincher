@@ -38,7 +38,7 @@ export const runsQueryOptions = (filters?: RunsFilters | string) => {
         query: {
           page,
           limit,
-          ...(trigger ? { trigger } : {}),
+          ...(trigger ? { wf: trigger } : {}),
           ...(status ? { status } : {}),
           ...(title_slug ? { title_slug } : {}),
         },

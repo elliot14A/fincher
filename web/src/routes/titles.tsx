@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { CheckCircle2, Film, Layers, MessageSquare, Plus, Trash2 } from 'lucide-preact'
-import { useState } from 'preact/hooks'
+import { useEffect, useState } from 'preact/hooks'
 import { toast } from 'sonner'
 import { Badge, type BadgeProps } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
@@ -9,13 +9,21 @@ import { ActionMenu } from '#/components/ui/dropdown'
 import { DeleteModal } from '#/components/ui/modal'
 import { PaginationControls } from '#/components/ui/pagination'
 import { CreateTitleModal } from '#/features/titles/components/modals'
+import { TitleSidebar } from '#/features/titles/components/sidebar'
 import { titlesKeys } from '#/features/titles/queryKeys'
 import { titlesQueryOptions } from '#/features/titles/queryOptions'
 import { deleteTitlesById, type ModelsTitle, postTitlesByIdQc } from '#/lib/api'
-import { useCountdown, useDisclosure, useSelectableRow, useTabbedQueryList } from '#/lib/hooks'
+import {
+  syncSimulationAnchorWithTitles,
+  useCountdown,
+  useDisclosure,
+  useSelectableRow,
+  useTabbedQueryList,
+} from '#/lib/hooks'
 import {
   actions,
   cardName,
+  contentLayout,
   countdownEmpty,
   countdownValue,
   emptyState,
@@ -24,6 +32,7 @@ import {
   header,
   list,
   loadingState,
+  mainListContainer,
   metaDivider,
   metaRow,
   metaTerritories,
@@ -107,8 +116,14 @@ function getTitleStatusNote(status: ModelsTitle['overall_status'] | undefined): 
   }
 }
 
-function TitleCountdown({ premiereDate }: { premiereDate: string | undefined }) {
-  const schedule = useCountdown(premiereDate)
+function TitleCountdown({
+  premiereDate,
+  status,
+}: {
+  premiereDate: string | undefined
+  status?: string
+}) {
+  const schedule = useCountdown(premiereDate, 100, status)
 
   if (!schedule.scheduled) {
     return (
@@ -173,7 +188,7 @@ function TitleRow({
         <span class={cardName}>{titleItem.name}</span>
         <span class={metaRow}>
           <span class={metaVersion}>{masterText}</span>
-          <span class={metaDivider}>·</span>
+          <span class={metaDivider}>•</span>
           <span class={metaTerritories}>{territoriesText}</span>
         </span>
       </div>
@@ -185,7 +200,7 @@ function TitleRow({
         <span class={statusNote}>{noteText}</span>
       </div>
 
-      <TitleCountdown premiereDate={titleItem.premiere_date} />
+      <TitleCountdown premiereDate={titleItem.premiere_date} status={titleItem.overall_status} />
 
       <div class={actions}>
         <ActionMenu
@@ -211,7 +226,7 @@ function TitleRow({
               key: 'packages',
               label: 'View Packages',
               icon: Layers,
-              onClick: () => navigate({ to: '/runs' }),
+              onClick: () => navigate({ to: '/deliveries' }),
             },
             {
               type: 'divider',
@@ -237,12 +252,11 @@ function TitlesPage() {
   const createModal = useDisclosure()
   const deleteModal = useDisclosure()
   const [deletingTitle, setDeletingTitle] = useState<ModelsTitle | null>(null)
+  const [selectedTitleId, setSelectedTitleId] = useState<string | null>(null)
 
   const {
     activeTab,
-    onTabChange,
-    setSelectedId,
-    currentSelectedId,
+    onTabChange: onTabChangeInternal,
     page,
     onPrevPage,
     onNextPage,
@@ -263,6 +277,17 @@ function TitlesPage() {
         sort_order,
       }),
   })
+
+  const [hasUserClosedSidebar, setHasUserClosedSidebar] = useState(false)
+
+  useEffect(() => {
+    if (titles.length > 0) {
+      syncSimulationAnchorWithTitles(titles)
+      if (!selectedTitleId && !hasUserClosedSidebar) {
+        setSelectedTitleId(titles[0].id)
+      }
+    }
+  }, [titles, selectedTitleId, hasUserClosedSidebar])
 
   const sendToQcMutation = useMutation({
     mutationFn: async (id: string) => {
@@ -296,6 +321,11 @@ function TitlesPage() {
     },
   })
 
+  const onTabChange = (nextTab: TabId) => {
+    onTabChangeInternal(nextTab)
+    setSelectedTitleId(null)
+  }
+
   return (
     <div class={pageClass}>
       <div class={header}>
@@ -327,43 +357,67 @@ function TitlesPage() {
         </div>
       </div>
 
-      {isLoading ? (
-        <div class={loadingState}>Loading titles from database...</div>
-      ) : isError ? (
-        <div class={emptyState}>
-          <div class={emptyTitle}>Failed to load titles</div>
-          <div class={emptyText}>
-            {error instanceof Error ? error.message : 'An unexpected error occurred.'}
-          </div>
+      <div class={contentLayout}>
+        <div class={mainListContainer}>
+          {isLoading ? (
+            <div class={loadingState}>Loading titles from database...</div>
+          ) : isError ? (
+            <div class={emptyState}>
+              <div class={emptyTitle}>Failed to load titles</div>
+              <div class={emptyText}>
+                {error instanceof Error ? error.message : 'An unexpected error occurred.'}
+              </div>
+            </div>
+          ) : titles.length === 0 ? (
+            <div class={emptyState}>
+              <Film size={24} />
+              <div class={emptyTitle}>No titles found</div>
+              <div class={emptyText}>
+                {activeTab === 'ALL'
+                  ? 'No media titles registered yet. Create your first title to begin.'
+                  : `No titles found matching status '${activeTab}'.`}
+              </div>
+            </div>
+          ) : (
+            <div class={list}>
+              {titles.map((titleItem) => (
+                <TitleRow
+                  key={titleItem.id}
+                  titleItem={titleItem}
+                  isSelected={titleItem.id === selectedTitleId}
+                  onSelect={() => {
+                    if (titleItem.id === selectedTitleId) {
+                      setSelectedTitleId(null)
+                      setHasUserClosedSidebar(true)
+                    } else {
+                      setSelectedTitleId(titleItem.id)
+                      setHasUserClosedSidebar(false)
+                    }
+                  }}
+                  onSendToQC={() => sendToQcMutation.mutate(titleItem.id)}
+                  isSendingQC={sendToQcMutation.isPending}
+                  onDelete={() => {
+                    setDeletingTitle(titleItem)
+                    deleteModal.open()
+                  }}
+                />
+              ))}
+            </div>
+          )}
         </div>
-      ) : titles.length === 0 ? (
-        <div class={emptyState}>
-          <Film size={24} />
-          <div class={emptyTitle}>No titles found</div>
-          <div class={emptyText}>
-            {activeTab === 'ALL'
-              ? 'No media titles registered yet. Create your first title to begin.'
-              : `No titles found matching status '${activeTab}'.`}
-          </div>
-        </div>
-      ) : (
-        <div class={list}>
-          {titles.map((titleItem) => (
-            <TitleRow
-              key={titleItem.id}
-              titleItem={titleItem}
-              isSelected={titleItem.id === currentSelectedId}
-              onSelect={() => setSelectedId(titleItem.id)}
-              onSendToQC={() => sendToQcMutation.mutate(titleItem.id)}
-              isSendingQC={sendToQcMutation.isPending}
-              onDelete={() => {
-                setDeletingTitle(titleItem)
-                deleteModal.open()
-              }}
-            />
-          ))}
-        </div>
-      )}
+
+        {selectedTitleId ? (
+          <TitleSidebar
+            titleId={selectedTitleId}
+            onClose={() => {
+              setSelectedTitleId(null)
+              setHasUserClosedSidebar(true)
+            }}
+            onSendToQC={(id) => sendToQcMutation.mutate(id)}
+            isSendingQC={sendToQcMutation.isPending}
+          />
+        ) : null}
+      </div>
 
       <PaginationControls
         page={page}

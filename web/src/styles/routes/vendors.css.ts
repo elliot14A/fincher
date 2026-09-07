@@ -7,7 +7,7 @@ export const page = style({
   flexDirection: 'column',
   flex: 1,
   height: '100%',
-  overflowY: 'auto',
+  overflow: 'hidden',
 })
 
 export const header = style({
@@ -67,16 +67,35 @@ export const toolbarTabActive = style({
   borderBottom: `2px solid ${vars.color.primary}`,
 })
 
+export const contentLayout = style({
+  display: 'flex',
+  flex: 1,
+  minHeight: 0,
+  overflow: 'hidden',
+})
+
+export const mainListContainer = style({
+  display: 'flex',
+  flexDirection: 'column',
+  flex: 1,
+  minWidth: 0,
+  height: '100%',
+  overflow: 'hidden',
+})
+
 export const list = style({
   display: 'flex',
   flexDirection: 'column',
   padding: `${vars.space.xs} ${vars.space['2xl']}`,
+  flex: 1,
+  minHeight: 0,
+  overflowY: 'auto',
 })
 
 export const row = style({
   position: 'relative',
   display: 'grid',
-  gridTemplateColumns: '40px minmax(0, 1fr) 100px minmax(180px, auto) 36px',
+  gridTemplateColumns: '40px minmax(0, 1fr) 120px 110px 90px 36px',
   alignItems: 'center',
   columnGap: vars.space.lg,
   padding: `${vars.space.md} ${vars.space.sm}`,
@@ -102,8 +121,8 @@ export const rowActive = style({
 })
 
 export const vendorAvatar = style({
-  width: '36px',
-  height: '36px',
+  width: '38px',
+  height: '38px',
   borderRadius: vars.radii.xs,
   objectFit: 'cover',
   display: 'flex',
@@ -122,6 +141,12 @@ export const nameStack = style({
   minWidth: 0,
 })
 
+export const nameHeader = style({
+  display: 'flex',
+  alignItems: 'center',
+  gap: vars.space.xs,
+})
+
 export const cardName = style({
   fontSize: vars.fontSize.base,
   fontWeight: 600,
@@ -131,38 +156,69 @@ export const cardName = style({
   textOverflow: 'ellipsis',
 })
 
+export const vendorCode = style({
+  fontFamily: fonts.mono,
+  fontSize: vars.fontSize['3xs'],
+  color: vars.color.textTertiary,
+  backgroundColor: vars.color.surfaceElevated,
+  padding: `${vars.space['3xs']} ${vars.space.xs}`,
+  borderRadius: vars.radii.xs,
+  border: `1px solid ${vars.color.border}`,
+})
+
 export const metaRow = style({
   display: 'flex',
   alignItems: 'center',
   gap: vars.space.xs,
+  flexWrap: 'wrap',
+})
+
+export const rateStack = style({
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'flex-start',
+  gap: '2px',
+})
+
+export const rateLabel = style({
+  fontSize: vars.fontSize['3xs'],
+  color: vars.color.textTertiary,
+  textTransform: 'uppercase',
+  letterSpacing: '0.04em',
+})
+
+export const rateValue = style({
+  fontFamily: fonts.mono,
+  fontSize: vars.fontSize.sm,
+  fontWeight: 600,
+  color: vars.color.textPrimary,
+  fontVariantNumeric: 'tabular-nums',
+})
+
+export const tatStack = style({
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'flex-start',
+  gap: '2px',
+})
+
+export const tatLabel = style({
+  fontSize: vars.fontSize['3xs'],
+  color: vars.color.textTertiary,
+  textTransform: 'uppercase',
+  letterSpacing: '0.04em',
+})
+
+export const tatValue = style({
+  fontFamily: fonts.mono,
+  fontSize: vars.fontSize.sm,
+  fontWeight: 500,
+  color: vars.color.textSecondary,
 })
 
 export const statusStack = style({
   display: 'flex',
   alignItems: 'center',
-})
-
-export const scheduleStack = style({
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'flex-end',
-  whiteSpace: 'nowrap',
-  gap: '3px',
-})
-
-export const scheduleLabel = style({
-  fontSize: vars.fontSize['2xs'],
-  color: vars.color.textTertiary,
-})
-
-export const countdownValue = style({
-  fontFamily: fonts.mono,
-  fontSize: vars.fontSize.sm,
-  fontWeight: 500,
-  fontVariantNumeric: 'tabular-nums',
-  color: vars.color.textPrimary,
-  letterSpacing: '0.01em',
-  whiteSpace: 'nowrap',
 })
 
 export const actions = style({

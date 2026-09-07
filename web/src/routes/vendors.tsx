@@ -9,38 +9,45 @@ import { ActionMenu } from '#/components/ui/dropdown'
 import { DeleteModal } from '#/components/ui/modal'
 import { PaginationControls } from '#/components/ui/pagination'
 import { CreateVendorModal } from '#/features/vendors/components/modals'
+import { VendorSidebar } from '#/features/vendors/components/sidebar'
 import { vendorsKeys } from '#/features/vendors/queryKeys'
 import { vendorsQueryOptions } from '#/features/vendors/queryOptions'
 import { deleteVendorsById, type ModelsVendor } from '#/lib/api'
 import { useDisclosure, useSelectableRow, useTabbedQueryList } from '#/lib/hooks'
-import { formatDate } from '#/lib/utils'
 import {
   actions,
   cardName,
   componentBadge,
-  countdownValue,
+  contentLayout,
   emptyState,
   emptyText,
   emptyTitle,
   header,
   list,
   loadingState,
+  mainListContainer,
   marketBadge,
   metaRow,
+  nameHeader,
   nameStack,
   page as pageClass,
   pageSubtitle,
   pageTitle,
+  rateLabel,
+  rateStack,
+  rateValue,
   row,
   rowActive,
-  scheduleLabel,
-  scheduleStack,
   statusStack,
+  tatLabel,
+  tatStack,
+  tatValue,
   toolbar,
   toolbarGroup,
   toolbarTab,
   toolbarTabActive,
   vendorAvatar,
+  vendorCode,
 } from '#/styles/routes/vendors.css'
 
 export const Route = createFileRoute('/vendors')({
@@ -76,9 +83,12 @@ function VendorRow({
   })
 
   const posterUrl = (vendor.metadata as Record<string, string> | undefined)?.poster_url
-  const formattedDate = formatDate(vendor.created_at, undefined, 'Registered')
   const componentsList = vendor.components ?? []
   const marketsList = vendor.markets ?? []
+  const hourlyRate = vendor.hourly_rate_usd
+    ? `$${vendor.hourly_rate_usd.toFixed(2)}/hr`
+    : '$0.00/hr'
+  const tat = vendor.turnaround_hours ? `${vendor.turnaround_hours}h SLA` : '24h SLA'
 
   return (
     <div {...rowProps}>
@@ -91,7 +101,10 @@ function VendorRow({
       )}
 
       <div class={nameStack}>
-        <span class={cardName}>{vendor.name}</span>
+        <div class={nameHeader}>
+          <span class={cardName}>{vendor.name}</span>
+          <span class={vendorCode}>{vendor.id}</span>
+        </div>
         <div class={metaRow}>
           {componentsList.map((comp) => (
             <span key={comp} class={componentBadge}>
@@ -108,13 +121,18 @@ function VendorRow({
         </div>
       </div>
 
-      <div class={statusStack}>
-        <Badge variant="neutral">Active</Badge>
+      <div class={rateStack}>
+        <span class={rateLabel}>Billing Rate</span>
+        <span class={rateValue}>{hourlyRate}</span>
       </div>
 
-      <div class={scheduleStack}>
-        <span class={scheduleLabel}>Onboarded</span>
-        <span class={countdownValue}>{formattedDate}</span>
+      <div class={tatStack}>
+        <span class={tatLabel}>Turnaround</span>
+        <span class={tatValue}>{tat}</span>
+      </div>
+
+      <div class={statusStack}>
+        <Badge variant="success">Active</Badge>
       </div>
 
       <div class={actions}>
@@ -131,9 +149,9 @@ function VendorRow({
             {
               type: 'action',
               key: 'packages',
-              label: 'View Packages',
+              label: 'Inspect Packages',
               icon: Layers,
-              onClick: () => navigate({ to: '/runs' }),
+              onClick: () => navigate({ to: '/deliveries' }),
             },
             {
               type: 'divider',
@@ -233,41 +251,49 @@ function VendorsPage() {
         </div>
       </div>
 
-      {isLoading ? (
-        <div class={loadingState}>Loading vendors directory from database...</div>
-      ) : isError ? (
-        <div class={emptyState}>
-          <div class={emptyTitle}>Failed to load vendors</div>
-          <div class={emptyText}>
-            {error instanceof Error ? error.message : 'An unexpected error occurred.'}
-          </div>
+      <div class={contentLayout}>
+        <div class={mainListContainer}>
+          {isLoading ? (
+            <div class={loadingState}>Loading vendors directory from database...</div>
+          ) : isError ? (
+            <div class={emptyState}>
+              <div class={emptyTitle}>Failed to load vendors</div>
+              <div class={emptyText}>
+                {error instanceof Error ? error.message : 'An unexpected error occurred.'}
+              </div>
+            </div>
+          ) : vendors.length === 0 ? (
+            <div class={emptyState}>
+              <Users size={24} />
+              <div class={emptyTitle}>No vendors found</div>
+              <div class={emptyText}>
+                {activeTab === 'ALL'
+                  ? 'No post-production facilities registered yet.'
+                  : `No vendors found for specialty '${activeTab}'.`}
+              </div>
+            </div>
+          ) : (
+            <div class={list}>
+              {vendors.map((vendor) => (
+                <VendorRow
+                  key={vendor.id}
+                  vendor={vendor}
+                  isSelected={vendor.id === currentSelectedId}
+                  onSelect={() => setSelectedId(currentSelectedId === vendor.id ? null : vendor.id)}
+                  onDelete={() => {
+                    setDeletingVendor(vendor)
+                    deleteModal.open()
+                  }}
+                />
+              ))}
+            </div>
+          )}
         </div>
-      ) : vendors.length === 0 ? (
-        <div class={emptyState}>
-          <Users size={24} />
-          <div class={emptyTitle}>No vendors found</div>
-          <div class={emptyText}>
-            {activeTab === 'ALL'
-              ? 'No post-production facilities registered yet.'
-              : `No vendors found for specialty '${activeTab}'.`}
-          </div>
-        </div>
-      ) : (
-        <div class={list}>
-          {vendors.map((vendor) => (
-            <VendorRow
-              key={vendor.id}
-              vendor={vendor}
-              isSelected={vendor.id === currentSelectedId}
-              onSelect={() => setSelectedId(vendor.id)}
-              onDelete={() => {
-                setDeletingVendor(vendor)
-                deleteModal.open()
-              }}
-            />
-          ))}
-        </div>
-      )}
+
+        {currentSelectedId ? (
+          <VendorSidebar vendorId={currentSelectedId} onClose={() => setSelectedId(null)} />
+        ) : null}
+      </div>
 
       <PaginationControls
         page={page}

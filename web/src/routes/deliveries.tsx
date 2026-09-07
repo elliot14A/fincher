@@ -22,8 +22,10 @@ import { ActionMenu } from '#/components/ui/dropdown'
 import { DeleteModal } from '#/components/ui/modal'
 import { PaginationControls } from '#/components/ui/pagination'
 import { CreateDeliveryModal } from '#/features/deliveries/components/modals'
+import { DeliverySidebar } from '#/features/deliveries/components/sidebar'
 import { deliveriesKeys } from '#/features/deliveries/queryKeys'
 import { deliveriesQueryOptions } from '#/features/deliveries/queryOptions'
+import { PackageSidebar } from '#/features/packages/components/sidebar'
 import { packagesKeys } from '#/features/packages/queryKeys'
 import { packagesQueryOptions } from '#/features/packages/queryOptions'
 import {
@@ -39,14 +41,17 @@ import {
   cardName,
   cardTitleRow,
   componentIcon,
+  contentLayout,
   countdownValue,
   countryBadge,
   emptyState,
   emptyText,
   emptyTitle,
+  expandButton,
   header,
   list,
   loadingState,
+  mainListContainer,
   metaDivider,
   metaRow,
   metaText,
@@ -60,10 +65,12 @@ import {
   scheduleLabel,
   scheduleStack,
   statusStack,
+  subItemChevron,
   subItemComp,
   subItemIcon,
   subItemId,
   subItemLeft,
+  subItemRight,
   subItemRow,
   subItemVendor,
   subListContainer,
@@ -152,21 +159,20 @@ function DeliveryRow({
   delivery,
   isSelected,
   onSelect,
+  onSelectPackage,
   onDelete,
 }: {
   delivery: ModelsDelivery
   isSelected: boolean
   onSelect: () => void
+  onSelectPackage: (pkgId: string) => void
   onDelete: () => void
 }) {
   const navigate = useNavigate()
   const [isExpanded, setIsExpanded] = useState(false)
   const { rowProps } = useSelectableRow({
     isSelected,
-    onSelect: () => {
-      onSelect()
-      setIsExpanded((prev) => !prev)
-    },
+    onSelect,
     baseClassName: row,
     activeClassName: rowActive,
   })
@@ -190,7 +196,19 @@ function DeliveryRow({
         <div class={nameStack}>
           <div class={cardTitleRow}>
             <span class={cardName}>{delivery.id}</span>
-            {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+            <button
+              type="button"
+              class={expandButton}
+              onClick={(e) => {
+                e.stopPropagation()
+                setIsExpanded((prev) => !prev)
+              }}
+              aria-label={
+                isExpanded ? 'Collapse constituent packages' : 'Expand constituent packages'
+              }
+            >
+              {isExpanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+            </button>
           </div>
           <div class={metaRow}>
             <span class={metaText}>Title: {delivery.title_id}</span>
@@ -246,15 +264,27 @@ function DeliveryRow({
               const pkgStatus = mapPackageStatus(pkg.status)
               const CompIcon = getComponentIcon(pkg.component)
               return (
-                <div key={pkg.id} class={subItemRow}>
+                <button
+                  key={pkg.id}
+                  type="button"
+                  class={subItemRow}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onSelectPackage(pkg.id)
+                  }}
+                  aria-label={`Inspect package details for ${pkg.id}`}
+                >
                   <div class={subItemLeft}>
-                    <CompIcon size={13} class={subItemIcon} />
+                    <CompIcon size={14} class={subItemIcon} />
                     <span class={subItemId}>{pkg.id}</span>
                     <span class={subItemComp}>({pkg.component})</span>
                     {pkg.vendor_id && <span class={subItemVendor}>• Vendor: {pkg.vendor_id}</span>}
                   </div>
-                  <Badge variant={pkgStatus.variant}>{pkgStatus.label}</Badge>
-                </div>
+                  <div class={subItemRight}>
+                    <Badge variant={pkgStatus.variant}>{pkgStatus.label}</Badge>
+                    <ChevronRight size={14} class={subItemChevron} />
+                  </div>
+                </button>
               )
             })
           )}
@@ -360,7 +390,9 @@ function DeliveriesPage() {
   const [deliveryTab, setDeliveryTab] = useState<string>('ALL')
   const [packageTab, setPackageTab] = useState<string>('ALL')
   const [page, setPage] = useState(1)
-  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [selectedDeliveryId, setSelectedDeliveryId] = useState<string | null>(null)
+  const [selectedPackageId, setSelectedPackageId] = useState<string | null>(null)
+  const [packageOrigin, setPackageOrigin] = useState<'delivery' | 'standalone' | null>(null)
 
   const createModal = useDisclosure()
   const deleteModal = useDisclosure()
@@ -459,6 +491,9 @@ function DeliveriesPage() {
             onClick={() => {
               setViewMode('DELIVERIES')
               setPage(1)
+              setSelectedDeliveryId(null)
+              setSelectedPackageId(null)
+              setPackageOrigin(null)
             }}
           >
             <Globe size={14} />
@@ -472,6 +507,9 @@ function DeliveriesPage() {
             onClick={() => {
               setViewMode('PACKAGES')
               setPage(1)
+              setSelectedDeliveryId(null)
+              setSelectedPackageId(null)
+              setPackageOrigin(null)
             }}
           >
             <Layers size={14} />
@@ -491,6 +529,9 @@ function DeliveriesPage() {
                   onClick={() => {
                     setDeliveryTab(tab.id)
                     setPage(1)
+                    setSelectedDeliveryId(null)
+                    setSelectedPackageId(null)
+                    setPackageOrigin(null)
                   }}
                 >
                   {tab.label}
@@ -504,6 +545,9 @@ function DeliveriesPage() {
                   onClick={() => {
                     setPackageTab(tab.id)
                     setPage(1)
+                    setSelectedDeliveryId(null)
+                    setSelectedPackageId(null)
+                    setPackageOrigin(null)
                   }}
                 >
                   {tab.label}
@@ -512,83 +556,138 @@ function DeliveriesPage() {
         </div>
       </div>
 
-      {viewMode === 'DELIVERIES' ? (
-        isDeliveriesLoading ? (
-          <div class={loadingState}>Loading territory deliveries...</div>
-        ) : deliveries.length === 0 ? (
-          <div class={emptyState}>
-            <Globe size={32} />
-            <div class={emptyTitle}>No Deliveries Found</div>
-            <div class={emptyText}>
-              No territory deliveries match the selected filter. Create a delivery to schedule
-              localized platform releases.
+      <div class={contentLayout}>
+        <div class={mainListContainer}>
+          {viewMode === 'DELIVERIES' ? (
+            isDeliveriesLoading ? (
+              <div class={loadingState}>Loading territory deliveries...</div>
+            ) : deliveries.length === 0 ? (
+              <div class={emptyState}>
+                <Globe size={32} />
+                <div class={emptyTitle}>No Deliveries Found</div>
+                <div class={emptyText}>
+                  No territory deliveries match the selected filter. Create a delivery to schedule
+                  localized platform releases.
+                </div>
+              </div>
+            ) : (
+              <div class={list}>
+                {deliveries.map((d: ModelsDelivery) => (
+                  <DeliveryRow
+                    key={d.id}
+                    delivery={d}
+                    isSelected={selectedDeliveryId === d.id}
+                    onSelect={() => {
+                      setSelectedDeliveryId(selectedDeliveryId === d.id ? null : d.id)
+                      setSelectedPackageId(null)
+                      setPackageOrigin(null)
+                    }}
+                    onSelectPackage={(pkgId) => {
+                      setSelectedDeliveryId(d.id)
+                      setSelectedPackageId(pkgId)
+                      setPackageOrigin('delivery')
+                    }}
+                    onDelete={() => {
+                      setDeletingItem({ id: d.id, type: 'delivery' })
+                      deleteModal.open()
+                    }}
+                  />
+                ))}
+              </div>
+            )
+          ) : isPackagesLoading ? (
+            <div class={loadingState}>Loading media packages...</div>
+          ) : packages.length === 0 ? (
+            <div class={emptyState}>
+              <PackageIcon size={32} />
+              <div class={emptyTitle}>No Packages Found</div>
+              <div class={emptyText}>
+                No media asset packages match the selected component filter. Packages are created
+                during title onboarding and vendor allocations.
+              </div>
             </div>
-          </div>
-        ) : (
-          <>
+          ) : (
             <div class={list}>
-              {deliveries.map((d: ModelsDelivery) => (
-                <DeliveryRow
-                  key={d.id}
-                  delivery={d}
-                  isSelected={selectedId === d.id}
-                  onSelect={() => setSelectedId(d.id)}
+              {packages.map((pkg: ModelsPackage) => (
+                <PackageRow
+                  key={pkg.id}
+                  pkg={pkg}
+                  isSelected={selectedPackageId === pkg.id}
+                  onSelect={() => {
+                    setSelectedPackageId(selectedPackageId === pkg.id ? null : pkg.id)
+                    setPackageOrigin('standalone')
+                  }}
                   onDelete={() => {
-                    setDeletingItem({ id: d.id, type: 'delivery' })
+                    setDeletingItem({ id: pkg.id, type: 'package' })
                     deleteModal.open()
                   }}
                 />
               ))}
             </div>
-
-            <PaginationControls
-              page={deliveriesResult?.page ?? page}
-              totalPages={deliveriesResult?.total_pages ?? 1}
-              hasNextPage={deliveriesResult?.has_next_page ?? false}
-              hasPrevPage={deliveriesResult?.has_prev_page ?? false}
-              onPrevPage={() => setPage((p) => Math.max(1, p - 1))}
-              onNextPage={() => setPage((p) => p + 1)}
-            />
-          </>
-        )
-      ) : isPackagesLoading ? (
-        <div class={loadingState}>Loading media packages...</div>
-      ) : packages.length === 0 ? (
-        <div class={emptyState}>
-          <PackageIcon size={32} />
-          <div class={emptyTitle}>No Packages Found</div>
-          <div class={emptyText}>
-            No media asset packages match the selected component filter. Packages are created during
-            title onboarding and vendor allocations.
-          </div>
+          )}
         </div>
-      ) : (
-        <>
-          <div class={list}>
-            {packages.map((pkg: ModelsPackage) => (
-              <PackageRow
-                key={pkg.id}
-                pkg={pkg}
-                isSelected={selectedId === pkg.id}
-                onSelect={() => setSelectedId(pkg.id)}
-                onDelete={() => {
-                  setDeletingItem({ id: pkg.id, type: 'package' })
-                  deleteModal.open()
-                }}
-              />
-            ))}
-          </div>
 
-          <PaginationControls
-            page={packagesResult?.page ?? page}
-            totalPages={packagesResult?.total_pages ?? 1}
-            hasNextPage={packagesResult?.has_next_page ?? false}
-            hasPrevPage={packagesResult?.has_prev_page ?? false}
-            onPrevPage={() => setPage((p) => Math.max(1, p - 1))}
-            onNextPage={() => setPage((p) => p + 1)}
+        {viewMode === 'DELIVERIES' ? (
+          selectedPackageId ? (
+            <PackageSidebar
+              packageId={selectedPackageId}
+              onClose={() => {
+                setSelectedPackageId(null)
+                setSelectedDeliveryId(null)
+                setPackageOrigin(null)
+              }}
+              onBack={
+                packageOrigin === 'delivery' && selectedDeliveryId
+                  ? () => {
+                      setSelectedPackageId(null)
+                      setPackageOrigin(null)
+                    }
+                  : undefined
+              }
+              backLabel="Back to Delivery"
+            />
+          ) : selectedDeliveryId ? (
+            <DeliverySidebar
+              deliveryId={selectedDeliveryId}
+              onClose={() => setSelectedDeliveryId(null)}
+              onSelectPackage={(pkgId) => {
+                setSelectedPackageId(pkgId)
+                setPackageOrigin('delivery')
+              }}
+            />
+          ) : null
+        ) : selectedPackageId ? (
+          <PackageSidebar
+            packageId={selectedPackageId}
+            onClose={() => setSelectedPackageId(null)}
           />
-        </>
-      )}
+        ) : null}
+      </div>
+
+      <PaginationControls
+        page={
+          viewMode === 'DELIVERIES'
+            ? (deliveriesResult?.page ?? page)
+            : (packagesResult?.page ?? page)
+        }
+        totalPages={
+          viewMode === 'DELIVERIES'
+            ? (deliveriesResult?.total_pages ?? 1)
+            : (packagesResult?.total_pages ?? 1)
+        }
+        hasNextPage={
+          viewMode === 'DELIVERIES'
+            ? (deliveriesResult?.has_next_page ?? false)
+            : (packagesResult?.has_next_page ?? false)
+        }
+        hasPrevPage={
+          viewMode === 'DELIVERIES'
+            ? (deliveriesResult?.has_prev_page ?? false)
+            : (packagesResult?.has_prev_page ?? false)
+        }
+        onPrevPage={() => setPage((p) => Math.max(1, p - 1))}
+        onNextPage={() => setPage((p) => p + 1)}
+      />
 
       <CreateDeliveryModal isOpen={createModal.isOpen} onClose={createModal.close} />
 

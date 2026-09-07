@@ -1,20 +1,7 @@
-import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
-import {
-  ChevronRight,
-  FileText,
-  LayoutGrid,
-  MessageSquare,
-  Play,
-  Plus,
-  Search,
-  Users,
-} from 'lucide-preact'
+import { FileText, LayoutGrid, MessageSquare, Play, Plus, Search, Users } from 'lucide-preact'
 import { Logo } from '#/components/ui/logo'
-import { titlesQueryOptions } from '#/features/titles'
-import type { ModelsTitle } from '#/lib/api'
 import {
-  activeDot,
   brandRow,
   brandSubtitle,
   composeButton,
@@ -24,12 +11,7 @@ import {
   navItemLabel,
   searchLabel,
   searchRow,
-  sectionTitle,
   sidebarContainer,
-  threadItem,
-  threadItemActive,
-  threadItemLabel,
-  viewAllRow,
 } from './navigationSidebar.css'
 
 const NAV_LINKS = [
@@ -40,22 +22,7 @@ const NAV_LINKS = [
   { to: '/runs', label: 'Runs', icon: Play },
 ] as const
 
-type RecentThreadItem = {
-  label: string
-  active: boolean
-  hasHold: boolean
-}
-
 export function NavigationSidebar() {
-  const { data: titlesResult } = useQuery(titlesQueryOptions({ limit: 4 }))
-  const titles = titlesResult?.items ?? []
-
-  const recentItems: RecentThreadItem[] = titles.slice(0, 4).map((t: ModelsTitle, idx: number) => ({
-    label: `${t.name} release integrity`,
-    active: idx === 0,
-    hasHold: t.overall_status === 'HOLD' || t.overall_status === 'AT_RISK',
-  }))
-
   return (
     <aside class={sidebarContainer}>
       <div class={brandRow}>
@@ -87,27 +54,6 @@ export function NavigationSidebar() {
           <span class={navItemLabel}>{label}</span>
         </Link>
       ))}
-
-      {recentItems.length > 0 ? (
-        <>
-          <div class={sectionTitle}>Recent</div>
-
-          {recentItems.map((thread: RecentThreadItem) => (
-            <div
-              key={thread.label}
-              class={thread.active ? `${threadItem} ${threadItemActive}` : threadItem}
-            >
-              <span class={threadItemLabel}>{thread.label}</span>
-              {(thread.active || thread.hasHold) && <span class={activeDot} />}
-            </div>
-          ))}
-
-          <div class={viewAllRow}>
-            <span>View all</span>
-            <ChevronRight size={14} />
-          </div>
-        </>
-      ) : null}
     </aside>
   )
 }

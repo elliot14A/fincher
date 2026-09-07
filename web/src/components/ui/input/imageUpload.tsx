@@ -17,7 +17,7 @@ import {
   uploadPrompt,
 } from './imageUpload.css'
 
-const MAX_SIZE_BYTES = 1 * 1024 * 1024 // Strict 1MB
+const MAX_SIZE_BYTES = 1024 * 1024
 
 function extractUploadId(url: string | undefined): string | null {
   if (!url) return null

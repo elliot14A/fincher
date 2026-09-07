@@ -7,7 +7,7 @@ export const page = style({
   flexDirection: 'column',
   flex: 1,
   height: '100%',
-  overflowY: 'auto',
+  overflow: 'hidden',
 })
 
 export const header = style({
@@ -111,10 +111,29 @@ export const toolbarTabActive = style({
   borderBottom: `2px solid ${vars.color.primary}`,
 })
 
+export const contentLayout = style({
+  display: 'flex',
+  flex: 1,
+  minHeight: 0,
+  overflow: 'hidden',
+})
+
+export const mainListContainer = style({
+  display: 'flex',
+  flexDirection: 'column',
+  flex: 1,
+  minWidth: 0,
+  height: '100%',
+  overflow: 'hidden',
+})
+
 export const list = style({
   display: 'flex',
   flexDirection: 'column',
   padding: `${vars.space.xs} ${vars.space['2xl']}`,
+  flex: 1,
+  minHeight: 0,
+  overflowY: 'auto',
 })
 
 export const row = style({
@@ -185,6 +204,26 @@ export const cardTitleRow = style({
   display: 'flex',
   alignItems: 'center',
   gap: vars.space.xs,
+})
+
+export const expandButton = style({
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  width: '20px',
+  height: '20px',
+  padding: 0,
+  background: 'transparent',
+  border: `1px solid ${vars.color.border}`,
+  borderRadius: vars.radii.xs,
+  color: vars.color.textSecondary,
+  cursor: 'pointer',
+  transition: 'all 0.15s ease',
+  ':hover': {
+    color: vars.color.textPrimary,
+    backgroundColor: vars.color.surfaceHover,
+    borderColor: vars.color.borderStrong,
+  },
 })
 
 export const cardName = style({
@@ -258,7 +297,6 @@ export const actions = style({
   justifyContent: 'center',
 })
 
-// Expanded Constituent Packages Sub-view
 export const subListContainer = style({
   gridColumn: '1 / -1',
   backgroundColor: vars.color.surfaceElevated,
@@ -290,11 +328,19 @@ export const subItemRow = style({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'space-between',
-  padding: `${vars.space.xs} 0`,
-  borderBottom: `1px solid ${vars.color.borderSubtle}`,
+  width: '100%',
+  textAlign: 'left',
+  background: 'none',
+  border: 'none',
+  font: 'inherit',
+  color: 'inherit',
+  padding: `${vars.space.xs} ${vars.space.sm}`,
+  borderRadius: vars.radii.xs,
   fontSize: vars.fontSize.xs,
-  ':last-child': {
-    borderBottom: 'none',
+  cursor: 'pointer',
+  transition: 'all 0.15s ease',
+  ':hover': {
+    backgroundColor: vars.color.surfaceHover,
   },
 })
 
@@ -302,24 +348,49 @@ export const subItemLeft = style({
   display: 'flex',
   alignItems: 'center',
   gap: vars.space.sm,
+  minWidth: 0,
+})
+
+export const subItemRight = style({
+  display: 'flex',
+  alignItems: 'center',
+  gap: vars.space.sm,
+  flexShrink: 0,
+})
+
+export const subItemChevron = style({
+  color: vars.color.textTertiary,
+  opacity: 0.6,
+  transition: 'transform 0.15s ease, opacity 0.15s ease',
+  selectors: {
+    [`${subItemRow}:hover &`]: {
+      opacity: 1,
+      transform: 'translateX(2px)',
+      color: vars.color.primary,
+    },
+  },
 })
 
 export const subItemIcon = style({
   color: vars.color.textSecondary,
+  flexShrink: 0,
 })
 
 export const subItemId = style({
   fontFamily: fonts.mono,
   fontWeight: 600,
   color: vars.color.textPrimary,
+  fontSize: vars.fontSize['2xs'],
 })
 
 export const subItemComp = style({
   color: vars.color.textTertiary,
+  fontSize: vars.fontSize['2xs'],
 })
 
 export const subItemVendor = style({
   color: vars.color.textSecondary,
+  fontSize: vars.fontSize['2xs'],
 })
 
 export const emptyState = style({

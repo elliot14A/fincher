@@ -58,7 +58,6 @@ function OperationsChatPage() {
   const handleSubmit = (event: { preventDefault: () => void }) => {
     event.preventDefault()
     if (!prompt.trim()) return
-    // Ready for autonomous agent streaming integration
   }
 
   return (

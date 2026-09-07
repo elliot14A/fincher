@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'bun:test'
-import { calculateCountdown } from './useCountdown'
+import {
+  calculateCountdown,
+  getSimulatedDomainTime,
+  resetSimulationAnchor,
+  syncSimulationAnchorWithTitles,
+} from './useCountdown'
 
 describe('calculateCountdown', () => {
   it('handles undefined or invalid dates safely', () => {
@@ -22,6 +27,21 @@ describe('calculateCountdown', () => {
     expect(result.isPast).toBe(true)
     expect(result.timecode).toBe('00h 00m 00s')
     expect(result.label).toBe('Released')
+  })
+
+  it('handles overdue statuses when past deadline', () => {
+    const now = 1700000000000
+    const pastDate = new Date(now - 10000).toISOString()
+
+    const overdueResult = calculateCountdown(pastDate, now, 'OVERDUE')
+    expect(overdueResult.label).toBe('Overdue')
+    expect(overdueResult.timecode).toBe('00h 00m 00s')
+
+    const holdResult = calculateCountdown(pastDate, now, 'HOLD')
+    expect(holdResult.label).toBe('Overdue')
+
+    const qcResult = calculateCountdown(pastDate, now, 'PROCESSING')
+    expect(qcResult.label).toBe('In QC (Overdue)')
   })
 
   it('calculates hours, minutes, seconds for future dates', () => {
@@ -53,5 +73,28 @@ describe('calculateCountdown', () => {
     expect(result.seconds).toBe(5)
     expect(result.label).toBe('76h 12m left')
     expect(result.timecode).toBe('76h 12m 05s')
+  })
+})
+
+describe('simulation anchor & compressed time', () => {
+  it('advances simulated domain time at 3600x real time from anchor', () => {
+    const base = 1700000000000
+    resetSimulationAnchor(base)
+
+    // 10 real seconds later = 10 domain hours (36,000,000 ms)
+    const simulated = getSimulatedDomainTime(base + 10000)
+    expect(simulated).toBe(base + 10 * 3600 * 1000)
+  })
+
+  it('syncSimulationAnchorWithTitles re-anchors when newer titles arrive', () => {
+    const oldBase = 1700000000000
+    resetSimulationAnchor(oldBase)
+
+    const newerCreated = new Date(oldBase + 60000).toISOString()
+    syncSimulationAnchorWithTitles([{ created_at: newerCreated }])
+
+    // Should now be anchored to the newer title
+    const simulated = getSimulatedDomainTime(oldBase + 60000)
+    expect(simulated).toBe(oldBase + 60000)
   })
 })

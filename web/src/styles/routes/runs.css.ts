@@ -12,7 +12,7 @@ export const page = style({
   flexDirection: 'column',
   flex: 1,
   height: '100%',
-  overflowY: 'auto',
+  overflow: 'hidden',
 })
 
 export const header = style({
@@ -74,8 +74,7 @@ export const toolbarTabActive = style({
 })
 
 export const contentLayout = style({
-  display: 'grid',
-  gridTemplateColumns: 'minmax(400px, 1fr) minmax(420px, 500px)',
+  display: 'flex',
   flex: 1,
   minHeight: 0,
   overflow: 'hidden',
@@ -84,6 +83,8 @@ export const contentLayout = style({
 export const mainListContainer = style({
   display: 'flex',
   flexDirection: 'column',
+  flex: 1,
+  minWidth: 0,
   height: '100%',
   overflow: 'hidden',
 })
@@ -92,6 +93,8 @@ export const list = style({
   display: 'flex',
   flexDirection: 'column',
   padding: `${vars.space.xs} ${vars.space['2xl']}`,
+  flex: 1,
+  minHeight: 0,
   overflowY: 'auto',
 })
 
@@ -157,6 +160,7 @@ export const metaRow = style({
   alignItems: 'center',
   gap: vars.space.xs,
   overflow: 'hidden',
+  flexWrap: 'wrap',
 })
 
 export const metaTrigger = style({
@@ -166,6 +170,16 @@ export const metaTrigger = style({
   textTransform: 'uppercase',
   letterSpacing: '0.04em',
   flexShrink: 0,
+})
+
+export const sublabelTag = style({
+  fontFamily: fonts.mono,
+  fontSize: vars.fontSize['3xs'],
+  color: vars.color.textSecondary,
+  backgroundColor: vars.color.surfaceElevated,
+  padding: `${vars.space['3xs']} ${vars.space.xs}`,
+  borderRadius: vars.radii.xs,
+  border: `1px solid ${vars.color.border}`,
 })
 
 export const metaDivider = style({
@@ -217,170 +231,6 @@ export const pulseDot = style({
   animation: `${pulseGlow} 1.5s infinite ease-in-out`,
 })
 
-// Inspector Drawer / Panel Styles
-export const inspectorPanel = style({
-  display: 'flex',
-  flexDirection: 'column',
-  borderLeft: `1px solid ${vars.color.borderSubtle}`,
-  backgroundColor: vars.color.surface,
-  height: '100%',
-  overflowY: 'auto',
-  padding: vars.space.lg,
-  gap: vars.space.lg,
-})
-
-export const inspectorHeader = style({
-  display: 'flex',
-  flexDirection: 'column',
-  gap: vars.space.xs,
-  paddingBottom: vars.space.md,
-  borderBottom: `1px solid ${vars.color.borderSubtle}`,
-})
-
-export const inspectorTopRow = style({
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-})
-
-export const inspectorTitle = style({
-  fontSize: vars.fontSize.base,
-  fontWeight: 600,
-  color: vars.color.textPrimary,
-  margin: 0,
-})
-
-export const inspectorSubtitle = style({
-  fontSize: vars.fontSize.xs,
-  color: vars.color.textTertiary,
-  fontFamily: fonts.mono,
-})
-
-export const sectionHeading = style({
-  fontSize: vars.fontSize.xs,
-  fontWeight: 600,
-  textTransform: 'uppercase',
-  letterSpacing: '0.05em',
-  color: vars.color.textSecondary,
-  margin: 0,
-  marginBottom: vars.space.sm,
-})
-
-export const contextGrid = style({
-  display: 'grid',
-  gridTemplateColumns: '1fr 1fr',
-  gap: vars.space.sm,
-  fontSize: vars.fontSize.xs,
-})
-
-export const contextLabel = style({
-  color: vars.color.textTertiary,
-})
-
-export const contextValue = style({
-  color: vars.color.textPrimary,
-  fontWeight: 600,
-})
-
-export const stepsTimeline = style({
-  display: 'flex',
-  flexDirection: 'column',
-  gap: vars.space.sm,
-})
-
-export const stepCard = style({
-  display: 'flex',
-  flexDirection: 'column',
-  padding: vars.space.md,
-  backgroundColor: vars.color.surfaceElevated,
-  borderRadius: vars.radii.sm,
-  border: `1px solid ${vars.color.border}`,
-  gap: vars.space.xs,
-})
-
-export const stepHeader = style({
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-})
-
-export const stepHeaderLeft = style({
-  display: 'flex',
-  alignItems: 'center',
-  gap: vars.space.xs,
-})
-
-export const stepName = style({
-  fontSize: vars.fontSize.xs,
-  fontWeight: 600,
-  fontFamily: fonts.mono,
-  color: vars.color.textPrimary,
-})
-
-export const stepDurationText = style({
-  fontSize: vars.fontSize['2xs'],
-  color: vars.color.textSecondary,
-  fontFamily: fonts.mono,
-})
-
-export const stepMeta = style({
-  fontSize: vars.fontSize['2xs'],
-  color: vars.color.textTertiary,
-  marginTop: vars.space['3xs'],
-})
-
-export const resultsList = style({
-  display: 'flex',
-  flexDirection: 'column',
-  gap: vars.space.sm,
-})
-
-export const resultCard = style({
-  display: 'flex',
-  flexDirection: 'column',
-  padding: vars.space.md,
-  backgroundColor: vars.color.surfaceElevated,
-  borderRadius: vars.radii.sm,
-  border: `1px solid ${vars.color.primaryBorder}`,
-  gap: vars.space.xs,
-})
-
-export const resultHeader = style({
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-})
-
-export const resultJudge = style({
-  fontSize: vars.fontSize['2xs'],
-  fontWeight: 600,
-  textTransform: 'uppercase',
-  letterSpacing: '0.04em',
-  color: vars.color.primary,
-})
-
-export const attemptBadge = style({
-  fontSize: vars.fontSize['2xs'],
-  color: vars.color.textTertiary,
-})
-
-export const resultOutcome = style({
-  fontSize: vars.fontSize.sm,
-  fontWeight: 600,
-  color: vars.color.textPrimary,
-})
-
-export const rationaleBox = style({
-  fontSize: vars.fontSize.xs,
-  color: vars.color.textSecondary,
-  backgroundColor: vars.color.background,
-  padding: vars.space.sm,
-  borderRadius: vars.radii.xs,
-  border: `1px solid ${vars.color.borderSubtle}`,
-  lineHeight: 1.45,
-  whiteSpace: 'pre-wrap',
-})
-
 export const emptyState = style({
   display: 'flex',
   flexDirection: 'column',
@@ -390,7 +240,7 @@ export const emptyState = style({
   textAlign: 'center',
   color: vars.color.textTertiary,
   gap: vars.space.sm,
-  minHeight: '320px',
+  minHeight: '380px',
   flex: 1,
 })
 
@@ -413,6 +263,6 @@ export const loadingState = style({
   padding: `${vars.space['3xl']} ${vars.space['2xl']}`,
   color: vars.color.textTertiary,
   fontSize: vars.fontSize.sm,
-  minHeight: '320px',
+  minHeight: '380px',
   flex: 1,
 })
