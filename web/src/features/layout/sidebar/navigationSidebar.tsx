@@ -15,7 +15,7 @@ import {
 } from './navigationSidebar.css'
 
 const NAV_LINKS = [
-  { to: '/', label: 'Chat', icon: MessageSquare },
+  { to: '/chat', label: 'Chat', icon: MessageSquare },
   { to: '/titles', label: 'Titles', icon: FileText },
   { to: '/deliveries', label: 'Deliveries', icon: LayoutGrid },
   { to: '/vendors', label: 'Vendors', icon: Users },
@@ -32,7 +32,7 @@ export function NavigationSidebar() {
         </div>
       </div>
 
-      <Link to="/" className={composeButton}>
+      <Link to="/chat" className={composeButton}>
         <Plus size={14} />
         <span>New chat</span>
       </Link>

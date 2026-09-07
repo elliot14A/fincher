@@ -10,6 +10,16 @@ export const shellRoot = style({
   backgroundColor: vars.color.background,
 })
 
+export const shellRootLanding = style({
+  display: 'flex',
+  flexDirection: 'column',
+  minHeight: '100vh',
+  width: '100vw',
+  overflowY: 'auto',
+  overflowX: 'hidden',
+  backgroundColor: vars.color.background,
+})
+
 export const shellMainArea = style({
   display: 'flex',
   flexDirection: 'column',

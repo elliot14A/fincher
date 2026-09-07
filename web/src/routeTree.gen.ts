@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ChatRouteImport } from './routes/chat'
 import { Route as DeliveriesRouteImport } from './routes/deliveries'
 import { Route as RunsRouteImport } from './routes/runs'
 import { Route as TitlesRouteImport } from './routes/titles'
@@ -18,6 +19,11 @@ import { Route as VendorsRouteImport } from './routes/vendors'
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ChatRoute = ChatRouteImport.update({
+  id: '/chat',
+  path: '/chat',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DeliveriesRoute = DeliveriesRouteImport.update({
@@ -43,6 +49,7 @@ const VendorsRoute = VendorsRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/chat': typeof ChatRoute
   '/deliveries': typeof DeliveriesRoute
   '/runs': typeof RunsRoute
   '/titles': typeof TitlesRoute
@@ -50,6 +57,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/chat': typeof ChatRoute
   '/deliveries': typeof DeliveriesRoute
   '/runs': typeof RunsRoute
   '/titles': typeof TitlesRoute
@@ -58,6 +66,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/chat': typeof ChatRoute
   '/deliveries': typeof DeliveriesRoute
   '/runs': typeof RunsRoute
   '/titles': typeof TitlesRoute
@@ -65,14 +74,22 @@ export interface FileRoutesById {
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/deliveries' | '/runs' | '/titles' | '/vendors'
+  fullPaths: '/' | '/chat' | '/deliveries' | '/runs' | '/titles' | '/vendors'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/deliveries' | '/runs' | '/titles' | '/vendors'
-  id: '__root__' | '/' | '/deliveries' | '/runs' | '/titles' | '/vendors'
+  to: '/' | '/chat' | '/deliveries' | '/runs' | '/titles' | '/vendors'
+  id:
+    | '__root__'
+    | '/'
+    | '/chat'
+    | '/deliveries'
+    | '/runs'
+    | '/titles'
+    | '/vendors'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ChatRoute: typeof ChatRoute
   DeliveriesRoute: typeof DeliveriesRoute
   RunsRoute: typeof RunsRoute
   TitlesRoute: typeof TitlesRoute
@@ -86,6 +103,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/chat': {
+      id: '/chat'
+      path: '/chat'
+      fullPath: '/chat'
+      preLoaderRoute: typeof ChatRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/deliveries': {
@@ -121,6 +145,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ChatRoute: ChatRoute,
   DeliveriesRoute: DeliveriesRoute,
   RunsRoute: RunsRoute,
   TitlesRoute: TitlesRoute,
