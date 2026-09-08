@@ -2,12 +2,12 @@ package agent
 
 import (
 	"fmt"
+	"strings"
 
 	domainerrors "github.com/elliot14A/fincher/pkg/domain/errors"
 	"github.com/elliot14A/fincher/pkg/domain/models"
 )
 
-// VerificationDecision represents the gate evaluation outcome.
 type VerificationDecision string
 
 const (
@@ -22,14 +22,12 @@ const (
 	SocialNoticeThresholdHours = 72.0
 )
 
-// VerificationResult captures the policy evaluation outcome and explanation.
 type VerificationResult struct {
 	Decision  VerificationDecision `json:"decision"`
 	Rationale string               `json:"rationale"`
 	Attempt   int                  `json:"attempt"`
 }
 
-// VerifyPlan rigorously validates a proposed ActionPlan against operational policies, SLA bounds, and market isolation gates.
 func VerifyPlan(plan *models.ActionPlan, impact *models.DeliveryImpact, vendors []models.VendorCandidate, projection *models.TitleProjection, attempt int) domainerrors.Result[*VerificationResult] {
 	if attempt >= MaxRemediationAttempts {
 		return domainerrors.Ok(&VerificationResult{
@@ -51,8 +49,6 @@ func VerifyPlan(plan *models.ActionPlan, impact *models.DeliveryImpact, vendors 
 		return reject("Action plan is empty; no operational remediation proposed.")
 	}
 
-	// Feasibility gate: If title readiness projection is breached (critical path + reconform exceeds remaining premiere window)
-	// and the plan does not propose holding or alerting, reject it.
 	if projection != nil && projection.IsBreached {
 		hasMitigation := false
 		for _, action := range plan.Actions {
@@ -92,6 +88,9 @@ func VerifyPlan(plan *models.ActionPlan, impact *models.DeliveryImpact, vendors 
 
 		switch action.Type {
 		case models.ActionHoldDelivery:
+			if strings.HasPrefix(action.TargetID, "pkg-") {
+				return reject("Type mismatch: HOLD_DELIVERY targets package id %q; delivery actions require a delivery id (del-*). To repair a defective package use REASSIGN_VENDOR with the package id in payload.package_id.", action.TargetID)
+			}
 			if releaseTargets[action.TargetID] {
 				return reject("Contradictory plan: delivery %s is targeted for both HOLD and RELEASE within the same action plan.", action.TargetID)
 			}
@@ -102,6 +101,9 @@ func VerifyPlan(plan *models.ActionPlan, impact *models.DeliveryImpact, vendors 
 			}
 
 		case models.ActionReleaseDelivery:
+			if strings.HasPrefix(action.TargetID, "pkg-") {
+				return reject("Type mismatch: RELEASE_DELIVERY targets package id %q; delivery actions require a delivery id (del-*). To repair a defective package use REASSIGN_VENDOR with the package id in payload.package_id.", action.TargetID)
+			}
 			if holdTargets[action.TargetID] {
 				return reject("Contradictory plan: delivery %s is targeted for both HOLD and RELEASE within the same action plan.", action.TargetID)
 			}
@@ -112,11 +114,6 @@ func VerifyPlan(plan *models.ActionPlan, impact *models.DeliveryImpact, vendors 
 			}
 
 		case models.ActionReassignVendor:
-			candidate, exists := vendorMap[action.TargetID]
-			if !exists {
-				return reject("Vendor validation failure: candidate vendor %s does not exist or is inactive.", action.TargetID)
-			}
-
 			pkgIDVal, hasPkg := action.Payload["package_id"]
 			pkgID, isStr := pkgIDVal.(string)
 			if !hasPkg || !isStr || pkgID == "" {
@@ -125,6 +122,14 @@ func VerifyPlan(plan *models.ActionPlan, impact *models.DeliveryImpact, vendors 
 
 			if impact != nil && len(affectedPackageMap) > 0 && !affectedPackageMap[pkgID] {
 				return reject("Blast radius violation: target package %s is not among affected defective packages (%v).", pkgID, impact.AffectedPackages)
+			}
+
+			candidate, exists := vendorMap[action.TargetID]
+			if len(vendorMap) == 0 {
+				continue
+			}
+			if !exists {
+				return reject("Vendor validation failure: candidate vendor %s does not exist or is inactive.", action.TargetID)
 			}
 
 			if impact != nil && impact.HoursUntilPremiere > 0 && float64(candidate.TurnaroundHours) > impact.HoursUntilPremiere {
@@ -136,8 +141,10 @@ func VerifyPlan(plan *models.ActionPlan, impact *models.DeliveryImpact, vendors 
 			}
 
 		case models.ActionEmailVendor:
-			if _, exists := vendorMap[action.TargetID]; !exists {
-				return reject("Vendor validation failure: cannot dispatch email to unknown vendor %s.", action.TargetID)
+			if len(vendorMap) > 0 {
+				if _, exists := vendorMap[action.TargetID]; !exists {
+					return reject("Vendor validation failure: cannot dispatch email to unknown vendor %s.", action.TargetID)
+				}
 			}
 
 		case models.ActionPostSocialUpdate:
@@ -151,6 +158,33 @@ func VerifyPlan(plan *models.ActionPlan, impact *models.DeliveryImpact, vendors 
 		if action.Type == models.ActionPostSocialUpdate {
 			if len(holdTargets) == 0 {
 				return reject("Social notice unjustified: cannot post public delay announcement when no delivery holds are active.")
+			}
+		}
+	}
+
+	breached := projection != nil && projection.IsBreached
+	if !breached && impact != nil && len(impact.AffectedPackages) > 0 {
+		hasMitigation := false
+		repaired := make(map[string]bool)
+		for _, action := range plan.Actions {
+			switch action.Type {
+			case models.ActionReassignVendor:
+				if pkgID, ok := action.Payload["package_id"].(string); ok && affectedPackageMap[pkgID] {
+					repaired[pkgID] = true
+				}
+			case models.ActionHoldTitle, models.ActionHoldDelivery:
+				hasMitigation = true
+			}
+		}
+		if !hasMitigation {
+			var uncovered []string
+			for _, p := range impact.AffectedPackages {
+				if !repaired[p] {
+					uncovered = append(uncovered, p)
+				}
+			}
+			if len(uncovered) > 0 {
+				return reject("Defect unremediated: every affected package must have its own REASSIGN_VENDOR action (with payload.package_id set to that package) to trigger re-QC, or the plan must escalate with HOLD_TITLE/HOLD_DELIVERY. Uncovered packages: %v. Communication-only actions do not remediate the defect.", uncovered)
 			}
 		}
 	}

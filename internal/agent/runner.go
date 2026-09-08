@@ -22,15 +22,14 @@ import (
 	"github.com/elliot14A/fincher/pkg/logger"
 )
 
-// RunnerResult records the execution outcome of an ActionPlan.
 type RunnerResult struct {
 	RunID             string          `json:"run_id"`
 	ExecutedActions   []models.Action `json:"executed_actions"`
 	Artifacts         []models.Action `json:"artifacts"`
+	SkippedActions    []models.Action `json:"skipped_actions,omitempty"`
 	DownstreamEmitted int             `json:"downstream_emitted"`
 }
 
-// SchedulerInterface defines the scheduler contract for background simulation tasks.
 type SchedulerInterface interface {
 	ScheduleTask(
 		kind scheduler.TaskKind,
@@ -44,7 +43,6 @@ type SchedulerInterface interface {
 	DecideOutcome(force string, component models.ComponentType) scheduler.QCOutcome
 }
 
-// RunnerDeps supplies dependencies to ActionPlan execution.
 type RunnerDeps struct {
 	TursoClient        *ent.Client
 	ClickHouse         *sql.DB
@@ -52,7 +50,6 @@ type RunnerDeps struct {
 	OnScheduleComplete func(event models.Event)
 }
 
-// RunActionPlan executes an approved ActionPlan using turso domain actions and emits downstream events to ClickHouse.
 func RunActionPlan(
 	ctx context.Context,
 	tursoClient *ent.Client,
@@ -67,7 +64,6 @@ func RunActionPlan(
 	}, runID, stepID, plan)
 }
 
-// RunActionPlanWithDeps executes an approved ActionPlan using provided dependencies and schedules background repairs if configured.
 func RunActionPlanWithDeps(
 	ctx context.Context,
 	deps RunnerDeps,
@@ -84,22 +80,30 @@ func RunActionPlanWithDeps(
 
 	executed := make([]models.Action, 0, len(plan.Actions))
 	artifacts := make([]models.Action, 0)
+	skipped := make([]models.Action, 0)
 	var downstreamEvents []models.Event
 
 	for _, action := range plan.Actions {
 		switch action.Type {
 		case models.ActionHoldTitle:
+			titleID := action.TargetID
+			if resolved := tursotitles.FindByIDOrSlug(ctx, deps.TursoClient, action.TargetID); resolved.IsOk() {
+				titleID = resolved.Unwrap().ID
+			}
 			overdueStatus := models.StatusOverdue
-			updRes := tursotitles.Update(ctx, deps.TursoClient, action.TargetID, &models.UpdateTitleInput{
+			updRes := tursotitles.Update(ctx, deps.TursoClient, titleID, &models.UpdateTitleInput{
 				OverallStatus: &overdueStatus,
 			})
 			if updRes.IsErr() {
-				return domainerrors.Err[*RunnerResult](updRes.Error())
+				logger.Warn("runner: skipping HOLD_TITLE for unresolvable title; continuing plan",
+					"run_id", runID, "target_id", action.TargetID, "error", updRes.Error())
+				skipped = append(skipped, action)
+				continue
 			}
 			executed = append(executed, action)
 
 			downstreamEvents = append(downstreamEvents, models.Event{
-				ID:              "evt-" + action.TargetID + "-hold",
+				ID:              "evt-" + titleID + "-hold",
 				Source:          "fincher/runner",
 				Type:            "fincher.title.held",
 				Subject:         plan.TitleSlug,
@@ -107,7 +111,7 @@ func RunActionPlanWithDeps(
 				Severity:        models.SeverityCritical,
 				DataContentType: "application/json",
 				Data: map[string]any{
-					"title_id": action.TargetID,
+					"title_id": titleID,
 					"reason":   action.Reason,
 					"status":   "OVERDUE",
 				},
@@ -143,7 +147,13 @@ func RunActionPlanWithDeps(
 				Status: &readyStatus,
 			})
 			if updRes.IsErr() {
-				return domainerrors.Err[*RunnerResult](updRes.Error())
+				logger.Warn("runner: skipping RELEASE_DELIVERY for unresolvable target; continuing plan",
+					"run_id", runID,
+					"target_id", action.TargetID,
+					"error", updRes.Error(),
+				)
+				skipped = append(skipped, action)
+				continue
 			}
 			executed = append(executed, action)
 
@@ -167,11 +177,25 @@ func RunActionPlanWithDeps(
 			if pkgIDVal, ok := action.Payload["package_id"]; ok {
 				if pkgID, isStr := pkgIDVal.(string); isStr && pkgID != "" {
 					targetPkgID = pkgID
-					updRes := tursopackages.Update(ctx, deps.TursoClient, pkgID, &models.UpdatePackageInput{
-						VendorID: &newVendorID,
-					})
+					reassignInput := &models.UpdatePackageInput{VendorID: &newVendorID}
+					if pRes := tursopackages.Get(ctx, deps.TursoClient, pkgID); pRes.IsOk() {
+						if tRes := tursotitles.Get(ctx, deps.TursoClient, pRes.Unwrap().TitleID); tRes.IsOk() {
+							activeMaster := tRes.Unwrap().CurrentMasterVersion
+							if activeMaster != "" {
+								reassignInput.DerivedFromMasterVersion = &activeMaster
+							}
+						}
+					}
+					updRes := tursopackages.Update(ctx, deps.TursoClient, pkgID, reassignInput)
 					if updRes.IsErr() {
-						return domainerrors.Err[*RunnerResult](updRes.Error())
+						logger.Warn("runner: skipping REASSIGN_VENDOR for unresolvable package; continuing plan",
+							"run_id", runID,
+							"package_id", pkgID,
+							"vendor_id", newVendorID,
+							"error", updRes.Error(),
+						)
+						skipped = append(skipped, action)
+						continue
 					}
 				}
 			}
@@ -192,7 +216,6 @@ func RunActionPlanWithDeps(
 				},
 			})
 
-			// Schedule background repair task if scheduler is attached
 			if deps.Scheduler != nil && targetPkgID != "" {
 				turnaroundHours := config.DefaultTurnaroundHours
 				var pkgComponent models.ComponentType
@@ -229,138 +252,12 @@ func RunActionPlanWithDeps(
 					pkgComponent,
 					forceOutcome,
 					turnaroundHours,
-					func(t *scheduler.Task) {
-						var outcome scheduler.QCOutcome
-						if deps.Scheduler != nil {
-							outcome = deps.Scheduler.DecideOutcome(t.ForceOutcome, t.Component)
-						} else {
-							outcome = scheduler.QCOutcomePass
-						}
-
-						if outcome == scheduler.QCOutcomePass {
-							// PASS path: re-read package and verify it is not stale against Title active master version
-							pRes := tursopackages.Get(ctx, deps.TursoClient, t.TargetID)
-							if pRes.IsOk() {
-								pkg := pRes.Unwrap()
-								tRes := tursotitles.Get(ctx, deps.TursoClient, pkg.TitleID)
-								if tRes.IsOk() {
-									title := tRes.Unwrap()
-									if pkg.IsStaleAgainst(title.CurrentMasterVersion) {
-										logger.Warn("runner: discarding QC pass for stale package against revised master",
-											"package_id", pkg.ID,
-											"derived_from", pkg.DerivedFromMasterVersion,
-											"active_master", title.CurrentMasterVersion,
-										)
-										return
-									}
-								}
-							}
-
-							// Mark package valid and emit completed QC
-							validStatus := models.PackageStatusValid
-							updPkgRes := tursopackages.Update(ctx, deps.TursoClient, t.TargetID, &models.UpdatePackageInput{
-								Status: &validStatus,
-							})
-							if updPkgRes.IsErr() {
-								logger.Error("runner: failed to update package status to VALID on QC pass",
-									"run_id", runID,
-									"package_id", t.TargetID,
-									"task_id", t.ID,
-									"error", updPkgRes.Error(),
-								)
-							}
-
-							qcEvent := models.Event{
-								ID:              fmt.Sprintf("evt-qc-%s", t.ID),
-								Source:          "fincher/qc.agent",
-								Type:            models.TypeQCInspectionCompleted,
-								Subject:         t.TitleSlug,
-								Time:            time.Now().UTC(),
-								Severity:        models.SeverityInfo,
-								DataContentType: "application/json",
-								Data: map[string]any{
-									"package_id": t.TargetID,
-									"status":     "PASSED",
-									"vendor_id":  t.VendorID,
-								},
-							}
-							if deps.OnScheduleComplete != nil {
-								deps.OnScheduleComplete(qcEvent)
-							}
-							return
-						}
-
-						// FAIL path: inspect current redelivery attempts
-						currentRedelivery := 0
-						pRes := tursopackages.Get(ctx, deps.TursoClient, t.TargetID)
-						if pRes.IsOk() {
-							currentRedelivery = pRes.Unwrap().RedeliveryCount
-						}
-
-						if currentRedelivery >= config.MaxRedeliveryAttempts {
-							// FAIL, cap exceeded -> ESCALATE to SLA breach
-							slaEvent := models.Event{
-								ID:              fmt.Sprintf("evt-sla-breach-%s", t.ID),
-								Source:          "fincher/qc.agent",
-								Type:            models.TypeVendorSLABreach,
-								Subject:         t.TitleSlug,
-								Time:            time.Now().UTC(),
-								Severity:        models.SeverityCritical,
-								DataContentType: "application/json",
-								Data: map[string]any{
-									"package_id":       t.TargetID,
-									"vendor_id":        t.VendorID,
-									"reason":           "redelivery_cap_exceeded",
-									"redelivery_count": currentRedelivery,
-								},
-							}
-							if deps.OnScheduleComplete != nil {
-								deps.OnScheduleComplete(slaEvent)
-							}
-							return
-						}
-
-						// FAIL, under cap -> increment RedeliveryCount and emit domain-scoped defect
-						newRedelivery := currentRedelivery + 1
-						updRedelivRes := tursopackages.Update(ctx, deps.TursoClient, t.TargetID, &models.UpdatePackageInput{
-							RedeliveryCount: &newRedelivery,
-						})
-						if updRedelivRes.IsErr() {
-							logger.Error("runner: failed to update package redelivery count",
-								"run_id", runID,
-								"package_id", t.TargetID,
-								"task_id", t.ID,
-								"new_count", newRedelivery,
-								"error", updRedelivRes.Error(),
-							)
-						}
-
-						defectEventType, defectSeverity := scheduler.DefectEventTypeFor(t.Component)
-						defectData := map[string]any{
-							"package_id":       t.TargetID,
-							"vendor_id":        t.VendorID,
-							"defect_type":      "REPAIR_INSPECTION_FAILED",
-							"redelivery_count": newRedelivery,
-						}
-						if t.Component == models.ComponentAudio {
-							defectData["drift_ms"] = 110.0
-							defectData["defect_type"] = "AUDIO_SYNC_DRIFT"
-						}
-
-						defectEvent := models.Event{
-							ID:              fmt.Sprintf("evt-defect-%s-%d", t.ID, newRedelivery),
-							Source:          "fincher/qc.agent",
-							Type:            defectEventType,
-							Subject:         t.TitleSlug,
-							Time:            time.Now().UTC(),
-							Severity:        defectSeverity,
-							DataContentType: "application/json",
-							Data:            defectData,
-						}
-						if deps.OnScheduleComplete != nil {
-							deps.OnScheduleComplete(defectEvent)
-						}
-					},
+					BuildQCCompletionCallback(ctx, QCScheduleDeps{
+						TursoClient:        deps.TursoClient,
+						Scheduler:          deps.Scheduler,
+						OnScheduleComplete: deps.OnScheduleComplete,
+						LogContext:         runID,
+					}),
 				)
 				if schedErr != nil {
 					logger.Error("runner: failed to schedule repair task",
@@ -467,6 +364,7 @@ func RunActionPlanWithDeps(
 		RunID:             runID,
 		ExecutedActions:   executed,
 		Artifacts:         artifacts,
+		SkippedActions:    skipped,
 		DownstreamEmitted: len(downstreamEvents),
 	})
 }

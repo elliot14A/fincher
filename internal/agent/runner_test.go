@@ -482,7 +482,7 @@ func TestRunActionPlan_ActionHoldTitle(t *testing.T) {
 	}
 }
 
-func TestRunActionPlan_StaleMasterPass_Discarded(t *testing.T) {
+func TestRunActionPlan_ReassignRederivesAgainstCurrentMaster(t *testing.T) {
 	client := tursotest.NewMemoryClient(t)
 	defer client.Close()
 	ctx := context.Background()
@@ -551,19 +551,21 @@ func TestRunActionPlan_StaleMasterPass_Discarded(t *testing.T) {
 		t.Fatalf("RunActionPlanWithDeps failed: %v", execRes.Error())
 	}
 
-	// Give compressed task time to fire and verify stale completion was discarded
 	time.Sleep(30 * time.Millisecond)
 
-	if callbackCalled {
-		t.Error("expected stale completion callback NOT to be invoked")
+	if !callbackCalled {
+		t.Error("expected re-derivation QC pass callback to be invoked")
 	}
 
-	// Package should still be INVALIDATED, NOT updated to VALID
 	pRes := packages.Get(ctx, client, "pkg-stale-test")
 	if pRes.IsErr() {
 		t.Fatalf("get package failed: %v", pRes.Error())
 	}
-	if pRes.Unwrap().Status != models.PackageStatusInvalidated {
-		t.Errorf("expected package to remain INVALIDATED, got: %s", pRes.Unwrap().Status)
+	pkg := pRes.Unwrap()
+	if pkg.Status != models.PackageStatusValid {
+		t.Errorf("expected reassigned package to recover to VALID, got: %s", pkg.Status)
+	}
+	if pkg.DerivedFromMasterVersion != "master-v2" {
+		t.Errorf("expected package re-derived against current master master-v2, got: %s", pkg.DerivedFromMasterVersion)
 	}
 }

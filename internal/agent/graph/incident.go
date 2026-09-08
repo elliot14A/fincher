@@ -17,7 +17,6 @@ import (
 	"github.com/elliot14A/fincher/pkg/logger"
 )
 
-// DefaultMaxRemediationAttempts caps the verifier self-correction loop.
 const DefaultMaxRemediationAttempts = 3
 
 func failIncidentStage(ctx context.Context, client *ent.Client, runID, titleSlug, stepID, stageName string, err error) {
@@ -43,11 +42,65 @@ func failIncidentStage(ctx context.Context, client *ent.Client, runID, titleSlug
 	}
 }
 
-// ExecuteIncident runs the 4-stage Multi-Agent incident investigation and remediation graph:
-//  1. Stage 1: Triage Judge (Filter benign/routine events vs actionable anomalies)
-//  2. Stage 2: Context Gathering (Delivery impact, ClickHouse vendor analytics, vendor candidates, title projection)
-//  3. Stage 3: Remediation Planning & Policy Verification Loop (bounded self-correction up to maxAttempts)
-//  4. Stage 4: Execution or Escalation (software executor mutates SQLite state & emits downstream events, or escalates to operator)
+func distributeReassignPackages(plan *models.ActionPlan, affected []string) {
+	reassignIdx := make([]int, 0, len(plan.Actions))
+	for i := range plan.Actions {
+		if plan.Actions[i].Type == models.ActionReassignVendor {
+			if plan.Actions[i].Payload == nil {
+				plan.Actions[i].Payload = map[string]any{}
+			}
+			reassignIdx = append(reassignIdx, i)
+		}
+	}
+	if len(reassignIdx) == 0 {
+		return
+	}
+
+	covered := make(map[string]bool)
+	for _, i := range reassignIdx {
+		if pkgID, ok := plan.Actions[i].Payload["package_id"].(string); ok && pkgID != "" {
+			covered[pkgID] = true
+		}
+	}
+
+	uncovered := make([]string, 0, len(affected))
+	for _, p := range affected {
+		if !covered[p] {
+			uncovered = append(uncovered, p)
+		}
+	}
+	if len(uncovered) == 0 {
+		return
+	}
+
+	next := 0
+	for _, i := range reassignIdx {
+		if next >= len(uncovered) {
+			break
+		}
+		if pkgID, ok := plan.Actions[i].Payload["package_id"].(string); !ok || pkgID == "" {
+			plan.Actions[i].Payload["package_id"] = uncovered[next]
+			next++
+		}
+	}
+
+	for next < len(uncovered) {
+		src := plan.Actions[reassignIdx[next%len(reassignIdx)]]
+		clonedPayload := make(map[string]any, len(src.Payload))
+		for k, v := range src.Payload {
+			clonedPayload[k] = v
+		}
+		clonedPayload["package_id"] = uncovered[next]
+		plan.Actions = append(plan.Actions, models.Action{
+			Type:     models.ActionReassignVendor,
+			TargetID: src.TargetID,
+			Reason:   src.Reason,
+			Payload:  clonedPayload,
+		})
+		next++
+	}
+}
+
 func ExecuteIncident(ctx context.Context, deps IncidentGraphDeps, input IncidentInput) (*IncidentOutput, error) {
 	if input.Event == nil {
 		return nil, domainerrors.NewWithOp("graph.ExecuteIncident", domainerrors.CodeInvalidInput, "input event cannot be nil", nil)
@@ -64,7 +117,6 @@ func ExecuteIncident(ctx context.Context, deps IncidentGraphDeps, input Incident
 		titleSlug = models.DefaultTitleAgnosticSentinel
 	}
 
-	// 1. Resolve Run ID and guarantee root Run record exists in Turso
 	runID := input.RunID
 	if runID == "" {
 		if input.Event.ID != "" {
@@ -93,7 +145,6 @@ func ExecuteIncident(ctx context.Context, deps IncidentGraphDeps, input Incident
 		}
 	}
 
-	// 2. Stage 1: Triage Judge
 	triageStepID := fmt.Sprintf("step-%s-triage", runID)
 	sRes := runs.CreateStep(ctx, deps.TursoClient, &models.Step{
 		Base:      models.Base{ID: triageStepID},
@@ -139,9 +190,10 @@ func ExecuteIncident(ctx context.Context, deps IncidentGraphDeps, input Incident
 	}
 
 	runs.UpdateStepStatus(ctx, deps.TursoClient, triageStepID, models.StepStatusCompleted, &now, map[string]any{
-		"actionable": filterDecision.Actionable,
-		"severity":   string(filterDecision.Severity),
-		"rationale":  filterDecision.Rationale,
+		"actionable":   filterDecision.Actionable,
+		"severity":     string(filterDecision.Severity),
+		"anomaly_type": filterDecision.AnomalyType,
+		"rationale":    filterDecision.Rationale,
 	})
 
 	if !filterDecision.Actionable {
@@ -157,16 +209,23 @@ func ExecuteIncident(ctx context.Context, deps IncidentGraphDeps, input Incident
 		}, nil
 	}
 
-	// 2.5 Master-revision safety: Cancel existing in-flight tasks for this title upon new master cut
-	if input.Event.Type == models.TypeMasterCutRevised && deps.Scheduler != nil {
-		cancelled := deps.Scheduler.CancelTasksForTitle(input.Event.Subject)
-		logger.Info("incident: cancelled in-flight tasks on master cut revision",
-			"title_slug", input.Event.Subject,
-			"cancelled_count", cancelled,
-		)
+	var masterRevisionInvalidated []string
+	if input.Event.Type == models.TypeMasterCutRevised {
+		if deps.Scheduler != nil {
+			cancelled := deps.Scheduler.CancelTasksForTitle(input.Event.Subject)
+			logger.Info("incident: cancelled in-flight tasks on master cut revision",
+				"title_slug", input.Event.Subject,
+				"cancelled_count", cancelled,
+			)
+		}
+		if res, err := applyMasterRevision(ctx, deps, input.Event); err != nil {
+			logger.Warn("incident: failed to apply master revision",
+				"title_slug", input.Event.Subject, "error", err)
+		} else {
+			masterRevisionInvalidated = res.InvalidatedPackageIDs
+		}
 	}
 
-	// 3. Stage 2: Context Gathering
 	contextStepID := fmt.Sprintf("step-%s-context", runID)
 	cRes := runs.CreateStep(ctx, deps.TursoClient, &models.Step{
 		Base:      models.Base{ID: contextStepID},
@@ -197,29 +256,27 @@ func ExecuteIncident(ctx context.Context, deps IncidentGraphDeps, input Incident
 		return nil, domainerrors.NewWithOp("graph.ExecuteIncident", domainerrors.CodeInternal, "failed to gather delivery impact", err)
 	}
 
-	var analytics *models.AnalyticsSummary
-	if deps.ClickHouse != nil {
-		analytics, err = tools.FetchAnalytics(ctx, deps.ClickHouse, tools.AnalyticsArgs{
-			VendorID:  vendorID,
-			TitleSlug: input.Event.Subject,
-			Component: component,
-		})
-		if err != nil {
-			failIncidentStage(ctx, deps.TursoClient, runID, titleSlug, contextStepID, "context_historical_analytics", err)
-			return nil, domainerrors.NewWithOp("graph.ExecuteIncident", domainerrors.CodeInternal, "failed to gather historical analytics", err)
+	if len(masterRevisionInvalidated) > 0 && impact != nil {
+		existing := make(map[string]bool, len(impact.AffectedPackages))
+		for _, p := range impact.AffectedPackages {
+			existing[p] = true
 		}
-	} else {
-		analytics = &models.AnalyticsSummary{
-			VendorHistoricalAccuracy: models.UnmeasuredHistoricalAccuracy,
+		for _, p := range masterRevisionInvalidated {
+			if !existing[p] {
+				impact.AffectedPackages = append(impact.AffectedPackages, p)
+			}
 		}
 	}
 
-	candidates, err := tools.FetchVendorCandidates(ctx, deps.TursoClient, deps.ClickHouse, tools.VendorCandidatesArgs{
+	var analytics *models.AnalyticsSummary
+	analytics, err = tools.FetchAnalytics(ctx, deps.MCP, tools.AnalyticsArgs{
+		VendorID:  vendorID,
+		TitleSlug: input.Event.Subject,
 		Component: component,
 	})
 	if err != nil {
-		failIncidentStage(ctx, deps.TursoClient, runID, titleSlug, contextStepID, "context_vendor_candidates", err)
-		return nil, domainerrors.NewWithOp("graph.ExecuteIncident", domainerrors.CodeInternal, "failed to gather vendor candidates", err)
+		failIncidentStage(ctx, deps.TursoClient, runID, titleSlug, contextStepID, "context_historical_analytics", err)
+		return nil, domainerrors.NewWithOp("graph.ExecuteIncident", domainerrors.CodeInternal, "failed to gather historical analytics", err)
 	}
 
 	projection, err := tools.GetTitleReadyProjection(ctx, deps.TursoClient, input.Event.Subject)
@@ -234,14 +291,13 @@ func ExecuteIncident(ctx context.Context, deps IncidentGraphDeps, input Incident
 	now = time.Now().UTC()
 	contextMeta := map[string]any{
 		"deliveries_on_hold": len(impact.AffectedDeliveries),
-		"candidates_count":   len(candidates),
+		"vendor_source":      "tool_driven_sql",
 	}
 	if projection != nil {
 		contextMeta["projection"] = projection
 	}
 	runs.UpdateStepStatus(ctx, deps.TursoClient, contextStepID, models.StepStatusCompleted, &now, contextMeta)
 
-	// 4. Stage 3: Remediation Planning & Policy Verification Loop
 	maxAttempts := deps.MaxAttempts
 	if maxAttempts <= 0 {
 		maxAttempts = DefaultMaxRemediationAttempts
@@ -269,14 +325,18 @@ func ExecuteIncident(ctx context.Context, deps IncidentGraphDeps, input Incident
 	feedback := ""
 
 	for attempt := 1; attempt <= maxAttempts; attempt++ {
-		planRes := agent.PlanRemediation(ctx, deps.Model, input.Event, impact, analytics, candidates, projection, feedback)
+		planRes := agent.PlanRemediationViaTools(ctx, deps.Model, deps.TursoDB, input.Event, impact, analytics, projection, feedback)
 		if planRes.IsErr() {
 			failIncidentStage(ctx, deps.TursoClient, runID, titleSlug, remediationStepID, "remediation_plan", planRes.Error())
 			return nil, planRes.Error()
 		}
 		currentPlan := planRes.Unwrap()
 
-		verifyRes := agent.VerifyPlan(currentPlan, impact, candidates, projection, attempt)
+		if impact != nil && len(impact.AffectedPackages) > 0 {
+			distributeReassignPackages(currentPlan, impact.AffectedPackages)
+		}
+
+		verifyRes := agent.VerifyPlan(currentPlan, impact, nil, projection, attempt)
 		if verifyRes.IsErr() {
 			failIncidentStage(ctx, deps.TursoClient, runID, titleSlug, remediationStepID, "remediation_verify", verifyRes.Error())
 			return nil, verifyRes.Error()
@@ -314,7 +374,6 @@ func ExecuteIncident(ctx context.Context, deps IncidentGraphDeps, input Incident
 		"decision": string(lastVerification.Decision),
 	})
 
-	// 5. Stage 4: Execution / Escalation
 	if lastVerification.Decision == agent.DecisionApproved && finalPlan != nil {
 		executorStepID := fmt.Sprintf("step-%s-executor", runID)
 		exStepRes := runs.CreateStep(ctx, deps.TursoClient, &models.Step{

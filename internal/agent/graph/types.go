@@ -7,27 +7,27 @@ import (
 	"github.com/elliot14A/fincher/internal/scheduler"
 	"github.com/elliot14A/fincher/internal/turso/ent"
 	"github.com/elliot14A/fincher/pkg/domain/models"
+	"github.com/elliot14A/fincher/pkg/mcp"
 	"google.golang.org/adk/v2/model"
 )
 
-// IncidentGraphDeps supplies runtime dependencies to the incident workflow.
 type IncidentGraphDeps struct {
 	Model              model.LLM
 	TursoClient        *ent.Client
+	TursoDB            *sql.DB
 	ClickHouse         *sql.DB
+	MCP                *mcp.Client
 	MaxAttempts        int
 	Scheduler          *scheduler.Scheduler
 	OnScheduleComplete func(event models.Event)
 }
 
-// IncidentInput is the entry payload passed to the incident workflow.
 type IncidentInput struct {
 	RunID              string        `json:"run_id,omitempty"`
 	Event              *models.Event `json:"event"`
 	HoursUntilPremiere float64       `json:"hours_until_premiere"`
 }
 
-// IncidentOutput captures the complete end-to-end outcome of an incident run.
 type IncidentOutput struct {
 	Actionable   bool                       `json:"actionable"`
 	Decision     agent.VerificationDecision `json:"decision"`
@@ -37,14 +37,16 @@ type IncidentOutput struct {
 	Attempts     int                        `json:"attempts"`
 }
 
-// AllocationGraphDeps supplies dependencies to the vendor allocation workflow.
 type AllocationGraphDeps struct {
-	Model       model.LLM
-	TursoClient *ent.Client
-	ClickHouse  *sql.DB
+	Model              model.LLM
+	TursoClient        *ent.Client
+	TursoDB            *sql.DB
+	ClickHouse         *sql.DB
+	MCP                *mcp.Client
+	Scheduler          *scheduler.Scheduler
+	OnScheduleComplete func(event models.Event)
 }
 
-// AllocationInput is the entry payload for holistic vendor allocation.
 type AllocationInput struct {
 	RunID              string                         `json:"run_id,omitempty"`
 	TitleSlug          string                         `json:"title_slug"`
@@ -52,7 +54,6 @@ type AllocationInput struct {
 	HoursUntilPremiere float64                        `json:"hours_until_premiere"`
 }
 
-// AllocationOutput captures the holistic staffing plan.
 type AllocationOutput struct {
 	Plan     *models.AllocationPlan   `json:"plan,omitempty"`
 	Decision *agent.SelectionDecision `json:"decision,omitempty"`

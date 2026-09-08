@@ -3,23 +3,17 @@ package graph
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/google/uuid"
 
 	"github.com/elliot14A/fincher/internal/agent"
-	"github.com/elliot14A/fincher/internal/agent/tools"
 	"github.com/elliot14A/fincher/internal/turso/runs"
 	domainerrors "github.com/elliot14A/fincher/pkg/domain/errors"
 	"github.com/elliot14A/fincher/pkg/domain/models"
 	"github.com/elliot14A/fincher/pkg/logger"
 )
 
-// ExecuteAllocation evaluates candidate vendors and creates a holistic staffing plan across all requirements
-// based on turnaround feasibility, quality floors, and commercial rates.
-//
-// It persists candidate_gathering and vendor_selection Step and WfResult rows into Turso.
 func ExecuteAllocation(ctx context.Context, deps AllocationGraphDeps, input AllocationInput) (*AllocationOutput, error) {
 	if input.TitleSlug == "" {
 		return nil, domainerrors.NewWithOp("graph.ExecuteAllocation", domainerrors.CodeInvalidInput, "title slug cannot be empty", nil)
@@ -74,50 +68,10 @@ func ExecuteAllocation(ctx context.Context, deps AllocationGraphDeps, input Allo
 		)
 	}
 
-	type pairKey struct {
-		Component string
-		Market    string
-	}
-	seenPairs := make(map[pairKey]bool)
-	candidatesByRequirement := make(map[string][]models.VendorCandidate)
-	candidateCounts := make(map[string]int)
-
-	for _, req := range input.Requirements {
-		normComp := strings.ToUpper(strings.TrimSpace(req.Component))
-		normMarket := strings.TrimSpace(req.Market)
-		pk := pairKey{Component: normComp, Market: normMarket}
-		key := fmt.Sprintf("%s|%s", normComp, normMarket)
-
-		if seenPairs[pk] {
-			continue
-		}
-		seenPairs[pk] = true
-
-		cands, err := tools.FetchVendorCandidates(ctx, deps.TursoClient, deps.ClickHouse, tools.VendorCandidatesArgs{
-			Component: normComp,
-			Market:    normMarket,
-		})
-		now := time.Now().UTC()
-		if err != nil {
-			updStepRes := runs.UpdateStepStatus(ctx, deps.TursoClient, candStepID, models.StepStatusFailed, &now, map[string]any{"error": err.Error()})
-			if updStepRes.IsErr() {
-				logger.Warn("allocation: failed to update step status to failed", "run_id", runID, "step_id", candStepID, "error", updStepRes.Error())
-			}
-			updRunRes := runs.UpdateRunStatus(ctx, deps.TursoClient, runID, models.RunStatusFailed, &now, nil)
-			if updRunRes.IsErr() {
-				logger.Warn("allocation: failed to update run status to failed", "run_id", runID, "error", updRunRes.Error())
-			}
-			return nil, domainerrors.NewWithOp("graph.ExecuteAllocation", domainerrors.CodeInternal, "failed to gather vendor candidates", err)
-		}
-
-		candidatesByRequirement[key] = cands
-		candidateCounts[key] = len(cands)
-	}
-
 	now := time.Now().UTC()
 	runs.UpdateStepStatus(ctx, deps.TursoClient, candStepID, models.StepStatusCompleted, &now, map[string]any{
 		"requirements_count": len(input.Requirements),
-		"candidate_pools":    candidateCounts,
+		"mode":               "tool_driven_sql",
 	})
 
 	selectStepID := fmt.Sprintf("step-%s-selection", runID)
@@ -137,7 +91,7 @@ func ExecuteAllocation(ctx context.Context, deps AllocationGraphDeps, input Allo
 		)
 	}
 
-	planRes := agent.SelectVendorsForPlan(ctx, deps.Model, input.TitleSlug, input.Requirements, candidatesByRequirement, input.HoursUntilPremiere)
+	planRes := agent.SelectVendorsViaTools(ctx, deps.Model, deps.TursoDB, input.TitleSlug, input.Requirements, input.HoursUntilPremiere)
 	now = time.Now().UTC()
 	if planRes.IsErr() {
 		updStepRes := runs.UpdateStepStatus(ctx, deps.TursoClient, selectStepID, models.StepStatusFailed, &now, map[string]any{"error": planRes.Error().Error()})
@@ -173,9 +127,39 @@ func ExecuteAllocation(ctx context.Context, deps AllocationGraphDeps, input Allo
 		"assignments_count": len(plan.Assignments),
 		"overall_summary":   plan.OverallSummary,
 	})
+
+	provStepID := fmt.Sprintf("step-%s-provisioning", runID)
+	provStepRes := runs.CreateStep(ctx, deps.TursoClient, &models.Step{
+		Base:      models.Base{ID: provStepID},
+		RunID:     runID,
+		Name:      "provisioning",
+		Status:    models.StepStatusRunning,
+		StartedAt: time.Now().UTC(),
+	})
+	if provStepRes.IsErr() {
+		logger.Error("allocation: failed to persist provisioning step",
+			"run_id", runID, "title_slug", input.TitleSlug, "step_id", provStepID, "error", provStepRes.Error())
+	}
+
+	prov, provErr := provisionAllocationAssets(ctx, deps, input.TitleSlug, plan)
+	now = time.Now().UTC()
+	if provErr != nil {
+		runs.UpdateStepStatus(ctx, deps.TursoClient, provStepID, models.StepStatusFailed, &now, map[string]any{"error": provErr.Error()})
+		logger.Warn("allocation: provisioning failed", "run_id", runID, "title_slug", input.TitleSlug, "error", provErr)
+	} else {
+		runs.UpdateStepStatus(ctx, deps.TursoClient, provStepID, models.StepStatusCompleted, &now, map[string]any{
+			"packages_created":   prov.PackagesCreated,
+			"deliveries_created": prov.DeliveriesCreated,
+			"qc_scheduled":       prov.QCScheduled,
+			"skipped_infeasible": prov.SkippedInfeasible,
+		})
+	}
+
 	runs.UpdateRunStatus(ctx, deps.TursoClient, runID, models.RunStatusCompleted, &now, map[string]any{
-		"assignments_count": len(plan.Assignments),
-		"vendors":           assignedVendors,
+		"assignments_count":  len(plan.Assignments),
+		"vendors":            assignedVendors,
+		"packages_created":   prov.PackagesCreated,
+		"deliveries_created": prov.DeliveriesCreated,
 	})
 
 	var firstDecision *agent.SelectionDecision
