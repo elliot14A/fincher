@@ -1,16 +1,17 @@
 # Fincher — Autonomous Media Delivery Operations Justfile
 set shell := ["bash", "-uc"]
+set dotenv-load := true
 
 # Show available recipes
 default:
     @just --list
 
-# Run both backend and frontend concurrently (Ctrl+C terminates both)
+# Run both backend (air live-reload) and frontend concurrently (Ctrl+C terminates both)
 dev:
     #!/usr/bin/env bash
     trap 'kill 0' EXIT INT TERM
-    echo "==> Starting Fincher backend (:8080) and frontend (:5173)..."
-    go run ./cmd/fincher &
+    echo "==> Starting Fincher backend (air live-reload, :8080) and frontend (:5173)..."
+    air &
     (cd web && bun run dev) &
     wait
 
