@@ -13,6 +13,7 @@ import {
   Plus,
   Subtitles,
   Trash2,
+  X,
 } from 'lucide-preact'
 import { useState } from 'preact/hooks'
 import { toast } from 'sonner'
@@ -76,6 +77,8 @@ import {
   subListContainer,
   subListEmptyText,
   subListHeader,
+  titleFilterChip,
+  titleFilterClear,
   toolbar,
   toolbarGroup,
   toolbarTab,
@@ -86,7 +89,14 @@ import {
   viewModeGroup,
 } from '#/styles/routes/deliveries.css'
 
+type DeliveriesSearch = {
+  title?: string
+}
+
 export const Route = createFileRoute('/deliveries')({
+  validateSearch: (search: Record<string, unknown>): DeliveriesSearch => ({
+    title: typeof search.title === 'string' ? search.title : undefined,
+  }),
   component: DeliveriesPage,
 })
 
@@ -182,7 +192,7 @@ function DeliveryRow({
     enabled: isExpanded,
   })
   const constituentPackages = (packagesResult?.items ?? []).filter(
-    (p) => p.market === delivery.country || p.component === 'VIDEO' || !p.market,
+    (p) => p.component === 'VIDEO' || p.market === delivery.country,
   )
 
   const statusInfo = mapDeliveryStatus(delivery.status)
@@ -386,6 +396,8 @@ function PackageRow({
 
 function DeliveriesPage() {
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
+  const { title: titleFilter } = Route.useSearch()
   const [viewMode, setViewMode] = useState<ViewMode>('DELIVERIES')
   const [deliveryTab, setDeliveryTab] = useState<string>('ALL')
   const [packageTab, setPackageTab] = useState<string>('ALL')
@@ -404,6 +416,7 @@ function DeliveriesPage() {
   const { data: deliveriesResult, isLoading: isDeliveriesLoading } = useQuery(
     deliveriesQueryOptions({
       status: deliveryTab !== 'ALL' ? deliveryTab : undefined,
+      title_id: titleFilter,
       page,
       limit: 15,
     }),
@@ -412,10 +425,19 @@ function DeliveriesPage() {
   const { data: packagesResult, isLoading: isPackagesLoading } = useQuery(
     packagesQueryOptions({
       component: packageTab !== 'ALL' ? (packageTab as ModelsPackage['component']) : undefined,
+      title_id: titleFilter,
       page,
       limit: 15,
     }),
   )
+
+  const clearTitleFilter = () => {
+    navigate({ to: '/deliveries', search: {} })
+    setPage(1)
+    setSelectedDeliveryId(null)
+    setSelectedPackageId(null)
+    setPackageOrigin(null)
+  }
 
   const deleteDeliveryMutation = useMutation({
     mutationFn: async (id: string) => {
@@ -470,6 +492,19 @@ function DeliveriesPage() {
             Territory fulfillment matrix, constituent localized media packages, and release
             integrity
           </span>
+          {titleFilter ? (
+            <span class={titleFilterChip}>
+              <span>Filtered by title: {titleFilter}</span>
+              <button
+                type="button"
+                class={titleFilterClear}
+                onClick={clearTitleFilter}
+                aria-label="Clear title filter"
+              >
+                <X size={12} />
+              </button>
+            </span>
+          ) : null}
         </div>
         {viewMode === 'DELIVERIES' && (
           <Button variant="primary" onClick={createModal.open}>

@@ -12,13 +12,13 @@ import {
   TrendingUp,
   X,
 } from 'lucide-preact'
-import { Badge, type BadgeProps } from '#/components/ui/badge'
+import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
 import { deliveriesQueryOptions } from '#/features/deliveries/queryOptions'
 import { mapPackageStatus, packagesQueryOptions } from '#/features/packages'
 import { runsQueryOptions } from '#/features/runs/queryOptions'
+import { getQcGating, mapTitleStatus } from '#/features/titles/lib'
 import { titleDetailQueryOptions } from '#/features/titles/queryOptions'
-import type { ModelsTitle } from '#/lib/api'
 import { useCountdown } from '#/lib/hooks'
 import { formatDateTime } from '#/lib/utils/formatDate'
 import {
@@ -69,30 +69,6 @@ export type TitleSidebarProps = {
   isSendingQC: boolean
 }
 
-function mapTitleStatus(status: ModelsTitle['overall_status'] | undefined): {
-  label: string
-  variant: BadgeProps['variant']
-} {
-  switch (status) {
-    case 'DRAFT':
-      return { label: 'Draft', variant: 'neutral' }
-    case 'HOLD':
-      return { label: 'Hold', variant: 'danger' }
-    case 'OVERDUE':
-      return { label: 'Overdue', variant: 'danger' }
-    case 'AT_RISK':
-      return { label: 'At Risk', variant: 'warning' }
-    case 'PROCESSING':
-      return { label: 'In QC', variant: 'warning' }
-    case 'ON_TRACK':
-      return { label: 'Ready', variant: 'success' }
-    case 'SHIPPED':
-      return { label: 'Shipped', variant: 'success' }
-    default:
-      return { label: status ?? 'Draft', variant: 'neutral' }
-  }
-}
-
 export function TitleSidebar({ titleId, onClose, onSendToQC, isSendingQC }: TitleSidebarProps) {
   const navigate = useNavigate()
 
@@ -138,7 +114,7 @@ export function TitleSidebar({ titleId, onClose, onSendToQC, isSendingQC }: Titl
   const deliveries = deliveriesQuery.data?.items ?? []
   const runs = runsQuery.data?.items ?? []
 
-  const isInQC = title?.overall_status === 'PROCESSING'
+  const { isInQC, canRunQC } = getQcGating(title?.overall_status)
 
   return (
     <aside
@@ -282,7 +258,11 @@ export function TitleSidebar({ titleId, onClose, onSendToQC, isSendingQC }: Titl
               <span>Media Packages ({totalPackages})</span>
             </h3>
             {totalPackages > 0 ? (
-              <Button variant="ghost" size="sm" onClick={() => navigate({ to: '/deliveries' })}>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate({ to: '/deliveries', search: { title: title?.id } })}
+              >
                 <span>View All</span>
                 <ArrowRight size={12} />
               </Button>
@@ -363,7 +343,11 @@ export function TitleSidebar({ titleId, onClose, onSendToQC, isSendingQC }: Titl
       </div>
 
       <footer class={footer}>
-        <Button variant="secondary" size="sm" onClick={() => navigate({ to: '/deliveries' })}>
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => navigate({ to: '/deliveries', search: { title: title?.id } })}
+        >
           <Box size={14} />
           <span>Deliveries &amp; Packages</span>
         </Button>
@@ -371,11 +355,11 @@ export function TitleSidebar({ titleId, onClose, onSendToQC, isSendingQC }: Titl
         <Button
           variant="primary"
           size="sm"
-          disabled={isInQC || isSendingQC}
-          onClick={() => title?.id && onSendToQC(title.id)}
+          disabled={!canRunQC || isSendingQC}
+          onClick={() => canRunQC && title?.id && onSendToQC(title.id)}
         >
           <CheckCircle2 size={14} />
-          <span>{isInQC ? 'In QC' : 'Initiate Master QC'}</span>
+          <span>{isInQC ? 'In QC' : canRunQC ? 'Initiate Master QC' : 'QC Complete'}</span>
         </Button>
       </footer>
     </aside>

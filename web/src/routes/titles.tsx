@@ -3,11 +3,12 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { CheckCircle2, Film, Layers, MessageSquare, Plus, Trash2 } from 'lucide-preact'
 import { useEffect, useState } from 'preact/hooks'
 import { toast } from 'sonner'
-import { Badge, type BadgeProps } from '#/components/ui/badge'
+import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
 import { ActionMenu } from '#/components/ui/dropdown'
 import { DeleteModal } from '#/components/ui/modal'
 import { PaginationControls } from '#/components/ui/pagination'
+import { getQcGating, getTitleStatusNote, mapTitleStatus } from '#/features/titles'
 import { CreateTitleModal } from '#/features/titles/components/modals'
 import { TitleSidebar } from '#/features/titles/components/sidebar'
 import { titlesKeys } from '#/features/titles/queryKeys'
@@ -71,51 +72,6 @@ const TABS = [
 
 type TabId = (typeof TABS)[number]['id']
 
-function mapTitleStatus(status: ModelsTitle['overall_status'] | undefined): {
-  label: string
-  variant: BadgeProps['variant']
-} {
-  switch (status) {
-    case 'DRAFT':
-      return { label: 'Draft', variant: 'neutral' }
-    case 'HOLD':
-      return { label: 'Hold', variant: 'danger' }
-    case 'OVERDUE':
-      return { label: 'Overdue', variant: 'danger' }
-    case 'AT_RISK':
-      return { label: 'At Risk', variant: 'warning' }
-    case 'PROCESSING':
-      return { label: 'In QC', variant: 'warning' }
-    case 'ON_TRACK':
-      return { label: 'Ready', variant: 'success' }
-    case 'SHIPPED':
-      return { label: 'Shipped', variant: 'success' }
-    default:
-      return { label: status ?? 'Draft', variant: 'neutral' }
-  }
-}
-
-function getTitleStatusNote(status: ModelsTitle['overall_status'] | undefined): string {
-  switch (status) {
-    case 'DRAFT':
-      return 'Awaiting Master QC'
-    case 'HOLD':
-      return 'Delivery hold active'
-    case 'OVERDUE':
-      return 'Premiere window breached'
-    case 'AT_RISK':
-      return 'High risk package drift'
-    case 'PROCESSING':
-      return 'QC inspection in progress'
-    case 'ON_TRACK':
-      return 'All packages verified'
-    case 'SHIPPED':
-      return 'Worldwide delivery completed'
-    default:
-      return 'Awaiting cut confirmation'
-  }
-}
-
 function TitleCountdown({
   premiereDate,
   status,
@@ -172,8 +128,7 @@ function TitleRow({
   const masterText = `Master ${titleItem.current_master_version || 'V01'}`
   const noteText = getTitleStatusNote(titleItem.overall_status)
   const posterUrl = (titleItem.metadata as Record<string, string> | undefined)?.poster_url
-  const isInQC = titleItem.overall_status === 'PROCESSING'
-
+  const { isInQC, canRunQC } = getQcGating(titleItem.overall_status)
   return (
     <div {...rowProps}>
       {posterUrl ? (
@@ -209,9 +164,9 @@ function TitleRow({
             {
               type: 'action',
               key: 'qc',
-              label: isInQC ? 'In QC Inspection' : 'Send for Master QC',
+              label: isInQC ? 'In QC Inspection' : canRunQC ? 'Send for Master QC' : 'QC Complete',
               icon: CheckCircle2,
-              disabled: isInQC || isSendingQC,
+              disabled: !canRunQC || isSendingQC,
               onClick: onSendToQC,
             },
             {
@@ -226,7 +181,7 @@ function TitleRow({
               key: 'packages',
               label: 'View Packages',
               icon: Layers,
-              onClick: () => navigate({ to: '/deliveries' }),
+              onClick: () => navigate({ to: '/deliveries', search: { title: titleItem.id } }),
             },
             {
               type: 'divider',

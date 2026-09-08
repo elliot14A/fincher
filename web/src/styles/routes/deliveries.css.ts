@@ -33,6 +33,34 @@ export const pageSubtitle = style({
   display: 'block',
 })
 
+export const titleFilterChip = style({
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: vars.space['2xs'],
+  padding: `${vars.space['3xs']} ${vars.space.xs}`,
+  marginTop: vars.space['2xs'],
+  backgroundColor: vars.color.primaryMuted,
+  border: `1px solid ${vars.color.primaryBorder}`,
+  borderRadius: vars.radii.full,
+  fontSize: vars.fontSize.xs,
+  color: vars.color.primary,
+  width: 'fit-content',
+})
+
+export const titleFilterClear = style({
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  border: 'none',
+  background: 'none',
+  padding: 0,
+  cursor: 'pointer',
+  color: vars.color.primary,
+  ':hover': {
+    color: vars.color.textPrimary,
+  },
+})
+
 export const viewModeBar = style({
   display: 'flex',
   alignItems: 'center',
