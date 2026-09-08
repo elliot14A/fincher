@@ -26,8 +26,8 @@ func TestSeeder_PipelineWithTurso(t *testing.T) {
 	}
 
 	// 8 curated + 2 filler = 10 vendors
-	if summary.Vendors != 10 {
-		t.Errorf("expected 10 vendors, got %d", summary.Vendors)
+	if summary.Vendors != 12 {
+		t.Errorf("expected 12 vendors, got %d", summary.Vendors)
 	}
 	if summary.Titles != 7 {
 		t.Errorf("expected 7 titles, got %d", summary.Titles)
@@ -45,7 +45,7 @@ func TestSeeder_PipelineWithTurso(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected seeder with reset to succeed, got: %v", err)
 	}
-	if summary2.Vendors != 10 {
-		t.Errorf("expected 10 vendors after reset, got %d", summary2.Vendors)
+	if summary2.Vendors != 12 {
+		t.Errorf("expected 12 vendors after reset, got %d", summary2.Vendors)
 	}
 }

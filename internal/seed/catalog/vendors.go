@@ -105,6 +105,30 @@ func CuratedVendors() []VendorSpec {
 			DriftStdDevMS:   18.0,
 			PosterURL:       makePosterURL("Prasad Corp", "10b981", "ffffff"),
 		},
+		{
+			ID:              "vnd-vsi-london",
+			Name:            "VSI London",
+			Components:      []string{"AUDIO", "SUBTITLE"},
+			Markets:         westernMarkets,
+			HourlyRateUSD:   280.0,
+			TurnaroundHours: 6.0,
+			TargetAccuracy:  0.97,
+			DriftMeanMS:     18.0,
+			DriftStdDevMS:   8.0,
+			PosterURL:       makePosterURL("VSI London", "1d4ed8", "ffffff"),
+		},
+		{
+			ID:              "vnd-bti-studios",
+			Name:            "BTI Studios",
+			Components:      []string{"AUDIO", "SUBTITLE"},
+			Markets:         westernMarkets,
+			HourlyRateUSD:   40.0,
+			TurnaroundHours: 48.0,
+			TargetAccuracy:  0.90,
+			DriftMeanMS:     55.0,
+			DriftStdDevMS:   22.0,
+			PosterURL:       makePosterURL("BTI Studios", "475569", "ffffff"),
+		},
 		// Technicolor: Dedicated Video/QC facility.
 		// Coverage semantics: VIDEO is global and market-agnostic (Markets is empty).
 		{

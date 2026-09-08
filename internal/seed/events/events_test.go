@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/elliot14A/fincher/internal/seed"
+	"github.com/elliot14A/fincher/internal/seed/catalog"
 	"github.com/elliot14A/fincher/internal/seed/entities"
 	"github.com/elliot14A/fincher/internal/seed/events"
 	"github.com/elliot14A/fincher/pkg/domain/models"
@@ -80,8 +81,8 @@ func TestGenerateVendorHistory_CoverageAndDistribution(t *testing.T) {
 
 	histEvents := events.GenerateVendorHistory(world, cfg, rng, now)
 
-	// 8 curated vendors * 2000 events = 16000 events
-	expectedCount := 8 * cfg.EventsPerVendor
+	// Event count derives from the curated vendor catalog size.
+	expectedCount := len(catalog.CuratedVendors()) * cfg.EventsPerVendor
 	if len(histEvents) != expectedCount {
 		t.Fatalf("expected %d events, got %d", expectedCount, len(histEvents))
 	}

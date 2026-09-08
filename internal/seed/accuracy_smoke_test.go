@@ -5,18 +5,20 @@ import (
 	"math"
 	"testing"
 
-	"github.com/elliot14A/fincher/internal/clickhouse"
 	chvendors "github.com/elliot14A/fincher/internal/clickhouse/vendors"
+	"github.com/elliot14A/fincher/pkg/mcp"
 )
 
 func TestLiveClickHouse_AccuracyRollups(t *testing.T) {
-	db, err := clickhouse.Open("127.0.0.1:9000")
-	if err != nil {
-		t.Skipf("skipping live clickhouse test: %v", err)
-	}
-	defer db.Close()
-
 	ctx := context.Background()
+	mcpClient, err := mcp.NewClient("http://127.0.0.1:8000/mcp")
+	if err != nil {
+		t.Skipf("skipping live mcp test: %v", err)
+	}
+	if err := mcpClient.Ping(ctx); err != nil {
+		t.Skipf("skipping live mcp test: mcp server not reachable: %v", err)
+	}
+
 	targets := []struct {
 		vendorID       string
 		component      string
@@ -33,7 +35,7 @@ func TestLiveClickHouse_AccuracyRollups(t *testing.T) {
 	}
 
 	for _, tc := range targets {
-		res := chvendors.RecencyWeightedAccuracy(ctx, db, tc.vendorID, tc.component)
+		res := chvendors.RecencyWeightedAccuracy(ctx, mcpClient, tc.vendorID, tc.component)
 		if res.IsErr() {
 			t.Fatalf("failed to calculate accuracy for %s: %v", tc.vendorID, res.Error())
 		}

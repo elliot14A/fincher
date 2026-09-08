@@ -23,8 +23,8 @@ func TestBuildWorld(t *testing.T) {
 	}
 
 	// 8 curated + 2 filler = 10 vendors
-	if len(world.Vendors) != 10 {
-		t.Errorf("expected 10 vendors, got %d", len(world.Vendors))
+	if len(world.Vendors) != 12 {
+		t.Errorf("expected 12 vendors, got %d", len(world.Vendors))
 	}
 
 	// 7 titles
