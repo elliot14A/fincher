@@ -21,6 +21,7 @@ import (
 	tursoruns "github.com/elliot14A/fincher/internal/turso/runs"
 	"github.com/elliot14A/fincher/internal/turso/tursotest"
 	"github.com/elliot14A/fincher/pkg/domain/models"
+	"github.com/elliot14A/fincher/pkg/mcp"
 )
 
 type mockLLM struct {
@@ -68,6 +69,12 @@ func TestEvents_BatchIngestion_And_Routing(t *testing.T) {
 		t.Fatalf("running migrations: %v", err)
 	}
 
+	mcpClient, err := mcp.NewClient("http://127.0.0.1:8000/mcp")
+	if err != nil || mcpClient.Ping(ctx) != nil {
+		t.Skip("skipping integration: mcp server not reachable")
+		return
+	}
+
 	client := tursotest.NewMemoryClient(t)
 
 	mock := &mockLLM{
@@ -80,7 +87,7 @@ func TestEvents_BatchIngestion_And_Routing(t *testing.T) {
 	sched := scheduler.NewScheduler(time.Second)
 	e := echo.New()
 	g := e.Group("/api/events")
-	events.RegisterRoutes(g, conn, client, func() model.LLM { return mock }, sched)
+	events.RegisterRoutes(g, conn, mcpClient, conn, client, func() model.LLM { return mock }, sched)
 
 	titleSlug := "batch-title-" + uuid.NewString()[:8]
 	anomalyEventID := uuid.NewString()
@@ -319,6 +326,12 @@ func TestEvents_TitleDeadlineReached_DispatchesIncident(t *testing.T) {
 	defer cancel()
 	_ = clickhouse.AutoMigrate(ctx, conn)
 
+	mcpClient, mcpErr := mcp.NewClient("http://127.0.0.1:8000/mcp")
+	if mcpErr != nil || mcpClient.Ping(ctx) != nil {
+		t.Skip("skipping integration: mcp server not reachable")
+		return
+	}
+
 	client := tursotest.NewMemoryClient(t)
 	titleSlug := "deadline-route-" + uuid.NewString()[:8]
 	deadlineEventID := uuid.NewString()
@@ -346,7 +359,7 @@ func TestEvents_TitleDeadlineReached_DispatchesIncident(t *testing.T) {
 	sched := scheduler.NewScheduler(time.Millisecond)
 	e := echo.New()
 	g := e.Group("/api/events")
-	events.RegisterRoutes(g, conn, client, func() model.LLM { return mock }, sched)
+	events.RegisterRoutes(g, conn, mcpClient, conn, client, func() model.LLM { return mock }, sched)
 
 	event := models.Event{
 		ID:              deadlineEventID,

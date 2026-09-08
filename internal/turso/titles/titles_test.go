@@ -16,7 +16,7 @@ import (
 )
 
 func setupTestDB(t *testing.T) *ent.Client {
-	client, err := turso.Open(":memory:", "")
+	client, _, err := turso.Open(":memory:", "")
 	if err != nil {
 		t.Fatalf("failed to open in-memory database: %v", err)
 	}

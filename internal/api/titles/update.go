@@ -17,6 +17,7 @@ import (
 	tursotitles "github.com/elliot14A/fincher/internal/turso/titles"
 	"github.com/elliot14A/fincher/pkg/domain/models"
 	"github.com/elliot14A/fincher/pkg/logger"
+	"github.com/elliot14A/fincher/pkg/mcp"
 )
 
 // Update handles PATCH /api/titles/:id.
@@ -32,7 +33,7 @@ import (
 //	@Failure		400		{object}	errors.DomainError
 //	@Failure		404		{object}	errors.DomainError
 //	@Router			/titles/{id} [patch]
-func Update(client *ent.Client, chDB *sql.DB, modelProvider func() model.LLM, sched *scheduler.Scheduler) echo.HandlerFunc {
+func Update(client *ent.Client, chDB *sql.DB, mcpClient *mcp.Client, tursoDB *sql.DB, modelProvider func() model.LLM, sched *scheduler.Scheduler) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		id := c.Param("id")
 		var req models.UpdateTitleInput
@@ -61,7 +62,7 @@ func Update(client *ent.Client, chDB *sql.DB, modelProvider func() model.LLM, sc
 				}
 			}
 
-			ArmTitleDeadline(client, chDB, modelProvider, sched, updated)
+			ArmTitleDeadline(client, chDB, mcpClient, tursoDB, modelProvider, sched, updated)
 
 			if chDB != nil {
 				resumeEv := models.Event{
@@ -81,7 +82,7 @@ func Update(client *ent.Client, chDB *sql.DB, modelProvider func() model.LLM, sc
 				}
 				bgCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 				defer cancel()
-				_, err := events.IngestAndRoute(bgCtx, chDB, client, modelProvider, []models.Event{resumeEv}, sched)
+				_, err := events.IngestAndRoute(bgCtx, chDB, mcpClient, tursoDB, client, modelProvider, []models.Event{resumeEv}, sched)
 				if err != nil {
 					logger.Warn("titles.Update: failed to route resume event on premiere date change", "error", err)
 				}

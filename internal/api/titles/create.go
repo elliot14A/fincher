@@ -1,9 +1,11 @@
 package titles
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -12,6 +14,7 @@ import (
 
 	"github.com/elliot14A/fincher/internal/agent/graph"
 	apierrors "github.com/elliot14A/fincher/internal/api/errors"
+	"github.com/elliot14A/fincher/internal/api/events"
 	chevents "github.com/elliot14A/fincher/internal/clickhouse/events"
 	"github.com/elliot14A/fincher/internal/scheduler"
 	"github.com/elliot14A/fincher/internal/turso/ent"
@@ -19,6 +22,7 @@ import (
 	tursotitles "github.com/elliot14A/fincher/internal/turso/titles"
 	"github.com/elliot14A/fincher/pkg/domain/models"
 	"github.com/elliot14A/fincher/pkg/logger"
+	"github.com/elliot14A/fincher/pkg/mcp"
 )
 
 // Create handles POST /api/titles.
@@ -32,7 +36,7 @@ import (
 //	@Success		201		{object}	models.Title
 //	@Failure		400		{object}	errors.DomainError
 //	@Router			/titles [post]
-func Create(client *ent.Client, chDB *sql.DB, modelProvider func() model.LLM, sched *scheduler.Scheduler) echo.HandlerFunc {
+func Create(client *ent.Client, chDB *sql.DB, mcpClient *mcp.Client, tursoDB *sql.DB, modelProvider func() model.LLM, sched *scheduler.Scheduler) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var req models.Title
 		if err := c.Bind(&req); err != nil {
@@ -44,12 +48,25 @@ func Create(client *ent.Client, chDB *sql.DB, modelProvider func() model.LLM, sc
 
 		ctx := c.Request().Context()
 
+		// Auto-generate a deterministic ID when the client omits one. The turso layer
+		// validates Base.ID as required before persisting, so the handler owns ID minting.
+		if req.ID == "" {
+			switch {
+			case req.Slug != "":
+				req.ID = "title-" + req.Slug
+			case req.Name != "":
+				req.ID = "title-" + strings.ToLower(strings.ReplaceAll(strings.TrimSpace(req.Name), " ", "-"))
+			default:
+				req.ID = "title-" + uuid.NewString()[:8]
+			}
+		}
+
 		res := tursotitles.Create(ctx, client, &req)
 		if res.IsErr() {
 			return apierrors.Respond(c, res.Error())
 		}
 		created := res.Unwrap()
-		ArmTitleDeadline(client, chDB, modelProvider, sched, created)
+		ArmTitleDeadline(client, chDB, mcpClient, tursoDB, modelProvider, sched, created)
 
 		masterVer := created.CurrentMasterVersion
 		if masterVer == "" {
@@ -134,6 +151,22 @@ func Create(client *ent.Client, chDB *sql.DB, modelProvider func() model.LLM, sc
 				Model:       modelProvider(),
 				TursoClient: client,
 				ClickHouse:  chDB,
+				MCP:         mcpClient,
+				TursoDB:     tursoDB,
+				Scheduler:   sched,
+				OnScheduleComplete: func(qcEvent models.Event) {
+					bgCtx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+					defer cancel()
+					_, err := events.IngestAndRoute(bgCtx, chDB, mcpClient, tursoDB, client, modelProvider, []models.Event{qcEvent}, sched)
+					if err != nil {
+						logger.Error("title onboarding: failed to re-ingest allocation-scheduled QC event",
+							"title_slug", created.Slug,
+							"event_id", qcEvent.ID,
+							"event_type", qcEvent.Type,
+							"error", err,
+						)
+					}
+				},
 			}
 			_, _, err := graph.DispatchAllocation(ctx, deps, graph.AllocationInput{
 				TitleSlug:    created.Slug,

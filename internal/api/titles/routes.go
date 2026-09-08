@@ -8,14 +8,15 @@ import (
 
 	"github.com/elliot14A/fincher/internal/scheduler"
 	"github.com/elliot14A/fincher/internal/turso/ent"
+	"github.com/elliot14A/fincher/pkg/mcp"
 )
 
 // RegisterRoutes registers all title endpoints on the given router group.
-func RegisterRoutes(g *echo.Group, client *ent.Client, chDB *sql.DB, modelProvider func() model.LLM, sched *scheduler.Scheduler) {
-	g.POST("", Create(client, chDB, modelProvider, sched))
+func RegisterRoutes(g *echo.Group, client *ent.Client, chDB *sql.DB, mcpClient *mcp.Client, tursoDB *sql.DB, modelProvider func() model.LLM, sched *scheduler.Scheduler) {
+	g.POST("", Create(client, chDB, mcpClient, tursoDB, modelProvider, sched))
 	g.GET("", List(client))
 	g.GET("/:id", Get(client))
-	g.PATCH("/:id", Update(client, chDB, modelProvider, sched))
+	g.PATCH("/:id", Update(client, chDB, mcpClient, tursoDB, modelProvider, sched))
 	g.DELETE("/:id", Delete(client))
 	g.POST("/:id/qc", SendToQC(client, chDB, modelProvider, sched))
 }

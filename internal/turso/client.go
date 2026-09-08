@@ -28,9 +28,9 @@ import (
 //     write times are < 1ms on local disk in WAL mode. This guarantees that control-plane and
 //     operational entity writes are never stalled, while keeping Fincher entirely self-contained
 //     with zero external S3/MinIO/blob store dependencies for local operations and demo environments.
-func Open(dbURL, authToken string) (*ent.Client, error) {
+func Open(dbURL, authToken string) (*ent.Client, *sql.DB, error) {
 	if dbURL == "" {
-		return nil, fmt.Errorf("database URL is required")
+		return nil, nil, fmt.Errorf("database URL is required")
 	}
 
 	var (
@@ -43,7 +43,7 @@ func Open(dbURL, authToken string) (*ent.Client, error) {
 		if authToken != "" {
 			u, err := url.Parse(dbURL)
 			if err != nil {
-				return nil, fmt.Errorf("invalid database URL: %w", err)
+				return nil, nil, fmt.Errorf("invalid database URL: %w", err)
 			}
 			q := u.Query()
 			q.Set("authToken", authToken)
@@ -66,7 +66,7 @@ func Open(dbURL, authToken string) (*ent.Client, error) {
 	logger.Debug("opening database connection", "driver", driverName, "url", dbURL)
 	db, err := sql.Open(driverName, dsn)
 	if err != nil {
-		return nil, fmt.Errorf("opening database connection: %w", err)
+		return nil, nil, fmt.Errorf("opening database connection: %w", err)
 	}
 
 	if driverName == "sqlite3" {
@@ -78,7 +78,7 @@ func Open(dbURL, authToken string) (*ent.Client, error) {
 	db.SetConnMaxLifetime(5 * time.Minute)
 
 	if err := db.Ping(); err != nil {
-		return nil, fmt.Errorf("pinging database: %w", err)
+		return nil, nil, fmt.Errorf("pinging database: %w", err)
 	}
 
 	logger.Info("connected to database", "driver", driverName, "url", dbURL)
@@ -86,7 +86,7 @@ func Open(dbURL, authToken string) (*ent.Client, error) {
 	drv := entsql.OpenDB(dialect.SQLite, db)
 	client := ent.NewClient(ent.Driver(drv))
 
-	return client, nil
+	return client, db, nil
 }
 
 // AutoMigrate executes schema migrations.

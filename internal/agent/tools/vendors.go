@@ -2,7 +2,6 @@ package tools
 
 import (
 	"context"
-	"database/sql"
 	"strings"
 
 	chvendors "github.com/elliot14A/fincher/internal/clickhouse/vendors"
@@ -10,20 +9,18 @@ import (
 	tursovendors "github.com/elliot14A/fincher/internal/turso/vendors"
 	domainerrors "github.com/elliot14A/fincher/pkg/domain/errors"
 	"github.com/elliot14A/fincher/pkg/domain/models"
+	"github.com/elliot14A/fincher/pkg/mcp"
 	"google.golang.org/adk/v2/agent"
 	"google.golang.org/adk/v2/tool"
 	"google.golang.org/adk/v2/tool/functiontool"
 )
 
-// VendorCandidatesArgs defines filtering parameters for vendor candidates.
 type VendorCandidatesArgs struct {
 	Component string `json:"component,omitempty"`
 	Market    string `json:"market,omitempty"`
 }
 
-// FetchVendorCandidates queries candidate vendors from Turso SQLite and enriches with ClickHouse accuracy,
-// enforcing strict component and market coverage rules.
-func FetchVendorCandidates(ctx context.Context, client *ent.Client, chDB *sql.DB, args VendorCandidatesArgs) ([]models.VendorCandidate, error) {
+func FetchVendorCandidates(ctx context.Context, client *ent.Client, mcpClient *mcp.Client, args VendorCandidatesArgs) ([]models.VendorCandidate, error) {
 	if client == nil {
 		return nil, domainerrors.NewWithOp("tools.FetchVendorCandidates", domainerrors.CodeInvalidInput, "turso client cannot be nil", nil)
 	}
@@ -50,7 +47,6 @@ func FetchVendorCandidates(ctx context.Context, client *ent.Client, chDB *sql.DB
 	targetMarket := strings.TrimSpace(args.Market)
 
 	for _, v := range vendorsList {
-		// 1. Component check: vendor must cover targetComp if specified
 		if targetComp != "" {
 			compFound := false
 			for _, c := range v.Components {
@@ -64,9 +60,6 @@ func FetchVendorCandidates(ctx context.Context, client *ent.Client, chDB *sql.DB
 			}
 		}
 
-		// 2. Market check:
-		// VIDEO is global and market-agnostic (markets are ignored).
-		// Localized components (AUDIO, SUBTITLE, etc.) require targetMarket to be present in v.Markets when targetMarket != "".
 		if targetComp != "VIDEO" && targetMarket != "" {
 			marketFound := false
 			for _, m := range v.Markets {
@@ -81,8 +74,8 @@ func FetchVendorCandidates(ctx context.Context, client *ent.Client, chDB *sql.DB
 		}
 
 		accuracy := models.UnmeasuredHistoricalAccuracy
-		if chDB != nil && targetComp != "" {
-			accRes := chvendors.RecencyWeightedAccuracy(ctx, chDB, v.ID, targetComp)
+		if mcpClient != nil && targetComp != "" {
+			accRes := chvendors.RecencyWeightedAccuracy(ctx, mcpClient, v.ID, targetComp)
 			if accRes.IsOk() {
 				accuracy = accRes.Unwrap()
 			}
@@ -102,8 +95,7 @@ func FetchVendorCandidates(ctx context.Context, client *ent.Client, chDB *sql.DB
 	return candidates, nil
 }
 
-// NewVendorCandidatesTool creates an ADK function tool for retrieving eligible vendors.
-func NewVendorCandidatesTool(client *ent.Client, chDB *sql.DB) (tool.Tool, error) {
+func NewVendorCandidatesTool(client *ent.Client, mcpClient *mcp.Client) (tool.Tool, error) {
 	if client == nil {
 		return nil, domainerrors.NewWithOp("tools.NewVendorCandidatesTool", domainerrors.CodeInvalidInput, "turso client cannot be nil", nil)
 	}
@@ -111,10 +103,10 @@ func NewVendorCandidatesTool(client *ent.Client, chDB *sql.DB) (tool.Tool, error
 	return functiontool.New(
 		functiontool.Config{
 			Name:        "get_vendor_candidates",
-			Description: "Retrieves qualified vendor partners for a given component and optional market (e.g. AUDIO in te-IN) with commercial terms and historical quality ratings.",
+			Description: "Retrieves qualified vendor partners for a given component and optional market with commercial terms and historical quality ratings.",
 		},
 		func(ctx agent.Context, args VendorCandidatesArgs) ([]models.VendorCandidate, error) {
-			return FetchVendorCandidates(ctx, client, chDB, args)
+			return FetchVendorCandidates(ctx, client, mcpClient, args)
 		},
 	)
 }

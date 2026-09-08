@@ -28,7 +28,7 @@ var validPNGBytes = []byte{
 }
 
 func setupTestServer(t *testing.T) (*echo.Echo, *ent.Client) {
-	client, err := turso.Open(":memory:", "")
+	client, _, err := turso.Open(":memory:", "")
 	if err != nil {
 		t.Fatalf("failed to open memory db: %v", err)
 	}

@@ -6,6 +6,7 @@ require (
 	entgo.io/ent v0.14.6
 	github.com/ClickHouse/clickhouse-go/v2 v2.48.0
 	github.com/alecthomas/kong v1.16.1
+	github.com/brianvoe/gofakeit/v7 v7.16.0
 	github.com/go-playground/validator/v10 v10.30.3
 	github.com/google/jsonschema-go v0.4.3
 	github.com/google/uuid v1.6.0
@@ -29,7 +30,6 @@ require (
 	github.com/antlr4-go/antlr/v4 v4.13.0 // indirect
 	github.com/apparentlymart/go-textseg/v15 v15.0.0 // indirect
 	github.com/bmatcuk/doublestar v1.3.4 // indirect
-	github.com/brianvoe/gofakeit/v7 v7.16.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/coder/websocket v1.8.12 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect

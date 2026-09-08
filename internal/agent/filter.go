@@ -56,5 +56,30 @@ func FilterEvent(ctx context.Context, m model.LLM, event *models.Event, hoursUnt
 		string(eventDataJSON),
 	)
 
-	return generateJSON[*FilterDecision](ctx, m, "agent.FilterEvent", prompts.Filter, userPrompt)
+	res := generateJSON[*FilterDecision](ctx, m, "agent.FilterEvent", prompts.Filter, userPrompt)
+	if res.IsOk() {
+		decision := res.Unwrap()
+		decision.AnomalyType = anomalyTypeForEvent(event.Type)
+		res = domainerrors.Ok(decision)
+	}
+	return res
+}
+
+func anomalyTypeForEvent(eventType string) string {
+	switch eventType {
+	case models.TypeAudioSyncDriftDetected:
+		return "AUDIO_SYNC_DRIFT"
+	case models.TypeQCInspectionCompleted:
+		return "QC_FAILURE"
+	case models.TypePackageInvalidated:
+		return "PACKAGE_INVALIDATED"
+	case models.TypeVendorSLABreach:
+		return "VENDOR_SLA_BREACH"
+	case models.TypeMasterCutRevised:
+		return "MASTER_REVISION"
+	case models.TypeTitleDeadlineReached:
+		return "DEADLINE_BREACH"
+	default:
+		return "GENERAL_ANOMALY"
+	}
 }

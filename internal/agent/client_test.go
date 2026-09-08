@@ -12,7 +12,7 @@ func TestNewModel_Validation(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("Fails when API key is empty", func(t *testing.T) {
-		res := agent.NewModel(ctx, "", "gemini-2.5-flash")
+		res := agent.NewModel(ctx, "", "gemini-2.5-flash", nil)
 		if res.IsOk() {
 			t.Fatal("expected error for empty API key, got Ok")
 		}
@@ -26,7 +26,7 @@ func TestNewModel_Validation(t *testing.T) {
 	})
 
 	t.Run("Fails when model name is empty", func(t *testing.T) {
-		res := agent.NewModel(ctx, "test-fake-key", "")
+		res := agent.NewModel(ctx, "test-fake-key", "", nil)
 		if res.IsOk() {
 			t.Fatal("expected error for empty model name, got Ok")
 		}
@@ -40,7 +40,7 @@ func TestNewModel_Validation(t *testing.T) {
 	})
 
 	t.Run("Initializes model with valid configuration", func(t *testing.T) {
-		res := agent.NewModel(ctx, "test-fake-key", "gemini-2.5-flash")
+		res := agent.NewModel(ctx, "test-fake-key", "gemini-2.5-flash", nil)
 		if res.IsErr() {
 			t.Fatalf("expected successful client initialization, got error: %v", res.Error())
 		}

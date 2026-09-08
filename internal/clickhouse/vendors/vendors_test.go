@@ -12,6 +12,7 @@ import (
 	"github.com/elliot14A/fincher/internal/clickhouse/vendors"
 	domainerrors "github.com/elliot14A/fincher/pkg/domain/errors"
 	"github.com/elliot14A/fincher/pkg/domain/models"
+	"github.com/elliot14A/fincher/pkg/mcp"
 )
 
 func TestVendors_Validation(t *testing.T) {
@@ -48,10 +49,19 @@ func TestVendors_Integration(t *testing.T) {
 		t.Fatalf("automigrate failed: %v", err)
 	}
 
+	mcpClient, err := mcp.NewClient("http://127.0.0.1:8000/mcp")
+	if err != nil {
+		t.Skip("skipping integration test: mcp client init failed:", err)
+		return
+	}
+	if err := mcpClient.Ping(ctx); err != nil {
+		t.Skip("skipping integration test: mcp server not reachable:", err)
+		return
+	}
+
 	vendorID := "vendor-acc-" + uuid.NewString()[:8]
 
-	// Baseline accuracy for candidate with no historical data should be -1.0 (unmeasured)
-	baselineRes := vendors.RecencyWeightedAccuracy(ctx, conn, vendorID, "AUDIO")
+	baselineRes := vendors.RecencyWeightedAccuracy(ctx, mcpClient, vendorID, "AUDIO")
 	if !baselineRes.IsOk() {
 		t.Fatalf("calculating baseline accuracy: %v", baselineRes.Error())
 	}
@@ -80,7 +90,7 @@ func TestVendors_Integration(t *testing.T) {
 	}
 
 	// Accuracy should now be 0.0 (1 failed out of 1 measured)
-	accRes := vendors.RecencyWeightedAccuracy(ctx, conn, vendorID, "AUDIO")
+	accRes := vendors.RecencyWeightedAccuracy(ctx, mcpClient, vendorID, "AUDIO")
 	if !accRes.IsOk() {
 		t.Fatalf("calculating accuracy after failure: %v", accRes.Error())
 	}

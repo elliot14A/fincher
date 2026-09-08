@@ -2,6 +2,7 @@ package api
 
 import (
 	"database/sql"
+	"sync"
 	"time"
 
 	"github.com/labstack/echo/v4"
@@ -22,6 +23,7 @@ import (
 	"github.com/elliot14A/fincher/internal/turso/ent"
 	"github.com/elliot14A/fincher/openapi"
 	"github.com/elliot14A/fincher/pkg/logger"
+	"github.com/elliot14A/fincher/pkg/mcp"
 	"github.com/elliot14A/fincher/pkg/web"
 )
 
@@ -29,12 +31,23 @@ type Server struct {
 	echo      *echo.Echo
 	client    *ent.Client
 	chDB      *sql.DB
+	tursoDB   *sql.DB
+	mcp       *mcp.Client
 	llm       model.LLM
 	scheduler *scheduler.Scheduler
+	routeOnce sync.Once
 }
 
 func (s *Server) SetModel(m model.LLM) {
 	s.llm = m
+}
+
+func (s *Server) SetTursoDB(db *sql.DB) {
+	s.tursoDB = db
+}
+
+func (s *Server) SetMCP(m *mcp.Client) {
+	s.mcp = m
 }
 
 func (s *Server) SetScheduler(sched *scheduler.Scheduler) {
@@ -89,11 +102,11 @@ func NewServer(client *ent.Client, chDB ...*sql.DB) *Server {
 		s.chDB = chDB[0]
 	}
 
-	s.registerRoutes()
 	return s
 }
 
 func (s *Server) Router() *echo.Echo {
+	s.routeOnce.Do(s.registerRoutes)
 	return s.echo
 }
 
@@ -117,17 +130,17 @@ func (s *Server) registerRoutes() {
 		})
 	})
 
-	titles.RegisterRoutes(apiGroup.Group("/titles"), s.client, s.chDB, func() model.LLM { return s.llm }, s.scheduler)
+	titles.RegisterRoutes(apiGroup.Group("/titles"), s.client, s.chDB, s.mcp, s.tursoDB, func() model.LLM { return s.llm }, s.scheduler)
 	masters.RegisterRoutes(apiGroup.Group("/masters"), s.client)
 	vendors.RegisterRoutes(apiGroup.Group("/vendors"), s.client)
 	packages.RegisterRoutes(apiGroup.Group("/packages"), s.client)
 	deliveries.RegisterRoutes(apiGroup.Group("/deliveries"), s.client)
 	dependencies.RegisterRoutes(apiGroup.Group("/dependencies"), s.client)
 	uploads.RegisterRoutes(apiGroup.Group("/uploads"), s.client)
-	runs.RegisterRoutes(apiGroup.Group("/runs"), s.client, s.chDB, func() model.LLM { return s.llm })
+	runs.RegisterRoutes(apiGroup.Group("/runs"), s.client, s.chDB, s.mcp, s.tursoDB, func() model.LLM { return s.llm })
 
 	if s.chDB != nil {
-		events.RegisterRoutes(apiGroup.Group("/events"), s.chDB, s.client, func() model.LLM { return s.llm }, s.scheduler)
+		events.RegisterRoutes(apiGroup.Group("/events"), s.chDB, s.mcp, s.tursoDB, s.client, func() model.LLM { return s.llm }, s.scheduler)
 	}
 
 	web.RegisterRoutes(s.echo)

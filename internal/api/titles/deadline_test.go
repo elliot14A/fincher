@@ -70,7 +70,7 @@ func TestArmTitleDeadline_Matrix(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			client, err := turso.Open(":memory:", "")
+			client, _, err := turso.Open(":memory:", "")
 			if err != nil {
 				t.Fatalf("failed to open memory db: %v", err)
 			}
@@ -130,7 +130,7 @@ func TestArmTitleDeadline_Matrix(t *testing.T) {
 				CurrentMasterVersion: "V01",
 			}
 
-			titles.ArmTitleDeadline(client, conn, func() model.LLM { return nil }, sched, titleObj)
+			titles.ArmTitleDeadline(client, conn, nil, conn, func() model.LLM { return nil }, sched, titleObj)
 
 			// Allow timer and callback to complete
 			time.Sleep(100 * time.Millisecond)
@@ -153,18 +153,18 @@ func TestArmTitleDeadline_Matrix(t *testing.T) {
 
 func TestArmTitleDeadline_NilGuards(t *testing.T) {
 	// Must not panic on nil arguments
-	titles.ArmTitleDeadline(nil, nil, nil, nil, nil)
+	titles.ArmTitleDeadline(nil, nil, nil, nil, nil, nil, nil)
 
 	timeScale := time.Millisecond
 	sched := scheduler.NewScheduler(timeScale)
 	defer sched.Stop()
 
-	titles.ArmTitleDeadline(nil, nil, nil, sched, nil)
+	titles.ArmTitleDeadline(nil, nil, nil, nil, nil, sched, nil)
 
 	title := &models.Title{
 		Base:         models.Base{ID: "title-nil-test"},
 		Slug:         "nil-test",
 		PremiereDate: time.Now().UTC().Add(time.Hour),
 	}
-	titles.ArmTitleDeadline(nil, nil, nil, sched, title)
+	titles.ArmTitleDeadline(nil, nil, nil, nil, nil, sched, title)
 }

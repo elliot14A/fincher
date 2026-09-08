@@ -19,6 +19,7 @@ import (
 	domainerrors "github.com/elliot14A/fincher/pkg/domain/errors"
 	"github.com/elliot14A/fincher/pkg/domain/models"
 	"github.com/elliot14A/fincher/pkg/logger"
+	"github.com/elliot14A/fincher/pkg/mcp"
 )
 
 // IngestAndRoute validates, stores, and routes a batch of CloudEvents.
@@ -27,6 +28,8 @@ import (
 func IngestAndRoute(
 	ctx context.Context,
 	db *sql.DB,
+	mcpClient *mcp.Client,
+	tursoDB *sql.DB,
 	tursoClient *ent.Client,
 	modelProvider func() model.LLM,
 	events []models.Event,
@@ -75,12 +78,14 @@ func IngestAndRoute(
 				Model:       m,
 				TursoClient: tursoClient,
 				ClickHouse:  db,
+				MCP:         mcpClient,
+				TursoDB:     tursoDB,
 				MaxAttempts: graph.DefaultMaxRemediationAttempts,
 				Scheduler:   sched,
 				OnScheduleComplete: func(qcEvent models.Event) {
 					bgCtx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 					defer cancel()
-					_, err := IngestAndRoute(bgCtx, db, tursoClient, modelProvider, []models.Event{qcEvent}, sched)
+					_, err := IngestAndRoute(bgCtx, db, mcpClient, tursoDB, tursoClient, modelProvider, []models.Event{qcEvent}, sched)
 					if err != nil {
 						logger.Error("events: failed to re-ingest scheduled QC completion event",
 							"event_id", qcEvent.ID,
@@ -123,6 +128,22 @@ func IngestAndRoute(
 				Model:       m,
 				TursoClient: tursoClient,
 				ClickHouse:  db,
+				MCP:         mcpClient,
+				TursoDB:     tursoDB,
+				Scheduler:   sched,
+				OnScheduleComplete: func(qcEvent models.Event) {
+					bgCtx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+					defer cancel()
+					_, err := IngestAndRoute(bgCtx, db, mcpClient, tursoDB, tursoClient, modelProvider, []models.Event{qcEvent}, sched)
+					if err != nil {
+						logger.Error("events: failed to re-ingest allocation-scheduled QC completion event",
+							"event_id", qcEvent.ID,
+							"event_type", qcEvent.Type,
+							"subject", qcEvent.Subject,
+							"error", err,
+						)
+					}
+				},
 			}
 			runObj, _, err := graph.DispatchAllocation(ctx, allocDeps, graph.AllocationInput{
 				RunID:     "run-" + ev.ID,
@@ -181,7 +202,7 @@ func IngestAndRoute(
 //	@Failure		400		{object}	errors.ErrorResponse
 //	@Failure		500		{object}	errors.ErrorResponse
 //	@Router			/events [post]
-func Create(db *sql.DB, tursoClient *ent.Client, modelProvider func() model.LLM, sched *scheduler.Scheduler) echo.HandlerFunc {
+func Create(db *sql.DB, mcpClient *mcp.Client, tursoDB *sql.DB, tursoClient *ent.Client, modelProvider func() model.LLM, sched *scheduler.Scheduler) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var req []models.Event
 		if err := c.Bind(&req); err != nil {
@@ -192,7 +213,7 @@ func Create(db *sql.DB, tursoClient *ent.Client, modelProvider func() model.LLM,
 		}
 
 		ctx := c.Request().Context()
-		resp, err := IngestAndRoute(ctx, db, tursoClient, modelProvider, req, sched)
+		resp, err := IngestAndRoute(ctx, db, mcpClient, tursoDB, tursoClient, modelProvider, req, sched)
 		if err != nil {
 			return apierrors.Respond(c, err)
 		}

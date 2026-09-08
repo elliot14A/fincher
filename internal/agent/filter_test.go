@@ -77,8 +77,8 @@ func TestFilterEvent(t *testing.T) {
 		if decision.Severity != models.SeverityCritical {
 			t.Errorf("expected CRITICAL severity, got: %s", decision.Severity)
 		}
-		if decision.AnomalyType != "AUDIO_SYNC_DRIFT" {
-			t.Errorf("expected AUDIO_SYNC_DRIFT, got: %s", decision.AnomalyType)
+		if decision.AnomalyType != "QC_FAILURE" {
+			t.Errorf("expected QC_FAILURE (deterministic from event type), got: %s", decision.AnomalyType)
 		}
 
 		if llm.lastRequest == nil || llm.lastRequest.Config == nil {

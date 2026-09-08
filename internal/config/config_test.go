@@ -17,8 +17,7 @@ func TestConfig_Validation(t *testing.T) {
 		ClickHouseDSN:               "127.0.0.1:9000",
 		MCPURL:                      "http://127.0.0.1:8000/mcp",
 		GeminiAPIKey:                "test-key",
-		FlashModel:                  "gemini-2.5-flash",
-		ProModel:                    "gemini-2.5-pro",
+		GeminiModel:                 "gemini-2.5-flash",
 		DailyModelInvocationCap:     200,
 		MaxConcurrentAIWorkflowRuns: 3,
 	}

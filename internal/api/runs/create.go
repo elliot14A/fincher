@@ -15,6 +15,7 @@ import (
 	tursoruns "github.com/elliot14A/fincher/internal/turso/runs"
 	tursotitles "github.com/elliot14A/fincher/internal/turso/titles"
 	"github.com/elliot14A/fincher/pkg/domain/models"
+	"github.com/elliot14A/fincher/pkg/mcp"
 )
 
 // CreateRunRequest defines the parameters for triggering a workflow run.
@@ -28,7 +29,7 @@ type CreateRunRequest struct {
 }
 
 // Create handles POST /api/runs.
-func Create(client *ent.Client, chDB *sql.DB, modelProvider func() model.LLM) echo.HandlerFunc {
+func Create(client *ent.Client, chDB *sql.DB, mcpClient *mcp.Client, tursoDB *sql.DB, modelProvider func() model.LLM) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var req CreateRunRequest
 		if err := c.Bind(&req); err != nil {
@@ -86,6 +87,8 @@ func Create(client *ent.Client, chDB *sql.DB, modelProvider func() model.LLM) ec
 				Model:       m,
 				TursoClient: client,
 				ClickHouse:  chDB,
+				MCP:         mcpClient,
+				TursoDB:     tursoDB,
 			}
 			comp := req.Component
 			if comp == "" {
@@ -144,6 +147,8 @@ func Create(client *ent.Client, chDB *sql.DB, modelProvider func() model.LLM) ec
 				Model:       m,
 				TursoClient: client,
 				ClickHouse:  chDB,
+				MCP:         mcpClient,
+				TursoDB:     tursoDB,
 				MaxAttempts: graph.DefaultMaxRemediationAttempts,
 			}
 			runObj, _, err := graph.DispatchIncident(c.Request().Context(), incidentDeps, graph.IncidentInput{

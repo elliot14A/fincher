@@ -2,20 +2,23 @@ package vendors
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 
 	"github.com/elliot14A/fincher/internal/clickhouse"
 	domainerrors "github.com/elliot14A/fincher/pkg/domain/errors"
+	"github.com/elliot14A/fincher/pkg/mcp"
 )
 
 const DecayHalfLifeDays = 120.0
 
-// RecencyWeightedAccuracy computes the 120-day exponential decay pass rate for a vendor component.
-// If no measurements exist for this vendor component, it returns -1.0 (unmeasured sentinel).
-func RecencyWeightedAccuracy(ctx context.Context, db *sql.DB, vendorID, component string) domainerrors.Result[float64] {
-	if vendorID == "" || component == "" {
-		return domainerrors.Err[float64](clickhouse.NewError("vendors.RecencyWeightedAccuracy", domainerrors.CodeInvalidInput, "vendorID and component are required", nil))
+func RecencyWeightedAccuracy(ctx context.Context, client *mcp.Client, vendorID, component string) domainerrors.Result[float64] {
+	safeVendor, err := mcp.SafeIdentifier("vendor_id", vendorID)
+	if err != nil {
+		return domainerrors.Err[float64](clickhouse.NewError("vendors.RecencyWeightedAccuracy", domainerrors.CodeInvalidInput, err.Error(), nil))
+	}
+	safeComponent, err := mcp.SafeIdentifier("component", component)
+	if err != nil {
+		return domainerrors.Err[float64](clickhouse.NewError("vendors.RecencyWeightedAccuracy", domainerrors.CodeInvalidInput, err.Error(), nil))
 	}
 
 	query := fmt.Sprintf(`
@@ -23,18 +26,19 @@ func RecencyWeightedAccuracy(ctx context.Context, db *sql.DB, vendorID, componen
 			sum(failed_inspections * exp(-dateDiff('day', recorded_date, today()) / %f)) as weighted_failed,
 			sum(measured_status_count * exp(-dateDiff('day', recorded_date, today()) / %f)) as weighted_measured
 		from fincher.vendor_metrics
-		where vendor_id = ? and component = ?
-	`, DecayHalfLifeDays, DecayHalfLifeDays)
+		where vendor_id = '%s' and component = '%s'
+	`, DecayHalfLifeDays, DecayHalfLifeDays, safeVendor, safeComponent)
 
-	var (
-		weightedFailed   float64
-		weightedMeasured float64
-	)
-
-	row := db.QueryRowContext(ctx, query, vendorID, component)
-	if err := row.Scan(&weightedFailed, &weightedMeasured); err != nil {
+	rows, err := mcp.RunQueryRows(ctx, client, query)
+	if err != nil {
 		return domainerrors.Err[float64](clickhouse.MapError("vendors.RecencyWeightedAccuracy", "vendor_metrics", vendorID, err))
 	}
+	if len(rows) == 0 {
+		return domainerrors.Ok(-1.0)
+	}
+
+	weightedFailed := asFloat(rows[0]["weighted_failed"])
+	weightedMeasured := asFloat(rows[0]["weighted_measured"])
 
 	if weightedMeasured <= 0 {
 		return domainerrors.Ok(-1.0)
@@ -45,4 +49,17 @@ func RecencyWeightedAccuracy(ctx context.Context, db *sql.DB, vendorID, componen
 		accuracy = 0
 	}
 	return domainerrors.Ok(accuracy)
+}
+
+func asFloat(v any) float64 {
+	switch n := v.(type) {
+	case float64:
+		return n
+	case int64:
+		return float64(n)
+	case int:
+		return float64(n)
+	default:
+		return 0
+	}
 }

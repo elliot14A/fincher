@@ -2,19 +2,19 @@ package agent
 
 import (
 	"context"
-	"database/sql"
+	"fmt"
 
 	"github.com/elliot14A/fincher/internal/agent/tools"
 	"github.com/elliot14A/fincher/internal/turso/ent"
 	domainerrors "github.com/elliot14A/fincher/pkg/domain/errors"
+	"github.com/elliot14A/fincher/pkg/mcp"
 	"google.golang.org/adk/v2/model"
 	"google.golang.org/adk/v2/model/gemini"
 	"google.golang.org/adk/v2/tool"
 	genai "google.golang.org/genai"
 )
 
-// NewModel initializes an ADK model.LLM backed by Google Gemini.
-func NewModel(ctx context.Context, apiKey, modelName string) domainerrors.Result[model.LLM] {
+func NewModel(ctx context.Context, apiKey, modelName string, opts map[string]string) domainerrors.Result[model.LLM] {
 	if apiKey == "" {
 		return domainerrors.Err[model.LLM](NewError("agent.NewModel", domainerrors.CodeInvalidInput, "gemini api key is required", nil))
 	}
@@ -23,7 +23,12 @@ func NewModel(ctx context.Context, apiKey, modelName string) domainerrors.Result
 	}
 
 	cfg := &genai.ClientConfig{
-		APIKey: apiKey,
+		Backend: genai.BackendVertexAI,
+		APIKey:  apiKey,
+	}
+
+	if loc := opts["location"]; loc != "" {
+		cfg.HTTPOptions.BaseURL = fmt.Sprintf("https://%s-aiplatform.googleapis.com/", loc)
 	}
 
 	m, err := gemini.NewModel(ctx, modelName, cfg)
@@ -34,16 +39,15 @@ func NewModel(ctx context.Context, apiKey, modelName string) domainerrors.Result
 	return domainerrors.Ok(m)
 }
 
-// BuildAgentTools constructs the complete ADK toolset for AI evaluation agents.
-func BuildAgentTools(tursoClient *ent.Client, chDB *sql.DB) ([]tool.Tool, error) {
+func BuildAgentTools(tursoClient *ent.Client, mcpClient *mcp.Client) ([]tool.Tool, error) {
 	if tursoClient == nil {
 		return nil, domainerrors.NewWithOp("agent.BuildAgentTools", domainerrors.CodeInvalidInput, "turso client cannot be nil", nil)
 	}
-	if chDB == nil {
-		return nil, domainerrors.NewWithOp("agent.BuildAgentTools", domainerrors.CodeInvalidInput, "clickhouse db cannot be nil", nil)
+	if mcpClient == nil {
+		return nil, domainerrors.NewWithOp("agent.BuildAgentTools", domainerrors.CodeInvalidInput, "mcp client cannot be nil", nil)
 	}
 
-	analyticsTool, err := tools.NewAnalyticsTool(chDB)
+	analyticsTool, err := tools.NewAnalyticsTool(mcpClient)
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +55,7 @@ func BuildAgentTools(tursoClient *ent.Client, chDB *sql.DB) ([]tool.Tool, error)
 	if err != nil {
 		return nil, err
 	}
-	candidatesTool, err := tools.NewVendorCandidatesTool(tursoClient, chDB)
+	candidatesTool, err := tools.NewVendorCandidatesTool(tursoClient, mcpClient)
 	if err != nil {
 		return nil, err
 	}

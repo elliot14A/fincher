@@ -16,12 +16,15 @@ import (
 	domainerrors "github.com/elliot14A/fincher/pkg/domain/errors"
 	"github.com/elliot14A/fincher/pkg/domain/models"
 	"github.com/elliot14A/fincher/pkg/logger"
+	"github.com/elliot14A/fincher/pkg/mcp"
 )
 
 // ArmTitleDeadline schedules a compressed-time deadline timer for a title.
 func ArmTitleDeadline(
 	client *ent.Client,
 	chDB *sql.DB,
+	mcpClient *mcp.Client,
+	tursoDB *sql.DB,
 	modelProvider func() model.LLM,
 	sched *scheduler.Scheduler,
 	title *models.Title,
@@ -84,7 +87,7 @@ func ArmTitleDeadline(
 		)
 
 		if chDB != nil && client != nil {
-			_, _ = events.IngestAndRoute(bgCtx, chDB, client, modelProvider, []models.Event{breachEvent}, sched)
+			_, _ = events.IngestAndRoute(bgCtx, chDB, mcpClient, tursoDB, client, modelProvider, []models.Event{breachEvent}, sched)
 		}
 	})
 }

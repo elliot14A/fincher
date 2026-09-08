@@ -18,7 +18,7 @@ func NewMemoryClient(t *testing.T) *ent.Client {
 	testName := strings.ReplaceAll(t.Name(), "/", "_")
 	dbURL := fmt.Sprintf("file:mem_%s_%d?mode=memory&cache=shared&_fk=1&_busy_timeout=5000", testName, time.Now().UnixNano())
 
-	client, err := turso.Open(dbURL, "")
+	client, _, err := turso.Open(dbURL, "")
 	if err != nil {
 		t.Fatalf("tursotest: failed to open in-memory database: %v", err)
 	}

@@ -18,6 +18,7 @@ import (
 	"github.com/elliot14A/fincher/internal/scheduler"
 	"github.com/elliot14A/fincher/internal/turso"
 	"github.com/elliot14A/fincher/pkg/logger"
+	"github.com/elliot14A/fincher/pkg/mcp"
 )
 
 //	@title			Fincher Media Delivery Operations API
@@ -46,7 +47,7 @@ func main() {
 	logger.Init(cfg.Environment, os.Stdout)
 	logger.Info("starting fincher service", "environment", cfg.Environment, "port", cfg.Port)
 
-	dbClient, err := turso.Open(cfg.TursoURL, cfg.TursoToken)
+	dbClient, dbSQL, err := turso.Open(cfg.TursoURL, cfg.TursoToken)
 	if err != nil {
 		logger.Error("failed to open database connection", "error", err)
 		os.Exit(1)
@@ -72,14 +73,27 @@ func main() {
 	}
 
 	srv := api.NewServer(dbClient, chDB)
+	srv.SetTursoDB(dbSQL)
 	srv.SetScheduler(scheduler.NewScheduler(config.DefaultTimeScale))
+
+	mcpClient, err := mcp.NewClient(cfg.MCPURL)
+	if err != nil {
+		logger.Error("failed to initialize clickhouse mcp client", "endpoint", cfg.MCPURL, "error", err)
+		return
+	}
+	if err := mcpClient.Ping(ctx); err != nil {
+		logger.Error("clickhouse mcp server unreachable; agent analytics require it", "endpoint", cfg.MCPURL, "error", err)
+		return
+	}
+	srv.SetMCP(mcpClient)
+	logger.Info("connected to clickhouse mcp server", "endpoint", cfg.MCPURL)
 	if cfg.GeminiAPIKey != "" {
-		modelRes := agent.NewModel(ctx, cfg.GeminiAPIKey, cfg.FlashModel)
+		modelRes := agent.NewModel(ctx, cfg.GeminiAPIKey, cfg.GeminiModel, cfg.GeminiOptions)
 		if modelRes.IsErr() {
 			logger.Warn("failed to initialize gemini model", "error", modelRes.Error())
 		} else {
 			srv.SetModel(modelRes.Unwrap())
-			logger.Info("initialized gemini model runtime", "model", cfg.FlashModel)
+			logger.Info("initialized gemini model runtime", "model", cfg.GeminiModel)
 		}
 	}
 	e := srv.Router()

@@ -29,7 +29,7 @@ func main() {
 	ctx := context.Background()
 
 	// Connect Turso SQLite
-	tursoClient, err := turso.Open(cfg.TursoURL, cfg.TursoToken)
+	tursoClient, _, err := turso.Open(cfg.TursoURL, cfg.TursoToken)
 	if err != nil {
 		logger.Error("failed to open Turso / SQLite client", "error", err)
 		os.Exit(1)

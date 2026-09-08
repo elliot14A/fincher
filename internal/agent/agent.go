@@ -12,14 +12,20 @@ import (
 	genai "google.golang.org/genai"
 )
 
-// generateJSON executes an LLM request expecting structured JSON and parses it into T.
 func generateJSON[T any](ctx context.Context, m model.LLM, op, systemPrompt, userPrompt string) domainerrors.Result[T] {
 	if m == nil {
 		return domainerrors.Err[T](NewError(op, domainerrors.CodeInvalidInput, "llm model cannot be nil", nil))
 	}
 
+	noThinking := int32(0)
 	genConfig := &genai.GenerateContentConfig{
 		ResponseMIMEType: "application/json",
+		SystemInstruction: &genai.Content{
+			Parts: []*genai.Part{
+				{Text: systemPrompt},
+			},
+		},
+		ThinkingConfig: &genai.ThinkingConfig{ThinkingBudget: &noThinking},
 	}
 	if schema, err := jsonschema.For[T](nil); err == nil && schema != nil {
 		genConfig.ResponseJsonSchema = schema
@@ -28,12 +34,6 @@ func generateJSON[T any](ctx context.Context, m model.LLM, op, systemPrompt, use
 	req := &model.LLMRequest{
 		Model: m.Name(),
 		Contents: []*genai.Content{
-			{
-				Role: "system",
-				Parts: []*genai.Part{
-					{Text: systemPrompt},
-				},
-			},
 			{
 				Role: "user",
 				Parts: []*genai.Part{
