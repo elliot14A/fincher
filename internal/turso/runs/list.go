@@ -34,7 +34,7 @@ func ListRuns(ctx context.Context, client *ent.Client, filter ListFilter, p mode
 		query = query.Where(entrun.TriggerContainsFold(p.Search))
 	}
 
-	query = query.Order(turso.OrderBy(p, ent.Desc(entrun.FieldStartedAt), ent.Asc(entrun.FieldStartedAt)))
+	query = query.Order(turso.OrderBy(p, ent.Asc(entrun.FieldCreatedAt), ent.Desc(entrun.FieldCreatedAt)))
 
 	return turso.Paginate(
 		ctx,
