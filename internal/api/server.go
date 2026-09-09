@@ -10,12 +10,14 @@ import (
 
 	"google.golang.org/adk/v2/model"
 
+	"github.com/elliot14A/fincher/internal/api/chat"
 	"github.com/elliot14A/fincher/internal/api/deliveries"
 	"github.com/elliot14A/fincher/internal/api/dependencies"
 	"github.com/elliot14A/fincher/internal/api/events"
 	"github.com/elliot14A/fincher/internal/api/masters"
 	"github.com/elliot14A/fincher/internal/api/packages"
 	"github.com/elliot14A/fincher/internal/api/runs"
+	"github.com/elliot14A/fincher/internal/api/search"
 	"github.com/elliot14A/fincher/internal/api/titles"
 	"github.com/elliot14A/fincher/internal/api/uploads"
 	"github.com/elliot14A/fincher/internal/api/vendors"
@@ -138,6 +140,8 @@ func (s *Server) registerRoutes() {
 	dependencies.RegisterRoutes(apiGroup.Group("/dependencies"), s.client)
 	uploads.RegisterRoutes(apiGroup.Group("/uploads"), s.client)
 	runs.RegisterRoutes(apiGroup.Group("/runs"), s.client, s.chDB, s.mcp, s.tursoDB, func() model.LLM { return s.llm })
+	chat.RegisterRoutes(apiGroup.Group("/chat"), s.client, s.tursoDB, s.mcp, func() model.LLM { return s.llm })
+	search.RegisterRoutes(apiGroup.Group("/search"), s.client)
 
 	if s.chDB != nil {
 		events.RegisterRoutes(apiGroup.Group("/events"), s.chDB, s.mcp, s.tursoDB, s.client, func() model.LLM { return s.llm }, s.scheduler)

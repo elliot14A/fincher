@@ -13,3 +13,6 @@ var Selector string
 
 //go:embed plan_selector.md
 var PlanSelector string
+
+//go:embed chat.md
+var Chat string

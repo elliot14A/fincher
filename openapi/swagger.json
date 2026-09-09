@@ -11,6 +11,195 @@
     },
     "basePath": "/api",
     "paths": {
+        "/chat": {
+            "get": {
+                "description": "Returns all persisted chat sessions newest-first (without messages).",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "chat"
+                ],
+                "summary": "List chat sessions",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.ChatSession"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Sends an operator message to the read-only chat assistant, persists the turn, and returns the grounded assistant answer with SQL citations. Creates a new session when session_id is omitted.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "chat"
+                ],
+                "summary": "Send a message to the chat assistant",
+                "parameters": [
+                    {
+                        "description": "Chat message",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/chat.SendMessageRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/chat.SendMessageResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/chat/{id}": {
+            "get": {
+                "description": "Fetches a single chat session and its full message history (the audit log of what the assistant did, including SQL citations).",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "chat"
+                ],
+                "summary": "Get a chat session with messages",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Session ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.ChatSession"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Deletes a chat session and all of its messages.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "chat"
+                ],
+                "summary": "Delete a chat session",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Session ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "description": "Updates the title of a chat session.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "chat"
+                ],
+                "summary": "Rename a chat session",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Session ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "New title",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/chat.UpdateSessionRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.ChatSession"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/deliveries": {
             "get": {
                 "description": "Fetches territory deliveries with pagination, optionally filtered by title, country, or status.",
@@ -990,6 +1179,50 @@
                 }
             }
         },
+        "/search": {
+            "get": {
+                "description": "Case-insensitive search across titles, vendors, and deliveries for @-mention tagging and reference resolution.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "search"
+                ],
+                "summary": "Search taggable objects",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Search query",
+                        "name": "q",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Max results per kind",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.SearchResult"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/titles": {
             "get": {
                 "description": "Fetches releases in the launch calendar with pagination, optionally filtered by status.",
@@ -1585,6 +1818,56 @@
         }
     },
     "definitions": {
+        "chat.SendMessageRequest": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                },
+                "session_id": {
+                    "type": "string"
+                },
+                "tagged_objects": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/chat.TaggedObjectRef"
+                    }
+                }
+            }
+        },
+        "chat.SendMessageResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "$ref": "#/definitions/models.ChatMessage"
+                },
+                "session_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "chat.TaggedObjectRef": {
+            "type": "object",
+            "properties": {
+                "display_name": {
+                    "type": "string"
+                },
+                "identifier": {
+                    "type": "string"
+                },
+                "kind": {
+                    "type": "string"
+                }
+            }
+        },
+        "chat.UpdateSessionRequest": {
+            "type": "object",
+            "properties": {
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
         "errors.DomainError": {
             "type": "object",
             "properties": {
@@ -1634,6 +1917,132 @@
                     "type": "string"
                 },
                 "op": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.ChatCitation": {
+            "type": "object",
+            "properties": {
+                "label": {
+                    "type": "string"
+                },
+                "source": {
+                    "type": "string"
+                },
+                "tool": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.ChatMessage": {
+            "type": "object",
+            "required": [
+                "id"
+            ],
+            "properties": {
+                "citations": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.ChatCitation"
+                    }
+                },
+                "content": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "metadata": {
+                    "type": "object",
+                    "additionalProperties": {}
+                },
+                "role": {
+                    "$ref": "#/definitions/models.ChatMessageRole"
+                },
+                "seq": {
+                    "type": "integer"
+                },
+                "session_id": {
+                    "type": "string"
+                },
+                "sources": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.ChatSource"
+                    }
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.ChatMessageRole": {
+            "type": "string",
+            "enum": [
+                "user",
+                "assistant"
+            ],
+            "x-enum-varnames": [
+                "ChatRoleUser",
+                "ChatRoleAssistant"
+            ]
+        },
+        "models.ChatSession": {
+            "type": "object",
+            "required": [
+                "id"
+            ],
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "messages": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.ChatMessage"
+                    }
+                },
+                "metadata": {
+                    "type": "object",
+                    "additionalProperties": {}
+                },
+                "title": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.ChatSource": {
+            "type": "object",
+            "properties": {
+                "display_name": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "identifier": {
+                    "type": "string"
+                },
+                "image_url": {
+                    "type": "string"
+                },
+                "kind": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "subtitle": {
                     "type": "string"
                 }
             }
@@ -2211,6 +2620,42 @@
                 "RunStatusCompleted",
                 "RunStatusFailed",
                 "RunStatusEscalated"
+            ]
+        },
+        "models.SearchResult": {
+            "type": "object",
+            "properties": {
+                "display_name": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "identifier": {
+                    "type": "string"
+                },
+                "image_url": {
+                    "type": "string"
+                },
+                "kind": {
+                    "$ref": "#/definitions/models.SearchResultKind"
+                },
+                "subtitle": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.SearchResultKind": {
+            "type": "string",
+            "enum": [
+                "title",
+                "vendor",
+                "delivery"
+            ],
+            "x-enum-varnames": [
+                "SearchKindTitle",
+                "SearchKindVendor",
+                "SearchKindDelivery"
             ]
         },
         "models.Step": {

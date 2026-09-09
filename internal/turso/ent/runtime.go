@@ -5,6 +5,8 @@ package ent
 import (
 	"time"
 
+	"github.com/elliot14A/fincher/internal/turso/ent/chatmessage"
+	"github.com/elliot14A/fincher/internal/turso/ent/chatsession"
 	"github.com/elliot14A/fincher/internal/turso/ent/delivery"
 	"github.com/elliot14A/fincher/internal/turso/ent/dependency"
 	"github.com/elliot14A/fincher/internal/turso/ent/master"
@@ -22,6 +24,62 @@ import (
 // (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
+	chatmessageMixin := schema.ChatMessage{}.Mixin()
+	chatmessageMixinFields0 := chatmessageMixin[0].Fields()
+	_ = chatmessageMixinFields0
+	chatmessageFields := schema.ChatMessage{}.Fields()
+	_ = chatmessageFields
+	// chatmessageDescCreatedAt is the schema descriptor for created_at field.
+	chatmessageDescCreatedAt := chatmessageMixinFields0[2].Descriptor()
+	// chatmessage.DefaultCreatedAt holds the default value on creation for the created_at field.
+	chatmessage.DefaultCreatedAt = chatmessageDescCreatedAt.Default.(func() time.Time)
+	// chatmessageDescUpdatedAt is the schema descriptor for updated_at field.
+	chatmessageDescUpdatedAt := chatmessageMixinFields0[3].Descriptor()
+	// chatmessage.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	chatmessage.DefaultUpdatedAt = chatmessageDescUpdatedAt.Default.(func() time.Time)
+	// chatmessage.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	chatmessage.UpdateDefaultUpdatedAt = chatmessageDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// chatmessageDescSessionID is the schema descriptor for session_id field.
+	chatmessageDescSessionID := chatmessageFields[0].Descriptor()
+	// chatmessage.SessionIDValidator is a validator for the "session_id" field. It is called by the builders before save.
+	chatmessage.SessionIDValidator = chatmessageDescSessionID.Validators[0].(func(string) error)
+	// chatmessageDescSeq is the schema descriptor for seq field.
+	chatmessageDescSeq := chatmessageFields[2].Descriptor()
+	// chatmessage.DefaultSeq holds the default value on creation for the seq field.
+	chatmessage.DefaultSeq = chatmessageDescSeq.Default.(int)
+	// chatmessage.SeqValidator is a validator for the "seq" field. It is called by the builders before save.
+	chatmessage.SeqValidator = chatmessageDescSeq.Validators[0].(func(int) error)
+	// chatmessageDescContent is the schema descriptor for content field.
+	chatmessageDescContent := chatmessageFields[3].Descriptor()
+	// chatmessage.DefaultContent holds the default value on creation for the content field.
+	chatmessage.DefaultContent = chatmessageDescContent.Default.(string)
+	// chatmessageDescID is the schema descriptor for id field.
+	chatmessageDescID := chatmessageMixinFields0[0].Descriptor()
+	// chatmessage.IDValidator is a validator for the "id" field. It is called by the builders before save.
+	chatmessage.IDValidator = chatmessageDescID.Validators[0].(func(string) error)
+	chatsessionMixin := schema.ChatSession{}.Mixin()
+	chatsessionMixinFields0 := chatsessionMixin[0].Fields()
+	_ = chatsessionMixinFields0
+	chatsessionFields := schema.ChatSession{}.Fields()
+	_ = chatsessionFields
+	// chatsessionDescCreatedAt is the schema descriptor for created_at field.
+	chatsessionDescCreatedAt := chatsessionMixinFields0[2].Descriptor()
+	// chatsession.DefaultCreatedAt holds the default value on creation for the created_at field.
+	chatsession.DefaultCreatedAt = chatsessionDescCreatedAt.Default.(func() time.Time)
+	// chatsessionDescUpdatedAt is the schema descriptor for updated_at field.
+	chatsessionDescUpdatedAt := chatsessionMixinFields0[3].Descriptor()
+	// chatsession.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	chatsession.DefaultUpdatedAt = chatsessionDescUpdatedAt.Default.(func() time.Time)
+	// chatsession.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	chatsession.UpdateDefaultUpdatedAt = chatsessionDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// chatsessionDescTitle is the schema descriptor for title field.
+	chatsessionDescTitle := chatsessionFields[0].Descriptor()
+	// chatsession.DefaultTitle holds the default value on creation for the title field.
+	chatsession.DefaultTitle = chatsessionDescTitle.Default.(string)
+	// chatsessionDescID is the schema descriptor for id field.
+	chatsessionDescID := chatsessionMixinFields0[0].Descriptor()
+	// chatsession.IDValidator is a validator for the "id" field. It is called by the builders before save.
+	chatsession.IDValidator = chatsessionDescID.Validators[0].(func(string) error)
 	deliveryMixin := schema.Delivery{}.Mixin()
 	deliveryMixinFields0 := deliveryMixin[0].Fields()
 	_ = deliveryMixinFields0

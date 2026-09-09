@@ -12,6 +12,8 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/elliot14A/fincher/internal/turso/ent/chatmessage"
+	"github.com/elliot14A/fincher/internal/turso/ent/chatsession"
 	"github.com/elliot14A/fincher/internal/turso/ent/delivery"
 	"github.com/elliot14A/fincher/internal/turso/ent/dependency"
 	"github.com/elliot14A/fincher/internal/turso/ent/master"
@@ -82,6 +84,8 @@ var (
 func checkColumn(t, c string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
+			chatmessage.Table:  chatmessage.ValidColumn,
+			chatsession.Table:  chatsession.ValidColumn,
 			delivery.Table:     delivery.ValidColumn,
 			dependency.Table:   dependency.ValidColumn,
 			master.Table:       master.ValidColumn,

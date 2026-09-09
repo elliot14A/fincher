@@ -8,6 +8,64 @@ import (
 )
 
 var (
+	// ChatMessagesColumns holds the columns for the "chat_messages" table.
+	ChatMessagesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeString, Unique: true},
+		{Name: "metadata", Type: field.TypeJSON, Nullable: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "role", Type: field.TypeEnum, Enums: []string{"user", "assistant"}},
+		{Name: "seq", Type: field.TypeInt, Default: 1},
+		{Name: "content", Type: field.TypeString, Size: 2147483647, Default: ""},
+		{Name: "session_id", Type: field.TypeString},
+	}
+	// ChatMessagesTable holds the schema information for the "chat_messages" table.
+	ChatMessagesTable = &schema.Table{
+		Name:       "chat_messages",
+		Columns:    ChatMessagesColumns,
+		PrimaryKey: []*schema.Column{ChatMessagesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "chat_messages_chat_sessions_messages",
+				Columns:    []*schema.Column{ChatMessagesColumns[7]},
+				RefColumns: []*schema.Column{ChatSessionsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "chatmessage_session_id",
+				Unique:  false,
+				Columns: []*schema.Column{ChatMessagesColumns[7]},
+			},
+			{
+				Name:    "chatmessage_session_id_seq",
+				Unique:  false,
+				Columns: []*schema.Column{ChatMessagesColumns[7], ChatMessagesColumns[5]},
+			},
+		},
+	}
+	// ChatSessionsColumns holds the columns for the "chat_sessions" table.
+	ChatSessionsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeString, Unique: true},
+		{Name: "metadata", Type: field.TypeJSON, Nullable: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "title", Type: field.TypeString, Default: ""},
+	}
+	// ChatSessionsTable holds the schema information for the "chat_sessions" table.
+	ChatSessionsTable = &schema.Table{
+		Name:       "chat_sessions",
+		Columns:    ChatSessionsColumns,
+		PrimaryKey: []*schema.Column{ChatSessionsColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "chatsession_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{ChatSessionsColumns[2]},
+			},
+		},
+	}
 	// DeliveriesColumns holds the columns for the "deliveries" table.
 	DeliveriesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeString, Unique: true},
@@ -392,6 +450,8 @@ var (
 	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
+		ChatMessagesTable,
+		ChatSessionsTable,
 		DeliveriesTable,
 		DependenciesTable,
 		MastersTable,
@@ -406,6 +466,7 @@ var (
 )
 
 func init() {
+	ChatMessagesTable.ForeignKeys[0].RefTable = ChatSessionsTable
 	DeliveriesTable.ForeignKeys[0].RefTable = TitlesTable
 	DependenciesTable.ForeignKeys[0].RefTable = MediaPackagesTable
 	DependenciesTable.ForeignKeys[1].RefTable = MediaPackagesTable
