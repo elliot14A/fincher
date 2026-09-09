@@ -84,7 +84,7 @@ func SendToQC(client *ent.Client, chDB *sql.DB, mcpClient *mcp.Client, tursoDB *
 			}
 		}
 
-		// 2. Schedule compressed-time Master QC task if scheduler is active
+		// 2. Schedule compressed-time Master QC task and arm premiere deadline if scheduler is active
 		if sched != nil {
 			_, err := sched.ScheduleTask(
 				scheduler.TaskKindMasterQC,
@@ -101,6 +101,7 @@ func SendToQC(client *ent.Client, chDB *sql.DB, mcpClient *mcp.Client, tursoDB *
 			if err != nil {
 				logger.Warn("master qc: failed to schedule inspection task", "error", err)
 			}
+			ArmTitleDeadline(client, chDB, mcpClient, tursoDB, modelProvider, sched, updatedTitle)
 		}
 
 		// 3. Dispatch Autonomous Multi-Agent Allocation Workflow

@@ -208,10 +208,8 @@ func ExecuteResolution(ctx context.Context, deps ResolutionDeps, input Resolutio
 					}
 				}
 
-				// Required components: must have both AUDIO and SUBTITLE for the territory
-				hasRequiredComponents := hasAudio && hasSubtitle
-				allValid := hasRequiredComponents && len(relevantPackages) > 0
-
+				// Required components: all matching packages for the territory must be in VALID status
+				allValid := len(relevantPackages) > 0
 				if allValid {
 					for _, reqPkg := range relevantPackages {
 						if reqPkg.Status != models.PackageStatusValid {
