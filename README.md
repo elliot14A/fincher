@@ -6,6 +6,98 @@ Fincher is an event-driven, multi-agent operations engine built for global film 
 
 ---
 
+## 🚀 Quick Start (Up & Running in 2 Minutes)
+
+### Prerequisites
+* **Go 1.24+**
+* **Docker & Docker Compose**
+* **Bun** (for frontend development)
+* **Just** (optional, recommended task runner)
+* **Google Gemini API Key**
+
+---
+
+### 1. Clone & Configure Environment
+
+```bash
+git clone https://github.com/elliot14A/fincher.git
+cd fincher
+
+# Copy environment template
+cp .env.example .env
+```
+
+Edit `.env` and add your Google Gemini API key:
+```dotenv
+FINCHER_PORT=8080
+FINCHER_ENV=development
+FINCHER_STEP_TIMEOUT=30s
+FINCHER_TURSO_URL=fincher.db
+FINCHER_MCP_URL=http://127.0.0.1:8000/mcp
+FINCHER_GEMINI_API_KEY=your_gemini_api_key_here
+FINCHER_GEMINI_MODEL=gemini-2.5-flash
+FINCHER_GEMINI_OPTIONS=location=asia-south1
+FINCHER_DAILY_MODEL_CAP=200
+```
+
+---
+
+### 2. Start Infrastructure (ClickHouse & ClickHouse MCP)
+
+Launch ClickHouse analytical DB and the official ClickHouse MCP server:
+
+```bash
+# Using Just:
+just docker-up
+
+# Or using Docker Compose directly:
+docker compose up -d
+```
+
+Verify health:
+* ClickHouse HTTP: `http://localhost:8123/ping`
+* ClickHouse MCP Health: `http://localhost:8000/health`
+
+---
+
+### 3. Seed Database & Historical Analytics
+
+Populate SQLite with media catalog titles, masters, packages, deliveries, and active vendors, and inject synthetic historical QC logs and defect metrics into ClickHouse:
+
+```bash
+# Using Just:
+just seed
+
+# Or using Go directly:
+go run ./cmd/seed
+```
+
+*(To perform a clean wipe and re-seed, run `just seed-reset` or `go run ./cmd/seed --reset`)*.
+
+---
+
+### 4. Run Fincher (Development Mode)
+
+Start both the Go backend (port `8080`) and Preact frontend (port `5173`) with live-reload:
+
+```bash
+# Using Just:
+just dev
+
+# Or run separately in two terminals:
+# Terminal 1 (Backend):
+go run ./cmd/fincher
+
+# Terminal 2 (Frontend):
+cd web && bun install && bun run dev
+```
+
+* 🖥️ **Operations Console UI**: [`http://localhost:5173`](http://localhost:5173) (proxies `/api` to Go backend)
+* ⚡ **Backend API & Health**: [`http://localhost:8080/health`](http://localhost:8080/health)
+* 📜 **OpenAPI 3 Specification**: [`http://localhost:8080/openapi.json`](http://localhost:8080/openapi.json)
+
+---
+
 ## ⚡ Core Philosophy & Invariants
 
 > **"AI investigates and plans. Scoped judges verify. Software executes."**
@@ -232,98 +324,6 @@ Before any action plan can touch the database or trigger vendors, the Policy Ver
 7. **Social Media Guardrail**: Prohibits public stakeholder/social alerts if premiere is more than 72 hours away (`SocialNoticeThresholdHours = 72h`) or if no deliveries are currently held.
 8. **Unremediated Package Check**: Every defective package identified in the blast radius must have an explicit `REASSIGN_VENDOR` action.
 9. **Bounded Self-Correction**: If the plan fails verification 3 times (`MaxRemediationAttempts = 3`), the loop breaks immediately and escalates to `RunStatusEscalated` without applying any state changes.
-
----
-
-## 🚀 Quick Start & Setup Guide
-
-### Prerequisites
-* **Go 1.24+**
-* **Docker & Docker Compose**
-* **Bun** (for frontend development)
-* **Just** (optional, recommended task runner)
-* **Google Gemini API Key**
-
----
-
-### 1. Clone & Configure Environment
-
-```bash
-git clone https://github.com/elliot14A/fincher.git
-cd fincher
-
-# Copy environment template
-cp .env.example .env
-```
-
-Edit `.env` and provide your Google Gemini API key:
-```dotenv
-FINCHER_PORT=8080
-FINCHER_ENV=development
-FINCHER_STEP_TIMEOUT=30s
-FINCHER_TURSO_URL=fincher.db
-FINCHER_MCP_URL=http://127.0.0.1:8000/mcp
-FINCHER_GEMINI_API_KEY=your_gemini_api_key_here
-FINCHER_GEMINI_MODEL=gemini-2.5-flash
-FINCHER_GEMINI_OPTIONS=location=asia-south1
-FINCHER_DAILY_MODEL_CAP=200
-```
-
----
-
-### 2. Start Infrastructure (ClickHouse & ClickHouse MCP)
-
-Launch the ClickHouse analytical database and official ClickHouse MCP server containers:
-
-```bash
-# Using Just:
-just docker-up
-
-# Or using Docker Compose directly:
-docker compose up -d
-```
-
-Verify that both containers are healthy:
-* ClickHouse HTTP: `http://localhost:8123/ping`
-* ClickHouse MCP Health: `http://localhost:8000/health`
-
----
-
-### 3. Seed Database & Historical Analytics
-
-Populate SQLite with media catalog titles, masters, packages, deliveries, and active vendors, and inject synthetic historical QC logs and defect metrics into ClickHouse:
-
-```bash
-# Using Just:
-just seed
-
-# Or using Go directly:
-go run ./cmd/seed
-```
-
-*(To perform a clean wipe and re-seed, run `just seed-reset` or `go run ./cmd/seed --reset`)*.
-
----
-
-### 4. Run Fincher (Development Mode)
-
-Start both the Go backend (port `8080`) and Preact frontend (port `5173`) with live-reload:
-
-```bash
-# Using Just:
-just dev
-
-# Or run separately in two terminals:
-# Terminal 1 (Backend):
-go run ./cmd/fincher
-
-# Terminal 2 (Frontend):
-cd web && bun install && bun run dev
-```
-
-* **Operations Console UI**: [`http://localhost:5173`](http://localhost:5173) (proxies `/api` to Go backend)
-* **Backend API & Health**: [`http://localhost:8080/health`](http://localhost:8080/health)
-* **OpenAPI 3 Specification**: [`http://localhost:8080/openapi.json`](http://localhost:8080/openapi.json)
 
 ---
 
