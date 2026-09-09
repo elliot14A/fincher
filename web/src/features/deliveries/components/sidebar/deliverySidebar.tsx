@@ -1,16 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
-import {
-  ArrowRight,
-  Bot,
-  ChevronRight,
-  Clock,
-  Film,
-  Globe,
-  Layers,
-  ShieldAlert,
-  X,
-} from 'lucide-preact'
+import { ArrowRight, ChevronRight, Clock, Film, Globe, Layers, ShieldAlert, X } from 'lucide-preact'
 import { Badge, type BadgeProps } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
 import { deliveryDetailQueryOptions } from '#/features/deliveries/queryOptions'
@@ -251,10 +241,6 @@ export function DeliverySidebar({ deliveryId, onClose, onSelectPackage }: Delive
         <Button variant="secondary" onClick={() => navigate({ to: '/titles' })}>
           <Film size={14} />
           <span>View Title</span>
-        </Button>
-        <Button variant="primary" onClick={() => navigate({ to: '/' })}>
-          <Bot size={14} />
-          <span>Ask Assistant</span>
         </Button>
       </footer>
     </aside>

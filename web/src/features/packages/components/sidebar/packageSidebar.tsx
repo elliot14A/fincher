@@ -2,7 +2,6 @@ import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import {
   ArrowRight,
-  Bot,
   Building2,
   ChevronLeft,
   FileCode,
@@ -222,10 +221,6 @@ export function PackageSidebar({
         <Button variant="secondary" onClick={() => navigate({ to: '/titles' })}>
           <Film size={14} />
           <span>View Title</span>
-        </Button>
-        <Button variant="primary" onClick={() => navigate({ to: '/' })}>
-          <Bot size={14} />
-          <span>Ask Assistant</span>
         </Button>
       </footer>
     </aside>

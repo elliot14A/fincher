@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { Building2, Layers, MessageSquare, Plus, Trash2, Users } from 'lucide-preact'
+import { Building2, Layers, Plus, Trash2, Users } from 'lucide-preact'
 import { useState } from 'preact/hooks'
 import { toast } from 'sonner'
 import { Badge } from '#/components/ui/badge'
@@ -139,13 +139,6 @@ function VendorRow({
         <ActionMenu
           ariaLabel={`Actions for ${vendor.name}`}
           items={[
-            {
-              type: 'action',
-              key: 'chat',
-              label: 'Ask Assistant',
-              icon: MessageSquare,
-              onClick: () => navigate({ to: '/' }),
-            },
             {
               type: 'action',
               key: 'packages',

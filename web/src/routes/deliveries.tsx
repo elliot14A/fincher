@@ -8,7 +8,6 @@ import {
   Globe,
   Headphones,
   Layers,
-  MessageSquare,
   Package as PackageIcon,
   Plus,
   Subtitles,
@@ -178,7 +177,6 @@ function DeliveryRow({
   onSelectPackage: (pkgId: string) => void
   onDelete: () => void
 }) {
-  const navigate = useNavigate()
   const [isExpanded, setIsExpanded] = useState(false)
   const { rowProps } = useSelectableRow({
     isSelected,
@@ -238,17 +236,6 @@ function DeliveryRow({
           <ActionMenu
             ariaLabel={`Actions for ${delivery.id}`}
             items={[
-              {
-                type: 'action',
-                key: 'chat',
-                label: 'Ask Assistant',
-                icon: MessageSquare,
-                onClick: () => navigate({ to: '/' }),
-              },
-              {
-                type: 'divider',
-                key: 'div-1',
-              },
               {
                 type: 'action',
                 key: 'delete',
@@ -315,7 +302,6 @@ function PackageRow({
   onSelect: () => void
   onDelete: () => void
 }) {
-  const navigate = useNavigate()
   const { rowProps } = useSelectableRow({
     isSelected,
     onSelect,
@@ -368,17 +354,6 @@ function PackageRow({
         <ActionMenu
           ariaLabel={`Actions for ${pkg.id}`}
           items={[
-            {
-              type: 'action',
-              key: 'chat',
-              label: 'Ask Assistant',
-              icon: MessageSquare,
-              onClick: () => navigate({ to: '/' }),
-            },
-            {
-              type: 'divider',
-              key: 'div-1',
-            },
             {
               type: 'action',
               key: 'delete',

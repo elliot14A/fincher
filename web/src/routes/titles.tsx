@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { CheckCircle2, Film, Layers, MessageSquare, Plus, Trash2 } from 'lucide-preact'
+import { CheckCircle2, Film, Layers, Plus, Trash2 } from 'lucide-preact'
 import { useEffect, useState } from 'preact/hooks'
 import { toast } from 'sonner'
 import { Badge } from '#/components/ui/badge'
@@ -168,13 +168,6 @@ function TitleRow({
               icon: CheckCircle2,
               disabled: !canRunQC || isSendingQC,
               onClick: onSendToQC,
-            },
-            {
-              type: 'action',
-              key: 'chat',
-              label: 'Ask Assistant',
-              icon: MessageSquare,
-              onClick: () => navigate({ to: '/' }),
             },
             {
               type: 'action',

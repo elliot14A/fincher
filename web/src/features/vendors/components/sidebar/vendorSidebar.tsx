@@ -1,7 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import {
-  Bot,
   Building2,
   ChevronRight,
   Clock,
@@ -250,10 +249,6 @@ export function VendorSidebar({ vendorId, onClose, onSelectPackage }: VendorSide
         <Button variant="secondary" onClick={() => navigate({ to: '/deliveries' })}>
           <Layers size={14} />
           <span>Deliveries &amp; Packages</span>
-        </Button>
-        <Button variant="primary" onClick={() => navigate({ to: '/' })}>
-          <Bot size={14} />
-          <span>Ask Assistant</span>
         </Button>
       </footer>
     </aside>
