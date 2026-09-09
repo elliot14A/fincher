@@ -60,8 +60,9 @@ cd web && bun install && bun dev
 
 1. **Read-Only AI Agents**: LLMs never mutate state or write SQL directly. Agents query SQLite and ClickHouse (via MCP) to produce structured proposals (`ActionPlan`).
 2. **Deterministic Policy Gate**: All proposed actions must be approved by `verifier.go` before execution (enforces market isolation, vendor accuracy ≥ 90%, and premiere deadline buffers).
-3. **Closed-Loop Execution**: State changes trigger simulated QC re-runs. Passing QC automatically releases deliveries and updates title status to `ON_TRACK`.
-4. **Full Telemetry**: Every run, tool call, reasoning step, and judge verdict is written to SQLite (`runs`, `steps`, `wf_results`) and streamed live over SSE (`/api/events/stream`).
+3. **Time-Compressed Clock**: The internal scheduler operates on a compressed clock where **1 real second = 1 operational hour** (`timeScale = 1s`). An 8-hour vendor turnaround finishes in 8 seconds, enabling realistic, rapid live-testing.
+4. **Closed-Loop Execution**: State changes trigger simulated QC turnaround tasks. Passing QC automatically releases deliveries and updates title status to `ON_TRACK`.
+5. **Full Telemetry**: Every run, tool call, reasoning step, and judge verdict is written to SQLite (`runs`, `steps`, `wf_results`) and streamed live over SSE (`/api/events/stream`).
 
 ---
 
@@ -86,7 +87,7 @@ flowchart TD
     VERIFY -->|Rejected| AGENTS
     VERIFY -->|Approved| EXEC["Go Executor (runner.go)"]
     EXEC --> SQLITE
-    EXEC --> SCHED["Task Scheduler"]
+    EXEC --> SCHED["Task Scheduler (1s = 1h)"]
     SCHED -->|QC Result Callback| EV
     WFC --> SQLITE
 ```
@@ -100,6 +101,7 @@ flowchart TD
 | **MCP Server** | `@clickhouse/mcp-clickhouse` | Official Model Context Protocol HTTP interface for analytical queries |
 | **State DB** | SQLite / Turso | Media catalog titles, packages, deliveries, vendors, and audit runs |
 | **LLM Runtime** | Gemini 2.5 Flash / Google ADK | Triage judge, action planner, vendor selector, operations chat |
+| **In-Memory Scheduler** | `internal/scheduler` | Time-compressed task scheduler (1 second = 1 operational hour) |
 | **Frontend** | Preact + Vite + TanStack | Real-time operations UI with territory matrix & lineage DAG |
 
 ---
@@ -174,9 +176,28 @@ Every plan must pass all rules before execution:
 
 ---
 
-## Testing Scenarios
+## Testing & Simulating the Flows
 
-### 1. Trigger Audio Sync Drift Incident
+### 1. Interactive Simulation UI (`/simulate`)
+The web console includes a dedicated **Simulate Page** (`http://localhost:5173/simulate` or `https://fincher.elliot14a.work/simulate`) to test workflows live:
+- **Master Cut Revision**: Simulates editorial cut bumps, invalidating stale downstream packages.
+- **Audio Sync Drift**: Simulates audio timing drift (>120ms) and tests vendor reassignment.
+- **Vendor SLA Breach**: Simulates vendor delivery failures and emergency reassignment.
+- **Custom Event Emitter**: Send arbitrary CloudEvent JSON payloads directly to the ingestion engine.
+
+### 2. End-to-End Walkthrough: Title Creation & Allocation Flow
+Test the full lifecycle from title onboarding to automatic vendor assignment, QC turnaround, and delivery release:
+
+1. **Create Title**: Go to `http://localhost:5173/titles` &rarr; Click **"New Title"** (or use `POST /api/titles`).
+2. **Trigger Allocation**: Ingestion emits `fincher.title.created` and launches **Workflow B (Allocation)**.
+3. **Vendor Selection**: The agent queries SQLite via `query_turso`, selects the best vendors for Video, Audio, and Subtitles, creates Package rows (`PENDING`), and puts Deliveries on `HOLD`.
+4. **Simulated QC Turnaround**: Tasks are scheduled in the Scheduler. Because **1 second = 1 operational hour**, a 10-hour turnaround waits 10 seconds.
+5. **Auto-Resolution**: Once turnaround finishes, the QC callback fires `fincher.qc.completed` (`status: PASSED`).
+6. **Delivery Release**: **Workflow C (Resolution)** verifies all required packages (Video + Audio + Subtitle) are valid, auto-releases deliveries to `READY_TO_SHIP`, and sets the title status to `ON_TRACK`.
+
+### 3. API Anomaly Testing via cURL
+
+#### Trigger Audio Sync Drift Incident
 ```bash
 curl -X POST http://localhost:8080/api/events \
   -H "Content-Type: application/json" \
@@ -195,9 +216,8 @@ curl -X POST http://localhost:8080/api/events \
     }
   }'
 ```
-*Flow*: Triage flags event &rarr; blast radius identifies German delivery hold &rarr; planner selects qualified vendor &rarr; policy approves &rarr; executor mutates state & schedules re-QC &rarr; resolution releases delivery to `READY_TO_SHIP`.
 
-### 2. Trigger Master Cut Revision
+#### Trigger Master Cut Revision
 ```bash
 curl -X POST http://localhost:8080/api/events \
   -H "Content-Type: application/json" \
@@ -215,7 +235,7 @@ curl -X POST http://localhost:8080/api/events \
   }'
 ```
 
-### 3. Ask Operations Chat Assistant
+#### Ask Operations Chat Assistant
 ```bash
 curl -X POST http://localhost:8080/api/chat \
   -H "Content-Type: application/json" \
@@ -240,7 +260,7 @@ fincher/
 │   ├── api/              # REST routes (/api/titles, /deliveries, /packages, /events, /runs, /chat)
 │   ├── clickhouse/       # ClickHouse connection & schema migrations
 │   ├── turso/            # SQLite connection & Ent ORM client
-│   └── scheduler/        # In-memory time-scaled QC task scheduler
+│   └── scheduler/        # In-memory time-scaled QC task scheduler (1s = 1h)
 ├── pkg/
 │   ├── domain/models/    # Domain models & CloudEvent taxonomy
 │   └── mcp/              # ClickHouse MCP HTTP client
