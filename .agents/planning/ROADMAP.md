@@ -20,16 +20,19 @@ Build one complete feature slice end-to-end at a time:
 [ Feature 04: UI Scaffolding & Operations Console ] (Completed - Preact UI + Modals + Uploads)
                  │
                  ▼
-[ Feature 05: ClickHouse Ingestion Pipeline ]     (Active - Schema, MCP client, taxonomy, batch insert endpoint. Zero LLM cost.)
+[ Feature 05: ClickHouse Ingestion Pipeline ]     (Completed - Schema, MCP client, taxonomy, batch insert endpoint. Zero LLM cost.)
                  │
                  ▼
-[ Feature 06: Dedicated Agents ]                  (ADK Go v2 graph: judges, historian, lineage, optimizer, executor, live SSE + xyflow viz)
+[ Feature 06: Dedicated Agents ]                  (Completed - ADK Go v2 graph + tool-driven two-phase agents, strict MCP reads, live SSE + xyflow viz. Hardened via 5-scenario live E2E.)
                  │
                  ▼
-[ Feature 07: Docent Conversational Assistant ]   (Gemini Chat + Live Database & MCP Tools)
+[ Feature 07: Chat Assistant ]                    (Active - Gemini Chat + Live Database & MCP Tools)
                  │
                  ▼
 [ Feature 08: Smart Simulator & Comms Hub ]       (Dynamic Event Generator + Protected Seed Data + Dispatches)
+                 │
+                 ▼
+[ Feature 09: Console UI Refinement ]             (Operator control buttons, runs/deliveries polish, landing/visual passes. Deferred UI work.)
 ```
 
 > Feature 05 and 06 replace the earlier single "ClickHouse MCP & Multi-Agent Engine" milestone —
@@ -85,7 +88,7 @@ Build one complete feature slice end-to-end at a time:
 
 ---
 
-### Feature 05: ClickHouse Ingestion Pipeline (Active — zero LLM cost)
+### Feature 05: ClickHouse Ingestion Pipeline (Completed — zero LLM cost)
 * **Scope**: The substrate every agent depends on but which itself never calls a model — CNCF CloudEvents v1.0 ClickHouse schema, both ClickHouse access paths (agent-facing MCP + direct database/sql client), CloudEvents taxonomy, and a direct batch ingestion endpoint. Debounce/coalesce and the budget/rate-limit gate were scoped out of this phase entirely (2026-08-27) as unwarranted complexity at this scale — deferred to Feature 06, if/when needed, backed by Turso persistence (not in-memory) to survive Cloud Run scale-to-zero.
 * **Deliverables**:
   - `migrations/clickhouse/001_events.sql` .. `003_vendor_metrics.sql`: CloudEvents v1.0 root event stream, QC inspection projection, vendor historical rollups.
@@ -97,7 +100,13 @@ Build one complete feature slice end-to-end at a time:
 
 ---
 
-### Feature 06: Dedicated Agents (ADK Go v2 Graph)
+### Feature 06: Dedicated Agents (ADK Go v2 Graph) (Completed — hardened via live E2E)
+> Shipped as staged Go workflow graphs (`internal/agent/graph/`) rather than the literal ADK `workflow`
+> node primitives originally sketched below. Agent ClickHouse reads route strictly through the official
+> `mcp-clickhouse` `run_query` tool; vendor selection and incident remediation are tool-calling agents
+> using a two-phase tool→schema pattern (`runToolThenSchema`) plus a read-only `query_turso` tool.
+> Hardened and verified with a 5-scenario judge-grade live E2E (all PASS). See STATE.md 2026-09-08 log.
+
 * **Scope**: Everything that actually calls Gemini — the incident-investigation graph and the vendor-allocation graph, both built as ADK Go v2 `workflow` graphs firing per individual `ANOMALY_SIGNAL`/`ALLOCATION_REQUEST` event from Feature 05 (no batching/coalescing upstream), plus the budget/concurrency gate (Turso-persisted, deferred from Feature 05 — see `REQ-AGENT-10`), the live SSE stream, and `@xyflow/react` visualization of the graph executing.
 * **Deliverables**:
   - `internal/agent/graph.go`: ADK Go v2 wiring (`workflow.NewFunctionNode`, `workflow.NewAgentNode`, `workflow.Chain`/`Concat`, `workflow.NewJoinNode`, `workflowagent.New`).
@@ -111,12 +120,39 @@ Build one complete feature slice end-to-end at a time:
 
 ---
 
-### Feature 07: Docent Conversational Assistant (Gemini Chat)
-* **Scope**: Natural language operator assistant with tool access to ClickHouse MCP and SQLite live state.
+### Feature 07: Chat Assistant (Gemini Chat) (Active)
+* **Scope**: A read-only natural-language operator chat that answers supply-chain questions by
+  reasoning over live SQLite operational state and ClickHouse analytical history, using the SAME tool
+  layer the Feature 06 agents already use (`query_turso` + MCP `run_query` analytics). Strictly read-only
+  (Invariant 1) — the chat assistant never mutates state or triggers workflows; it explains and cites.
 * **Deliverables**:
-  - `internal/api/assistant/`: Chat endpoint streaming Gemini reasoning and citations via SSE.
-  - `web/src/routes/index.tsx`: Interactive chat workspace with suggested prompts, ClickHouse query citations, and instant context awareness.
-* **Verification**: Interactive query verification asserting ClickHouse analytical citations and accurate operational state responses.
+  - `internal/api/chat/`: `POST /api/chat` (submit a message, returns `{session_id}`), and
+    `GET /api/chat/:session/stream` (SSE streaming assistant tokens/answer + structured tool-call
+    citations). Session state kept in-memory (ephemeral, scale-to-zero acceptable for a chat session).
+  - `internal/agent/chat_agent.go`: a Gemini tool-calling agent (reuses `tools.NewTursoQueryTool`,
+    `tools.NewAnalyticsTool`, and title/projection tools) with a read-only system prompt; emits each
+    tool call as an auditable citation.
+  - `web/src/features/chat/`: feature slice (`queryKeys.ts`, `queryOptions.ts`, message list +
+    composer + citation pills components, co-located `*.css.ts`, `index.ts` barrel) and a shared
+    `web/src/lib/hooks/useSSEStream.ts` consuming the chat stream.
+  - `web/src/routes/chat.tsx`: wire the existing static shell to the live streaming endpoint with
+    conversation history, suggested prompts, and inline ClickHouse/SQLite citations.
+* **Verification**: live interactive queries against real ClickHouse + Turso asserting accurate answers
+  and that surfaced citations correspond to real executed tool calls; frontend `bun run typecheck`,
+  `biome check src`, and a browser walkthrough of a multi-turn conversation with streaming + citations.
+
+---
+
+### Feature 09: Console UI Refinement (Deferred UI Work)
+* **Scope**: The operator-facing console polish consciously deferred out of Feature 06 — explicit
+  control buttons and visual refinement, built on backend endpoints that already work end-to-end.
+* **Deliverables**:
+  - Operator controls: "Release Hold" (`PATCH /api/deliveries/:id`) and "Re-run Workflow"
+    (`POST /api/events` / `POST /api/runs`) button-level triggers in `runs.tsx` / `deliveries.tsx`.
+  - Runs and deliveries console visual/interaction polish; additional landing/visual passes beyond the
+    Feature 07-era hero clarity work already shipped.
+* **Verification**: `bun run typecheck`, `biome check src`, and browser walkthroughs of each operator
+  control performing the correct backend mutation and reflecting live via SSE.
 
 ---
 

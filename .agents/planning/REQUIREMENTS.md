@@ -39,7 +39,7 @@
 * **REQ-API-02**: Run inspection: `GET /api/runs/{id}`, `GET /api/runs/{id}/stream` (SSE live node-transition + judge-verdict feed for the xyflow graph visualization).
 * **REQ-API-03**: Title catalog & CRUD: `GET /api/titles`, `GET /api/titles/{id}`, `POST /api/titles`, `PATCH /api/titles/{id}`, `DELETE /api/titles/{id}`.
 * **REQ-API-04**: Master & Package & Vendor CRUD: `POST /api/masters`, `GET /api/masters`, `POST /api/packages`, `GET /api/packages`, `PATCH /api/packages/{id}`, `POST /api/vendors`, `GET /api/vendors`.
-* **REQ-API-05**: Read-first Docent query: `POST /api/query`, `GET /api/query/{session}/stream`.
+* **REQ-API-05**: Read-only chat assistant: `POST /api/chat`, `GET /api/chat/{session}/stream`.
 * **REQ-API-06**: Budget status: `GET /api/budget` (daily invocation cap usage, concurrency semaphore state, for the operator console budget widget).
 * **REQ-API-07**: Deliveries CRUD: `GET /api/deliveries`, `GET /api/deliveries/{id}`, `POST /api/deliveries`, `PATCH /api/deliveries/{id}`, `DELETE /api/deliveries/{id}`.
 * **REQ-API-08**: Dependency graph & lineage: `POST /api/dependencies`, `GET /api/dependencies`, `GET /api/dependencies/graph/{title_id}`, `DELETE /api/dependencies/{id}`.
@@ -55,7 +55,7 @@
 * **REQ-UI-07**: **Interactive Lineage DAG**: `@xyflow/react` canvas showing parent-child asset derivations, staleness indicators, and component nodes.
 * **REQ-UI-08**: **Territory Delivery Matrix**: High-density virtualized table (`@tanstack/react-table` + `@tanstack/react-virtual`) displaying 40+ country delivery statuses with hold override actions.
 * **REQ-UI-09**: **Live Investigation Graph**: Reuses the `@xyflow/react` DAG canvas (`REQ-UI-07`) to render `internal/agent/` graph nodes lighting up in real time as the SSE stream (`REQ-API-02`) reports transitions; each judge node surfaces its verdict + rationale inline.
-* **REQ-UI-10**: **Docent Assistant Interface**: Natural language operator drawer querying ClickHouse with SQL query citations.
+* **REQ-UI-10**: **Chat Assistant Interface**: Natural language operator chat querying ClickHouse with SQL query citations.
 
 ### Causal Seeder & LUME World (`REQ-SEED`)
 * **REQ-SEED-01**: Idempotent seeder creates 5–7 LUME launch titles (*Eclipse*, *Atlas*, *Orbit*, *Meridian*, *Vantage*) with dynamic premiere dates relative to `now()`.

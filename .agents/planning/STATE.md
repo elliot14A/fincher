@@ -1,11 +1,54 @@
 # Fincher — Live Operational State & Milestone Pointer
 
 ## Current Status Pointer
-* **Active Milestone**: Feature 06: Dedicated Agents & Hackathon Workflow Engine
-* **Active Phase**: `06-dedicated-agents`
-* **Phase Status**: READY TO EXECUTE (Plan updated per Python validation report & spec)
-* **Next Milestone**: Feature 07: Docent Conversational Assistant (Gemini Chat)
-* **Timestamp**: 2026-08-30T17:10:00+05:30
+* **Active Milestone**: Feature 07: Chat Assistant (Gemini Chat)
+* **Active Phase**: `07-chat-assistant`
+* **Phase Status**: READY TO EXECUTE (CONTEXT + PLAN authored)
+* **Previous Milestone**: Feature 06: Dedicated Agents & Hackathon Workflow Engine (COMPLETED & hardened via live E2E)
+* **Next Milestone**: Feature 08: Smart Simulator & Comms Hub — then Console UI Refinement (deferred UI fixes below)
+* **Timestamp**: 2026-09-08T17:00:00+05:30
+
+## Key Decision Log (2026-09-08)
+* **Feature 06 hardened and closed via rigorous live E2E**:
+  Ran a 5-scenario judge-grade evaluation (onboarding, vendor cost/time tradeoff, incident reassign,
+  deadline auto-emit, master revision) live against real Gemini + MCP + ClickHouse. All 5 PASS.
+* **Strict MCP migration for all agent reads**:
+  Every agent ClickHouse read now routes through the official `mcp-clickhouse` `run_query` tool via a
+  typed layer (`pkg/mcp/query.go`: `RunQueryRows`/`RunQueryScalar`/`SafeIdentifier`, `NaN`/`Inf` JSON
+  sanitization). `accuracy.go`, `analytics.go`, `vendors.go` rewritten to `*mcp.Client`; boot Pings MCP
+  fail-fast; routes register lazily via `sync.Once`. Direct SQL writes unchanged.
+* **Tool-driven agents + two-phase tool→schema pattern**:
+  Added a read-only `query_turso` SQL tool (`internal/agent/tools/turso.go`, SELECT/WITH-only, LIMIT 200).
+  Allocation (`SelectVendorsViaTools`) and incident planner (`PlanRemediationViaTools`) are now
+  tool-calling agents. Root-caused ADK's tools+`OutputSchema` array-shrinking fragility and fixed it with
+  a two-phase helper (`runToolThenSchema`): a tool-agent gathers/picks, then a schema-agent emits.
+  Removed the old `planner.go`.
+* **Scenario E multi-package re-derivation fixed (`distributeReassignPackages`)**:
+  Replaced the buggy collapse-to-index-0 `package_id` backfill with a deterministic per-package fan-out
+  (fills blanks, then clones the LLM-chosen vendor across uncovered packages; no-op if the LLM chose
+  `HOLD_TITLE`). Verified stable 5/5 consecutive runs (3/3 packages re-derived → `ON_TRACK`).
+* **Master-revision atomic status downgrade (no false-Ready window)**:
+  `applyMasterRevision` now downgrades title → `PROCESSING` and any `READY_TO_SHIP` deliveries → `HOLD`
+  atomically with package invalidation, eliminating the transient/frozen contradiction where a title
+  showed `ON_TRACK` with `INVALIDATED` packages. Resolution flips back to `ON_TRACK` only on genuine
+  re-validation. Verified live: 61 rapid snapshots during re-derivation, zero false-Ready.
+* **Single Gemini model config**:
+  Collapsed dead `FlashModel`/`ProModel` (the pro model was never consumed) into a single
+  `GeminiModel` (`FINCHER_GEMINI_MODEL`, default `gemini-2.5-flash`). Added `GeminiOptions`
+  (`FINCHER_GEMINI_OPTIONS=location=asia-south1`) — regional Vertex endpoint cut TTFB ~15x. Backend runs
+  100% on `gemini-2.5-flash`; no token/cost accounting exists yet (candidate for a future metrics pass).
+* **Runs ordering fix**: `internal/turso/runs/list.go` now orders by `created_at` descending (newest-first);
+  the prior code had the asc/desc `OrderBy` args inverted.
+* **Frontend polish shipped this session**: `/deliveries` now scopes by `?title=` (filter chip + title-nav
+  wiring); Master QC action gated to `DRAFT`/`AT_RISK` only; extracted shared `mapTitleStatus`/
+  `getTitleStatusNote`/`getQcGating` into `web/src/features/titles/lib/`; landing hero clarity pass
+  (eyebrow + Detect→Reason→Self-heal strip + grid texture).
+
+## Deferred: Console UI Refinement (own upcoming phase)
+* Landing-page hero clarity work is done; remaining UI refinements (operator "release hold" /
+  "re-run workflow" buttons, runs/deliveries console polish, additional visual passes) are consciously
+  deferred to a dedicated **Console UI Refinement** phase after Feature 07 (Chat Assistant) and Feature 08
+  (Simulator/Comms). Backend endpoints for these controls already exist and work end-to-end.
 
 ## Key Decision Log (2026-09-01)
 * **Unified Event-Driven Scheduler & Deadline Enforcement**:
@@ -62,7 +105,7 @@
 ## Key Decision Log (2026-08-26)
 * Split the former single "ClickHouse MCP & Multi-Agent Engine" milestone into two clean
   phases: **05 (ingestion pipeline, no LLM)** and **06 (dedicated agents, ADK Go v2 graph)**.
-  Docent moved to Feature 07, Simulator/Comms moved to Feature 08.
+  Chat Assistant moved to Feature 07, Simulator/Comms moved to Feature 08.
 * Dropped the earlier "Workflow DAG Edition" execution model (Cloud Scheduler polling,
   fixed 17-node palette, `decision_node` with 4 hardcoded branches, strictly acyclic runs).
   Replaced with an event-driven, push-based model: static taxonomy filter → debounce/coalesce
@@ -136,12 +179,15 @@
   - [x] **Unit 3**: Single front door ingestion auto-router in `internal/api/events/create.go`.
   - [x] **Unit 4**: Title projection tool (`get_title_ready_projection`) & compressed-time scheduler.
   - [x] **Unit 5**: Data-generation subsystem (`internal/seed/`) & CLI (`cmd/seed/main.go`) with 100k events and non-dominated vendors.
-  - [ ] **Unit 6**: Frontend live operations console, product showcase landing page, packages route, & hero simulator (`web/src/features/runs/` + `web/src/routes/runs.tsx`).
+  - [x] **Unit 6**: Frontend live operations console, product showcase landing page, packages route, & runs inspector (`web/src/features/runs/` + `web/src/routes/runs.tsx`). (Operator control buttons + further console polish deferred to Console UI Refinement phase.)
+  - [x] **Unit 7 (hardening)**: Strict MCP read migration, tool-driven two-phase agents, `distributeReassignPackages`, master-revision atomic downgrade, single Gemini model config, runs sort. Verified via 5-scenario live E2E (all PASS).
 
-- [ ] **Feature 07: Docent Conversational Assistant (Gemini Chat)**
-  - [ ] Natural language operator assistant streaming reasoning over ClickHouse & SQLite.
-  - [ ] Frontend: Interactive chat view in `web/src/routes/index.tsx` with ClickHouse query citations.
-  - [ ] Verification: Query accuracy and live citation verification.
+- [ ] **Feature 07: Chat Assistant (Gemini Chat)** (Active — see `.agents/planning/phases/07-chat-assistant/PLAN.md`)
+  - [ ] Backend: broaden read tools — extend `query_turso` schema to include `runs`/`steps`/`wf_results` (the "why") + add a raw `query_clickhouse` MCP tool (arbitrary historical SELECTs over `fincher.events`/`qc`/`vendor_metrics`).
+  - [ ] Backend: `internal/api/chat/` endpoint (`POST /api/chat`, `GET /api/chat/:session/stream`) — Gemini tool-calling agent combining live Turso state + ClickHouse history to answer open-ended why/when/status/premiere questions.
+  - [ ] Backend: read-only session-scoped agent with SQL query citations surfaced as structured metadata.
+  - [ ] Frontend: wire `web/src/routes/chat.tsx` to the streaming endpoint with a `web/src/features/chat/` slice (queryKeys/queryOptions, message list, citation pills, SSE hook).
+  - [ ] Verification: live query accuracy + citation verification against real ClickHouse/Turso.
 
 - [ ] **Feature 08: Smart Simulator, Protected Seed Data & Communications Hub**
   - [ ] Context-aware dynamic event generator tab (`web/src/routes/simulator.tsx`).

@@ -88,7 +88,7 @@ Both paths share the same primitive: **Go assembles evidence → one scoped LLM 
 | **Agent DB Interface** | Official ClickHouse MCP Server (`mcp-clickhouse`) | Remote MCP HTTP transport (`/mcp`). ClickHouse credentials isolated exclusively in MCP container |
 | **AI Models** | Google GenAI SDK (`google.golang.org/genai`) + ADK Go v2 graph engine (`google.golang.org/adk/v2`, `workflow` package) | Gemini Flash for triage/vendor/policy judges & draft notifications; Gemini Pro reserved for the Optimizer's `ActionPlan` synthesis on complex incidents |
 | **Decisions** | Evidence → Judgment → Execution primitive (`internal/agent/*`) | Go nodes assemble deterministic evidence; single-scoped LLM judge nodes render a verdict + rationale with no hardcoded thresholds; Go executes transactionally. Graph topology (ADK Go `workflow.Edge` routing), not a rule table, is what stays deterministic |
-| **Operator Assistant** | Read-first Docent Assistant | Answers "What's releasing this weekend?" and explains past run decisions with SQL query citations |
+| **Operator Assistant** | Read-only Chat Assistant | Answers "What's releasing this weekend?" and explains past run decisions with SQL query citations |
 | **HTTP API & SSE** | `github.com/labstack/echo/v4` | REST endpoints under `/api/*`, Swagger JSON spec serving, SSE for real-time node stepping |
 | **Frontend UI Runtime** | **Preact + Vite + TypeScript** | Microscopic ~3kb UI footprint with `@preact/preset-vite` and `preact/compat` |
 | **Frontend Styling** | **Vanilla Extract (`.css.ts`) + Recipes** | Zero-runtime CSS extraction, 100% type-safe design tokens (`theme.css.ts`) |
