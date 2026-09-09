@@ -1,0 +1,13 @@
+.git
+.github
+.agents
+.venv
+node_modules
+web/node_modules
+volumes
+*.db
+*.db-shm
+*.db-wal
+*.log
+bin
+tmp

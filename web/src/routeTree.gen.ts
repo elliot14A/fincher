@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ChatRouteImport } from './routes/chat'
 import { Route as DeliveriesRouteImport } from './routes/deliveries'
 import { Route as RunsRouteImport } from './routes/runs'
+import { Route as SimulateRouteImport } from './routes/simulate'
 import { Route as TitlesRouteImport } from './routes/titles'
 import { Route as VendorsRouteImport } from './routes/vendors'
 
@@ -36,6 +37,11 @@ const RunsRoute = RunsRouteImport.update({
   path: '/runs',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SimulateRoute = SimulateRouteImport.update({
+  id: '/simulate',
+  path: '/simulate',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TitlesRoute = TitlesRouteImport.update({
   id: '/titles',
   path: '/titles',
@@ -52,6 +58,7 @@ export interface FileRoutesByFullPath {
   '/chat': typeof ChatRoute
   '/deliveries': typeof DeliveriesRoute
   '/runs': typeof RunsRoute
+  '/simulate': typeof SimulateRoute
   '/titles': typeof TitlesRoute
   '/vendors': typeof VendorsRoute
 }
@@ -60,6 +67,7 @@ export interface FileRoutesByTo {
   '/chat': typeof ChatRoute
   '/deliveries': typeof DeliveriesRoute
   '/runs': typeof RunsRoute
+  '/simulate': typeof SimulateRoute
   '/titles': typeof TitlesRoute
   '/vendors': typeof VendorsRoute
 }
@@ -69,20 +77,36 @@ export interface FileRoutesById {
   '/chat': typeof ChatRoute
   '/deliveries': typeof DeliveriesRoute
   '/runs': typeof RunsRoute
+  '/simulate': typeof SimulateRoute
   '/titles': typeof TitlesRoute
   '/vendors': typeof VendorsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/chat' | '/deliveries' | '/runs' | '/titles' | '/vendors'
+  fullPaths:
+    | '/'
+    | '/chat'
+    | '/deliveries'
+    | '/runs'
+    | '/simulate'
+    | '/titles'
+    | '/vendors'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/chat' | '/deliveries' | '/runs' | '/titles' | '/vendors'
+  to:
+    | '/'
+    | '/chat'
+    | '/deliveries'
+    | '/runs'
+    | '/simulate'
+    | '/titles'
+    | '/vendors'
   id:
     | '__root__'
     | '/'
     | '/chat'
     | '/deliveries'
     | '/runs'
+    | '/simulate'
     | '/titles'
     | '/vendors'
   fileRoutesById: FileRoutesById
@@ -92,6 +116,7 @@ export interface RootRouteChildren {
   ChatRoute: typeof ChatRoute
   DeliveriesRoute: typeof DeliveriesRoute
   RunsRoute: typeof RunsRoute
+  SimulateRoute: typeof SimulateRoute
   TitlesRoute: typeof TitlesRoute
   VendorsRoute: typeof VendorsRoute
 }
@@ -126,6 +151,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RunsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/simulate': {
+      id: '/simulate'
+      path: '/simulate'
+      fullPath: '/simulate'
+      preLoaderRoute: typeof SimulateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/titles': {
       id: '/titles'
       path: '/titles'
@@ -148,6 +180,7 @@ const rootRouteChildren: RootRouteChildren = {
   ChatRoute: ChatRoute,
   DeliveriesRoute: DeliveriesRoute,
   RunsRoute: RunsRoute,
+  SimulateRoute: SimulateRoute,
   TitlesRoute: TitlesRoute,
   VendorsRoute: VendorsRoute,
 }

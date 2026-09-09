@@ -1,6 +1,5 @@
 import { style } from '@vanilla-extract/css'
 import { vars } from '#/styles/theme.css'
-import { fonts } from '#/styles/tokens'
 
 export const sidebarContainer = style({
   width: '244px',
@@ -52,40 +51,6 @@ export const composeButton = style({
     outline: `2px solid ${vars.color.primary}`,
     outlineOffset: '2px',
   },
-})
-
-export const searchRow = style({
-  display: 'flex',
-  alignItems: 'center',
-  gap: vars.space.sm,
-  padding: `${vars.space.xs} ${vars.space.sm}`,
-  marginBottom: vars.space.md,
-  backgroundColor: vars.color.surfaceElevated,
-  border: `1px solid ${vars.color.border}`,
-  borderRadius: vars.radii.sm,
-  color: vars.color.textTertiary,
-  fontSize: vars.fontSize.sm,
-  cursor: 'pointer',
-  transition: 'background-color 0.1s ease, border-color 0.1s ease',
-  ':hover': {
-    backgroundColor: vars.color.surfaceHover,
-    borderColor: vars.color.borderStrong,
-  },
-})
-
-export const searchLabel = style({
-  flex: 1,
-})
-
-export const kbdHint = style({
-  fontFamily: fonts.mono,
-  fontSize: vars.fontSize['2xs'],
-  color: vars.color.textTertiary,
-  backgroundColor: vars.color.surfaceActive,
-  border: `1px solid ${vars.color.borderStrong}`,
-  borderRadius: vars.radii.xs,
-  padding: '1px 5px',
-  lineHeight: vars.lineHeight.snug,
 })
 
 export const navItem = style({
