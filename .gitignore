@@ -5,7 +5,8 @@
 # Binaries & build artifacts
 bin/
 dist/
-pkg/web/dist/
+pkg/web/dist/*
+!pkg/web/dist/.gitkeep
 web/dist/
 web/node_modules/
 /fincher
