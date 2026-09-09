@@ -18,5 +18,5 @@ func RegisterRoutes(g *echo.Group, client *ent.Client, chDB *sql.DB, mcpClient *
 	g.GET("/:id", Get(client))
 	g.PATCH("/:id", Update(client, chDB, mcpClient, tursoDB, modelProvider, sched))
 	g.DELETE("/:id", Delete(client))
-	g.POST("/:id/qc", SendToQC(client, chDB, modelProvider, sched))
+	g.POST("/:id/qc", SendToQC(client, chDB, mcpClient, tursoDB, modelProvider, sched))
 }

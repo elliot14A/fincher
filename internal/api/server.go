@@ -139,7 +139,7 @@ func (s *Server) registerRoutes() {
 	deliveries.RegisterRoutes(apiGroup.Group("/deliveries"), s.client)
 	dependencies.RegisterRoutes(apiGroup.Group("/dependencies"), s.client)
 	uploads.RegisterRoutes(apiGroup.Group("/uploads"), s.client)
-	runs.RegisterRoutes(apiGroup.Group("/runs"), s.client, s.chDB, s.mcp, s.tursoDB, func() model.LLM { return s.llm })
+	runs.RegisterRoutes(apiGroup.Group("/runs"), s.client, s.chDB, s.mcp, s.tursoDB, func() model.LLM { return s.llm }, s.scheduler)
 	chat.RegisterRoutes(apiGroup.Group("/chat"), s.client, s.tursoDB, s.mcp, func() model.LLM { return s.llm })
 	search.RegisterRoutes(apiGroup.Group("/search"), s.client)
 

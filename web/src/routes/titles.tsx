@@ -8,6 +8,9 @@ import { Button } from '#/components/ui/button'
 import { ActionMenu } from '#/components/ui/dropdown'
 import { DeleteModal } from '#/components/ui/modal'
 import { PaginationControls } from '#/components/ui/pagination'
+import { deliveriesKeys } from '#/features/deliveries/queryKeys'
+import { packagesKeys } from '#/features/packages/queryKeys'
+import { runsKeys } from '#/features/runs/queryKeys'
 import { getQcGating, getTitleStatusNote, mapTitleStatus } from '#/features/titles'
 import { CreateTitleModal } from '#/features/titles/components/modals'
 import { TitleSidebar } from '#/features/titles/components/sidebar'
@@ -246,6 +249,9 @@ function TitlesPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: titlesKeys.all })
+      queryClient.invalidateQueries({ queryKey: runsKeys.all })
+      queryClient.invalidateQueries({ queryKey: deliveriesKeys.all })
+      queryClient.invalidateQueries({ queryKey: packagesKeys.all })
       toast.success('Master QC initiated successfully')
     },
     onError: (err) => {
