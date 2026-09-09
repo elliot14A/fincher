@@ -40,7 +40,6 @@ in
       FINCHER_PORT = "8080";
       FINCHER_TURSO_URL = "/var/lib/fincher/fincher.db";
       FINCHER_MCP_URL = "http://127.0.0.1:8000/mcp";
-      FINCHER_CLICKHOUSE_DSN = "127.0.0.1:9000";
       FINCHER_GEMINI_MODEL = "gemini-2.5-flash";
       FINCHER_GEMINI_OPTIONS = "location=asia-south1";
     };

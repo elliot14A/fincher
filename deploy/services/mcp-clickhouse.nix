@@ -1,6 +1,11 @@
-{ ... }:
+{ config, ... }:
 
 {
+  age.secrets."clickhouse.env" = {
+    file = ../secrets/clickhouse.env.age;
+    mode = "0400";
+  };
+
   virtualisation.oci-containers.backend = "podman";
   virtualisation.podman.enable = true;
 
@@ -18,6 +23,9 @@
       CLICKHOUSE_MCP_ALLOWED_HOSTS = "127.0.0.1:8000,localhost:8000,127.0.0.1,localhost,*";
       CLICKHOUSE_MCP_AUTH_DISABLED = "true";
     };
+    environmentFiles = [
+      config.age.secrets."clickhouse.env".path
+    ];
     extraOptions = [ "--network=host" ];
   };
 }
