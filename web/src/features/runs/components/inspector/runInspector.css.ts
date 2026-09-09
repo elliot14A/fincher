@@ -109,7 +109,7 @@ export const copyBtn = style({
 
 export const statBar = style({
   display: 'grid',
-  gridTemplateColumns: 'repeat(4, 1fr)',
+  gridTemplateColumns: 'repeat(3, 1fr)',
   gap: vars.space.xs,
   paddingTop: vars.space.xs,
   borderTop: `1px solid ${vars.color.borderSubtle}`,
@@ -135,49 +135,6 @@ export const statValue = style({
   color: vars.color.textPrimary,
 })
 
-export const tabsNav = style({
-  display: 'flex',
-  alignItems: 'center',
-  gap: vars.space.sm,
-  padding: `0 ${vars.space.lg}`,
-  borderBottom: `1px solid ${vars.color.borderSubtle}`,
-  backgroundColor: vars.color.surface,
-  flexShrink: 0,
-})
-
-export const tabBtn = style({
-  fontSize: vars.fontSize.xs,
-  color: vars.color.textTertiary,
-  padding: `${vars.space.sm} 0`,
-  cursor: 'pointer',
-  borderBottom: '2px solid transparent',
-  background: 'none',
-  border: 'none',
-  fontWeight: 500,
-  display: 'inline-flex',
-  alignItems: 'center',
-  gap: vars.space.xs,
-  transition: 'color 0.12s ease',
-  ':hover': {
-    color: vars.color.textSecondary,
-  },
-})
-
-export const tabBtnActive = style({
-  color: vars.color.textPrimary,
-  fontWeight: 600,
-  borderBottom: `2px solid ${vars.color.primary}`,
-})
-
-export const tabCountBadge = style({
-  fontSize: vars.fontSize['3xs'],
-  padding: '1px 5px',
-  borderRadius: vars.radii.full,
-  backgroundColor: vars.color.surfaceElevated,
-  color: vars.color.textSecondary,
-  border: `1px solid ${vars.color.border}`,
-})
-
 export const scrollArea = style({
   display: 'flex',
   flexDirection: 'column',
@@ -185,13 +142,7 @@ export const scrollArea = style({
   minHeight: 0,
   overflowY: 'auto',
   padding: vars.space.lg,
-  gap: vars.space.md,
-})
-
-export const section = style({
-  display: 'flex',
-  flexDirection: 'column',
-  gap: vars.space.xs,
+  gap: vars.space.lg,
 })
 
 export const sectionHeading = style({
@@ -206,138 +157,239 @@ export const sectionHeading = style({
   margin: 0,
 })
 
-export const rawJsonHeading = style([
-  sectionHeading,
-  {
-    marginTop: vars.space.sm,
-  },
-])
-
-// Waterfall & Steps
-export const waterfallList = style({
-  display: 'flex',
-  flexDirection: 'column',
-  gap: vars.space.xs,
+export const summaryLede = style({
+  fontSize: vars.fontSize.sm,
+  color: vars.color.textSecondary,
+  lineHeight: 1.5,
+  margin: 0,
 })
 
-export const stepCard = style({
-  display: 'flex',
-  flexDirection: 'column',
-  backgroundColor: vars.color.surfaceElevated,
-  border: `1px solid ${vars.color.border}`,
-  borderRadius: vars.radii.xs,
-  overflow: 'hidden',
-  transition: 'border-color 0.15s ease',
-  ':hover': {
-    borderColor: vars.color.borderStrong,
-  },
+export const summaryStrong = style({
+  color: vars.color.textPrimary,
+  fontWeight: 600,
 })
 
-export const stepHeaderBtn = style({
+export const stepTitleRow = style({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'space-between',
-  width: '100%',
-  textAlign: 'left',
-  background: 'none',
-  border: 'none',
-  padding: `${vars.space.xs} ${vars.space.sm}`,
-  cursor: 'pointer',
-  color: 'inherit',
-  font: 'inherit',
+  gap: vars.space.sm,
+  minHeight: '32px',
 })
 
-export const stepHeaderLeft = style({
+export const stepTitleGroup = style({
   display: 'flex',
-  alignItems: 'center',
-  gap: vars.space.xs,
+  flexDirection: 'column',
+  gap: '1px',
   minWidth: 0,
 })
 
-export const stepIconBox = style({
-  width: '24px',
-  height: '24px',
-  borderRadius: vars.radii.xs,
-  backgroundColor: vars.color.surfaceHover,
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  color: vars.color.textSecondary,
-  flexShrink: 0,
+export const stepTitle = style({
+  fontSize: vars.fontSize.sm,
+  fontWeight: 600,
+  color: vars.color.textPrimary,
 })
 
-export const stepIndex = style({
+export const stepAgent = style({
   fontFamily: fonts.mono,
   fontSize: vars.fontSize['3xs'],
   color: vars.color.textTertiary,
-  width: '14px',
 })
 
-export const stepName = style({
+export const stepDescription = style({
+  fontSize: vars.fontSize.xs,
+  color: vars.color.textSecondary,
+  lineHeight: 1.5,
+  margin: 0,
+})
+
+export const riskBanner = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: vars.space.xs,
+  borderRadius: vars.radii.sm,
+  padding: vars.space.sm,
+  border: `1px solid ${vars.color.border}`,
+  backgroundColor: vars.color.surfaceElevated,
+})
+
+export const riskBannerBreach = style({
+  borderColor: vars.color.dangerBorder,
+  backgroundColor: vars.color.dangerMuted,
+})
+
+export const riskBannerUrgent = style({
+  borderColor: vars.color.warningBorder,
+  backgroundColor: vars.color.warningMuted,
+})
+
+export const riskHeaderRow = style({
+  display: 'flex',
+  alignItems: 'center',
+  gap: vars.space.xs,
+})
+
+export const riskBandLabel = style({
+  fontFamily: fonts.mono,
+  fontSize: vars.fontSize['3xs'],
+  fontWeight: 700,
+  letterSpacing: '0.06em',
+  textTransform: 'uppercase',
+})
+
+export const riskMetrics = style({
+  display: 'grid',
+  gridTemplateColumns: 'repeat(3, 1fr)',
+  gap: vars.space.xs,
+})
+
+export const riskMetric = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '1px',
+})
+
+export const riskMetricValue = style({
+  fontFamily: fonts.mono,
+  fontSize: vars.fontSize.base,
+  fontWeight: 700,
+  color: vars.color.textPrimary,
+  fontVariantNumeric: 'tabular-nums',
+})
+
+export const riskMetricValueDanger = style({
+  color: vars.color.danger,
+})
+
+export const riskMetricLabel = style({
+  fontSize: vars.fontSize['3xs'],
+  color: vars.color.textTertiary,
+  textTransform: 'uppercase',
+  letterSpacing: '0.03em',
+})
+
+export const dataTable = style({
+  display: 'flex',
+  flexDirection: 'column',
+  border: `1px solid ${vars.color.border}`,
+  borderRadius: vars.radii.sm,
+  overflow: 'hidden',
+})
+
+export const dataTableRow = style({
+  display: 'grid',
+  gridTemplateColumns: 'minmax(0, 1.4fr) minmax(0, 1fr) auto',
+  gap: vars.space.sm,
+  padding: `${vars.space.xs} ${vars.space.sm}`,
+  alignItems: 'center',
+  borderTop: `1px solid ${vars.color.borderSubtle}`,
+  selectors: {
+    '&:first-child': {
+      borderTop: 'none',
+      backgroundColor: vars.color.surfaceElevated,
+    },
+  },
+})
+
+export const dataTableHeadCell = style({
+  fontSize: vars.fontSize['3xs'],
+  color: vars.color.textTertiary,
+  textTransform: 'uppercase',
+  letterSpacing: '0.04em',
+  fontWeight: 600,
+})
+
+export const dataCellPrimary = style({
+  fontSize: vars.fontSize.xs,
+  color: vars.color.textPrimary,
+  fontWeight: 500,
+  overflow: 'hidden',
+  whiteSpace: 'nowrap',
+  textOverflow: 'ellipsis',
+})
+
+export const dataCellSecondary = style({
+  fontFamily: fonts.mono,
+  fontSize: vars.fontSize['3xs'],
+  color: vars.color.textSecondary,
+})
+
+export const dataCellRight = style({
+  fontFamily: fonts.mono,
+  fontSize: vars.fontSize['3xs'],
+  color: vars.color.textSecondary,
+  textAlign: 'right',
+  whiteSpace: 'nowrap',
+})
+
+export const actionList = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: vars.space.xs,
+})
+
+export const actionRow = style({
+  display: 'flex',
+  alignItems: 'flex-start',
+  gap: vars.space.xs,
+  padding: vars.space.sm,
+  borderRadius: vars.radii.xs,
+  border: `1px solid ${vars.color.successBorder}`,
+  backgroundColor: vars.color.successMuted,
+})
+
+export const actionIcon = style({
+  color: vars.color.success,
+  flexShrink: 0,
+  marginTop: '1px',
+})
+
+export const actionText = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '1px',
+  minWidth: 0,
+})
+
+export const actionType = style({
   fontFamily: fonts.mono,
   fontSize: vars.fontSize.xs,
   fontWeight: 600,
   color: vars.color.textPrimary,
 })
 
-export const stepCategoryBadge = style({
-  fontSize: vars.fontSize['3xs'],
-  color: vars.color.teal,
-  backgroundColor: vars.color.tealMuted,
-  padding: '1px 5px',
-  borderRadius: vars.radii.xs,
-  fontWeight: 500,
-})
-
-export const stepHeaderRight = style({
-  display: 'flex',
-  alignItems: 'center',
-  gap: vars.space.sm,
-  flexShrink: 0,
-})
-
-export const latencyBarContainer = style({
-  width: '45px',
-  height: '4px',
-  backgroundColor: vars.color.surfaceActive,
-  borderRadius: vars.radii.full,
-  overflow: 'hidden',
-})
-
-export const latencyBarFill = style({
-  height: '100%',
-  backgroundColor: vars.color.primary,
-  borderRadius: vars.radii.full,
-})
-
-export const latencyText = style({
-  fontFamily: fonts.mono,
-  fontSize: vars.fontSize['3xs'],
+export const actionReason = style({
+  fontSize: vars.fontSize.xs,
   color: vars.color.textSecondary,
-  fontVariantNumeric: 'tabular-nums',
-  minWidth: '40px',
-  textAlign: 'right',
+  lineHeight: 1.45,
 })
 
-export const statusIconSuccess = style({
-  color: vars.color.success,
-})
-
-export const statusIconDanger = style({
-  color: vars.color.danger,
-})
-
-export const statusIconClock = style({
-  color: vars.color.textTertiary,
-})
-
-export const stepBody = style({
+export const chipRow = style({
   display: 'flex',
-  flexDirection: 'column',
-  padding: `${vars.space.xs} ${vars.space.sm} ${vars.space.sm} ${vars.space.sm}`,
-  borderTop: `1px solid ${vars.color.borderSubtle}`,
-  backgroundColor: vars.color.background,
+  flexWrap: 'wrap',
   gap: vars.space.xs,
+})
+
+export const chip = style({
+  display: 'inline-flex',
+  alignItems: 'baseline',
+  gap: vars.space['2xs'],
+  padding: '3px 8px',
+  borderRadius: vars.radii.full,
+  border: `1px solid ${vars.color.border}`,
+  backgroundColor: vars.color.surfaceElevated,
+})
+
+export const chipValue = style({
+  fontFamily: fonts.mono,
+  fontSize: vars.fontSize.xs,
+  fontWeight: 700,
+  color: vars.color.textPrimary,
+})
+
+export const chipLabel = style({
+  fontSize: vars.fontSize['3xs'],
+  color: vars.color.textTertiary,
 })
 
 export const sqlBlock = style({
@@ -349,133 +401,113 @@ export const sqlBlock = style({
   borderRadius: vars.radii.xs,
   border: `1px solid ${vars.color.border}`,
   whiteSpace: 'pre-wrap',
-  wordBreak: 'break-all',
+  wordBreak: 'break-word',
   lineHeight: 1.4,
 })
 
-export const keyValGrid = style({
-  display: 'grid',
-  gridTemplateColumns: 'max-content minmax(0, 1fr)',
-  gap: `${vars.space['2xs']} ${vars.space.sm}`,
-  fontSize: vars.fontSize['2xs'],
-  alignItems: 'baseline',
-})
-
-export const kvKey = style({
-  fontFamily: fonts.mono,
-  color: vars.color.textTertiary,
-  fontWeight: 500,
-})
-
-export const kvVal = style({
-  color: vars.color.textSecondary,
-  wordBreak: 'break-word',
-})
-
-export const tagList = style({
+export const judgeLoop = style({
   display: 'flex',
-  flexWrap: 'wrap',
-  gap: vars.space['2xs'],
+  flexDirection: 'column',
+  gap: vars.space.sm,
 })
 
-export const pillTag = style({
-  fontSize: vars.fontSize['3xs'],
-  fontFamily: fonts.mono,
-  color: vars.color.textPrimary,
+export const judgeCard = style({
+  display: 'flex',
+  flexDirection: 'column',
   backgroundColor: vars.color.surfaceElevated,
   border: `1px solid ${vars.color.border}`,
-  padding: '1px 6px',
-  borderRadius: vars.radii.xs,
-})
-
-// Policy Decisions
-export const decisionList = style({
-  display: 'flex',
-  flexDirection: 'column',
-  gap: vars.space.sm,
-})
-
-export const decisionCard = style({
-  display: 'flex',
-  flexDirection: 'column',
-  backgroundColor: vars.color.surfaceElevated,
-  border: `1px solid ${vars.color.primaryBorder}`,
-  borderRadius: vars.radii.xs,
+  borderRadius: vars.radii.sm,
   padding: vars.space.md,
-  gap: vars.space.sm,
+  gap: vars.space.xs,
 })
 
-export const decisionHeader = style({
+export const judgeCardApproved = style({
+  borderColor: vars.color.successBorder,
+})
+
+export const judgeCardRejected = style({
+  borderColor: vars.color.dangerBorder,
+})
+
+export const judgeHeader = style({
   display: 'flex',
   justifyContent: 'space-between',
   alignItems: 'center',
+  gap: vars.space.sm,
 })
 
-export const judgeTitle = style({
+export const judgeHeaderLeft = style({
   display: 'flex',
   alignItems: 'center',
   gap: vars.space.xs,
+  minWidth: 0,
+})
+
+export const judgeName = style({
   fontFamily: fonts.mono,
   fontSize: vars.fontSize.xs,
   fontWeight: 600,
-  color: vars.color.primary,
-  letterSpacing: '0.02em',
+  color: vars.color.textPrimary,
 })
 
 export const attemptPill = style({
   fontSize: vars.fontSize['3xs'],
   color: vars.color.textTertiary,
   fontFamily: fonts.mono,
+  padding: '1px 6px',
+  borderRadius: vars.radii.full,
+  border: `1px solid ${vars.color.border}`,
+  backgroundColor: vars.color.surface,
+  flexShrink: 0,
 })
 
-export const outcomeRow = style({
-  display: 'flex',
-  alignItems: 'center',
-  gap: vars.space.xs,
-})
-
-export const outcomeLabel = style({
-  fontSize: vars.fontSize['2xs'],
-  color: vars.color.textTertiary,
-  textTransform: 'uppercase',
-  fontWeight: 500,
-})
-
-export const rationaleCard = style({
-  display: 'flex',
-  flexDirection: 'column',
-  gap: vars.space.xs,
-  backgroundColor: vars.color.background,
-  borderLeft: `2px solid ${vars.color.primary}`,
-  border: `1px solid ${vars.color.borderSubtle}`,
-  borderRadius: vars.radii.xs,
-  padding: vars.space.sm,
-})
-
-export const rationaleText = style({
+export const judgeRationale = style({
   fontSize: vars.fontSize.xs,
   color: vars.color.textSecondary,
   lineHeight: 1.5,
   margin: 0,
+  borderLeft: `2px solid ${vars.color.border}`,
+  paddingLeft: vars.space.sm,
 })
 
-export const decisionMeta = style({
+export const verdictBanner = style({
   display: 'flex',
   alignItems: 'center',
-  gap: vars.space.md,
-  fontSize: vars.fontSize['3xs'],
-  color: vars.color.textTertiary,
+  gap: vars.space.xs,
+  padding: vars.space.sm,
+  borderRadius: vars.radii.sm,
+  fontSize: vars.fontSize.xs,
+  fontWeight: 500,
 })
 
-// Context & Telemetry
-export const contextCard = style({
+export const verdictBannerApproved = style({
+  border: `1px solid ${vars.color.successBorder}`,
+  backgroundColor: vars.color.successMuted,
+  color: vars.color.success,
+})
+
+export const verdictBannerRejected = style({
+  border: `1px solid ${vars.color.dangerBorder}`,
+  backgroundColor: vars.color.dangerMuted,
+  color: vars.color.danger,
+})
+
+export const rawToggle = style({
   display: 'flex',
-  flexDirection: 'column',
-  backgroundColor: vars.color.surfaceElevated,
-  border: `1px solid ${vars.color.border}`,
-  borderRadius: vars.radii.xs,
-  padding: vars.space.md,
-  gap: vars.space.sm,
+  alignItems: 'center',
+  gap: vars.space.xs,
+  background: 'none',
+  border: 'none',
+  padding: 0,
+  cursor: 'pointer',
+  color: vars.color.textTertiary,
+  fontSize: vars.fontSize['2xs'],
+  fontWeight: 600,
+  textTransform: 'uppercase',
+  letterSpacing: '0.05em',
+  ':hover': {
+    color: vars.color.textSecondary,
+  },
 })
 
 export const rawJsonPre = style({
@@ -487,8 +519,9 @@ export const rawJsonPre = style({
   borderRadius: vars.radii.xs,
   border: `1px solid ${vars.color.borderSubtle}`,
   overflowX: 'auto',
-  maxHeight: '260px',
+  maxHeight: '280px',
   lineHeight: 1.45,
+  marginTop: vars.space.xs,
 })
 
 export const pulseDot = style({
@@ -528,7 +561,7 @@ export const emptyText = style({
 
 export const footer = style({
   display: 'flex',
-  justifyContent: 'space-between',
+  justifyContent: 'flex-start',
   alignItems: 'center',
   gap: vars.space.sm,
   padding: `${vars.space.sm} ${vars.space.lg}`,

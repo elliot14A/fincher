@@ -257,7 +257,11 @@ function RunsPage() {
           )}
         </div>
 
-        <RunInspector runId={currentSelected} onClose={() => setSelectedRunId(null)} />
+        <RunInspector
+          runId={currentSelected}
+          onClose={() => setSelectedRunId(null)}
+          onSelectRun={(id) => setSelectedRunId(id)}
+        />
       </div>
     </div>
   )

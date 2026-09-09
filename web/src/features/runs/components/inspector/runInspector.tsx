@@ -1,43 +1,59 @@
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import {
-  Activity,
   Bot,
-  Brain,
-  Check,
+  Braces,
   CheckCircle2,
+  Check as CheckIcon,
   ChevronDown,
   ChevronRight,
   Clock,
   Copy,
-  Database,
   Film,
-  GitFork,
-  Scale,
-  Send,
+  ShieldAlert,
   ShieldCheck,
-  Terminal,
   Workflow,
   X,
   XCircle,
 } from 'lucide-preact'
-import { Fragment } from 'preact'
-import { useState } from 'preact/hooks'
+import { useEffect, useState } from 'preact/hooks'
 import { toast } from 'sonner'
 import { Badge, type BadgeProps } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
+import {
+  FlowFullscreen,
+  formatLatency,
+  isApprovedOutcome,
+  isRejectedOutcome,
+  narrativeFor,
+  num,
+  RunFlow,
+  type StepMeta,
+  stepLatencyMs,
+  str,
+} from '#/features/runs/components/graph'
 import { runDetailQueryOptions } from '#/features/runs/queryOptions'
 import type { ModelsRun, ModelsStep, ModelsWfResult } from '#/lib/api'
-import { formatDateTime } from '#/lib/utils/formatDate'
 import {
+  actionIcon,
+  actionList,
+  actionReason,
+  actionRow,
+  actionText,
+  actionType,
   attemptPill,
+  chip,
+  chipLabel,
+  chipRow,
+  chipValue,
   closeBtn,
-  contextCard,
   copyBtn,
-  decisionCard,
-  decisionHeader,
-  decisionList,
-  decisionMeta,
+  dataCellPrimary,
+  dataCellRight,
+  dataCellSecondary,
+  dataTable,
+  dataTableHeadCell,
+  dataTableRow,
   emptyState,
   emptyText,
   emptyTitle,
@@ -46,59 +62,55 @@ import {
   headerTopRight,
   headerTopRow,
   inspectorPanel,
-  judgeTitle,
-  keyValGrid,
-  kvKey,
-  kvVal,
-  latencyBarContainer,
-  latencyBarFill,
-  latencyText,
-  outcomeLabel,
-  outcomeRow,
-  pillTag,
+  judgeCard,
+  judgeCardApproved,
+  judgeCardRejected,
+  judgeHeader,
+  judgeHeaderLeft,
+  judgeLoop,
+  judgeName,
+  judgeRationale,
   pulseDot,
-  rationaleCard,
-  rationaleText,
-  rawJsonHeading,
   rawJsonPre,
+  rawToggle,
+  riskBandLabel,
+  riskBanner,
+  riskBannerBreach,
+  riskBannerUrgent,
+  riskHeaderRow,
+  riskMetric,
+  riskMetricLabel,
+  riskMetrics,
+  riskMetricValue,
+  riskMetricValueDanger,
   runIdRow,
   runIdText,
   runTitle,
   scrollArea,
-  section,
   sectionHeading,
   sqlBlock,
   statBar,
   statCard,
   statLabel,
-  statusIconClock,
-  statusIconDanger,
-  statusIconSuccess,
   statValue,
-  stepBody,
-  stepCard,
-  stepCategoryBadge,
-  stepHeaderBtn,
-  stepHeaderLeft,
-  stepHeaderRight,
-  stepIconBox,
-  stepIndex,
-  stepName,
-  tabBtn,
-  tabBtnActive,
-  tabCountBadge,
-  tabsNav,
-  tagList,
+  stepAgent,
+  stepDescription,
+  stepTitle,
+  stepTitleGroup,
+  stepTitleRow,
+  summaryLede,
+  summaryStrong,
   titleStack,
-  waterfallList,
+  verdictBanner,
+  verdictBannerApproved,
+  verdictBannerRejected,
 } from './runInspector.css'
 
 export type RunInspectorProps = {
   runId: string | null
   onClose?: () => void
+  onSelectRun?: (runId: string) => void
 }
-
-type TabType = 'steps' | 'policy' | 'telemetry'
 
 function mapRunStatus(status: ModelsRun['status']): {
   label: string
@@ -121,185 +133,228 @@ function mapRunStatus(status: ModelsRun['status']): {
   }
 }
 
-function mapOutcomeVariant(outcome: string): BadgeProps['variant'] {
-  const o = outcome.toUpperCase()
-  if (o.includes('APPROVE') || o.includes('RELEASE') || o.includes('VALID') || o.includes('PASS')) {
-    return 'success'
-  }
-  if (o.includes('HOLD') || o.includes('REVISE') || o.includes('RETRY')) {
-    return 'warning'
-  }
-  if (o.includes('ESCALATE') || o.includes('REJECT') || o.includes('FAIL')) {
-    return 'danger'
-  }
-  return 'neutral'
-}
-
-function getStepCategory(name: string): {
-  label: string
-  icon: typeof Activity
-} {
-  switch (name.toUpperCase()) {
-    case 'ANOMALY_TRIAGE':
-      return { label: 'Triage Engine', icon: Activity }
-    case 'HISTORIAN_CH_QUERY':
-      return { label: 'ClickHouse MCP', icon: Database }
-    case 'DEPENDENCY_GRAPH_WALK':
-      return { label: 'Graph Traversal', icon: GitFork }
-    case 'ACTION_PLANNING':
-      return { label: 'ADK Planner', icon: Brain }
-    case 'POLICY_VERIFICATION':
-      return { label: 'Policy Judge', icon: ShieldCheck }
-    case 'EXECUTOR_DISPATCH':
-      return { label: 'Executor', icon: Send }
+function triggerHeadline(trigger: string, titleName: string): string {
+  switch (trigger.toLowerCase()) {
+    case 'incident':
+      return `An incident was raised on ${titleName}. The agent triaged it, gathered live context, planned a fix under policy review, and executed.`
+    case 'allocation':
+      return `A localization order came in for ${titleName}. The agent selected vendors and provisioned the delivery pipeline.`
+    case 'resolution':
+      return `A downstream event fired for ${titleName}. The agent re-evaluated the workflow to drive it toward resolution.`
     default:
-      return { label: 'Workflow Node', icon: Terminal }
+      return `The agent ran a ${trigger} workflow for ${titleName}.`
   }
 }
 
-function calculateStepLatencyMs(startedAt?: string, endedAt?: string): number {
-  if (!startedAt) return 0
-  const start = new Date(startedAt).getTime()
-  const end = endedAt ? new Date(endedAt).getTime() : Date.now()
-  return Math.max(0, end - start)
-}
-
-function formatLatency(ms: number): string {
-  if (ms < 1000) return `${ms}ms`
-  return `${(ms / 1000).toFixed(2)}s`
-}
-
-function StepRow({
-  step,
-  index,
-  totalRunMs,
-  isInitiallyOpen,
-}: {
-  step: ModelsStep
-  index: number
-  totalRunMs: number
-  isInitiallyOpen: boolean
-}) {
-  const [isOpen, setIsOpen] = useState(isInitiallyOpen)
-  const category = getStepCategory(step.name)
-  const Icon = category.icon
-  const isCompleted = step.status === 'COMPLETED'
-  const isFailed = step.status === 'FAILED'
-  const isRunning = step.status === 'RUNNING'
-  const stepMs = calculateStepLatencyMs(step.started_at, step.ended_at)
-  const percentOfTotal =
-    totalRunMs > 0 ? Math.min(100, Math.max(10, Math.round((stepMs / totalRunMs) * 100))) : 50
-
-  const meta = (step.metadata as Record<string, unknown> | undefined) ?? {}
-  const hasMeta = Object.keys(meta).length > 0
+function Projection({ projection }: { projection: Record<string, unknown> }) {
+  const band = str(projection.risk_band).toUpperCase()
+  const isBreach = projection.is_breached === true || band === 'BREACH'
+  const isUrgent = !isBreach && (projection.is_urgent === true || band === 'URGENT')
+  const bannerClass = isBreach
+    ? `${riskBanner} ${riskBannerBreach}`
+    : isUrgent
+      ? `${riskBanner} ${riskBannerUrgent}`
+      : riskBanner
+  const hours = num(projection.hours_until_premiere)
+  const buffer = num(projection.buffer_hours)
+  const repairs = Array.isArray(projection.repairs)
+    ? (projection.repairs as Record<string, unknown>[])
+    : []
 
   return (
-    <div class={stepCard}>
-      <button
-        type="button"
-        class={stepHeaderBtn}
-        onClick={() => setIsOpen(!isOpen)}
-        aria-expanded={isOpen}
-      >
-        <div class={stepHeaderLeft}>
-          <span class={stepIndex}>{index + 1}.</span>
-          <div class={stepIconBox}>
-            <Icon size={13} />
-          </div>
-          <span class={stepName}>{step.name}</span>
-          <span class={stepCategoryBadge}>{category.label}</span>
+    <div class={bannerClass}>
+      <div class={riskHeaderRow}>
+        {isBreach ? <ShieldAlert size={13} /> : <Clock size={13} />}
+        <span class={riskBandLabel}>{band || 'ON TRACK'}</span>
+      </div>
+      <div class={riskMetrics}>
+        <div class={riskMetric}>
+          <span class={riskMetricValue}>{hours}h</span>
+          <span class={riskMetricLabel}>Until premiere</span>
         </div>
-
-        <div class={stepHeaderRight}>
-          <div class={latencyBarContainer} title={`${percentOfTotal}% of total latency`}>
-            <div class={latencyBarFill} style={{ width: `${percentOfTotal}%` }} />
-          </div>
-          <span class={latencyText}>{formatLatency(stepMs)}</span>
-
-          {isCompleted ? (
-            <CheckCircle2 size={14} class={statusIconSuccess} />
-          ) : isFailed ? (
-            <XCircle size={14} class={statusIconDanger} />
-          ) : isRunning ? (
-            <span class={pulseDot} />
-          ) : (
-            <Clock size={14} class={statusIconClock} />
-          )}
-
-          {hasMeta ? isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} /> : null}
+        <div class={riskMetric}>
+          <span
+            class={buffer < 0 ? `${riskMetricValue} ${riskMetricValueDanger}` : riskMetricValue}
+          >
+            {buffer > 0 ? `+${buffer}` : buffer}h
+          </span>
+          <span class={riskMetricLabel}>Buffer</span>
         </div>
-      </button>
+        <div class={riskMetric}>
+          <span class={riskMetricValue}>{repairs.length}</span>
+          <span class={riskMetricLabel}>Repairs</span>
+        </div>
+      </div>
 
-      {isOpen && hasMeta && (
-        <div class={stepBody}>
-          {typeof meta.query === 'string' && (
-            <div>
-              <div class={sectionHeading}>
-                <Database size={11} /> ClickHouse SQL Analytical Query
-              </div>
-              <div class={sqlBlock}>{meta.query}</div>
+      {repairs.length > 0 && (
+        <div class={dataTable}>
+          <div class={dataTableRow}>
+            <span class={dataTableHeadCell}>Component / Market</span>
+            <span class={dataTableHeadCell}>Vendor</span>
+            <span class={dataTableHeadCell}>ETA</span>
+          </div>
+          {repairs.map((r, i) => (
+            <div class={dataTableRow} key={str(r.package_id) || i}>
+              <span class={dataCellPrimary}>
+                {str(r.component)}
+                {str(r.market) ? ` · ${str(r.market)}` : ''}
+              </span>
+              <span class={dataCellSecondary}>{str(r.vendor_name) || str(r.vendor_id)}</span>
+              <span class={dataCellRight}>{num(r.turnaround_hours)}h</span>
             </div>
-          )}
-
-          <div class={keyValGrid}>
-            {Object.entries(meta).map(([k, v]) => {
-              if (k === 'query') return null
-
-              const formattedKey = k.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
-
-              if (Array.isArray(v)) {
-                return (
-                  <Fragment key={`arr-${k}`}>
-                    <span class={kvKey}>{formattedKey}:</span>
-                    <div class={tagList}>
-                      {v.map((item) => (
-                        <span key={String(item)} class={pillTag}>
-                          {String(item)}
-                        </span>
-                      ))}
-                    </div>
-                  </Fragment>
-                )
-              }
-
-              if (typeof v === 'object' && v !== null) {
-                return (
-                  <Fragment key={`obj-${k}`}>
-                    <span class={kvKey}>{formattedKey}:</span>
-                    <div class={tagList}>
-                      {Object.entries(v).map(([subK, subV]) => (
-                        <span key={subK} class={pillTag}>
-                          {subK}: {String(subV)}
-                        </span>
-                      ))}
-                    </div>
-                  </Fragment>
-                )
-              }
-
-              return (
-                <Fragment key={`val-${k}`}>
-                  <span class={kvKey}>{formattedKey}:</span>
-                  <span class={kvVal}>{String(v)}</span>
-                </Fragment>
-              )
-            })}
-          </div>
+          ))}
         </div>
       )}
     </div>
   )
 }
 
-export function RunInspector({ runId, onClose }: RunInspectorProps) {
+function ExecutedActions({ meta }: { meta: StepMeta }) {
+  let artifacts: Record<string, unknown>[] = []
+  const raw = meta.artifacts_json
+  if (typeof raw === 'string') {
+    try {
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed)) artifacts = parsed
+    } catch {
+      artifacts = []
+    }
+  } else if (Array.isArray(meta.artifacts)) {
+    artifacts = meta.artifacts as Record<string, unknown>[]
+  }
+
+  if (artifacts.length === 0) return null
+
+  return (
+    <div class={actionList}>
+      {artifacts.map((a, i) => (
+        <div class={actionRow} key={str(a.dispatch_id) || str(a.target_id) || i}>
+          <CheckCircle2 size={14} class={actionIcon} />
+          <div class={actionText}>
+            <span class={actionType}>{str(a.type) || 'ACTION'}</span>
+            {str(a.reason) && <span class={actionReason}>{str(a.reason)}</span>}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function StepDetail({ step }: { step: ModelsStep }) {
+  const narrative = narrativeFor(step.name)
+  const meta = (step.metadata as StepMeta | undefined) ?? {}
+  const extras: preact.JSX.Element[] = []
+
+  if (step.name === 'context_gathering' && meta.projection && typeof meta.projection === 'object') {
+    extras.push(<Projection key="proj" projection={meta.projection as Record<string, unknown>} />)
+  }
+  if (step.name === 'remediation_executor' && (meta.artifacts_json || meta.artifacts)) {
+    extras.push(<ExecutedActions key="actions" meta={meta} />)
+  }
+  if (step.name === 'vendor_selection' && str(meta.overall_summary)) {
+    extras.push(
+      <p key="vsum" class={stepDescription}>
+        {str(meta.overall_summary)}
+      </p>,
+    )
+  }
+  if (step.name === 'provisioning') {
+    const chips = [
+      { value: num(meta.deliveries_created), label: 'deliveries' },
+      { value: num(meta.packages_created), label: 'packages' },
+      { value: num(meta.qc_scheduled), label: 'QC jobs' },
+    ]
+    extras.push(
+      <div key="chips" class={chipRow}>
+        {chips.map((c) => (
+          <span class={chip} key={c.label}>
+            <span class={chipValue}>{c.value}</span>
+            <span class={chipLabel}>{c.label}</span>
+          </span>
+        ))}
+      </div>,
+    )
+  }
+  if (typeof meta.query === 'string') {
+    extras.push(
+      <div key="sql" class={sqlBlock}>
+        {meta.query}
+      </div>,
+    )
+  }
+
+  return (
+    <div>
+      <div class={stepTitleRow}>
+        <div class={stepTitleGroup}>
+          <span class={stepTitle}>{narrative.title}</span>
+          <span class={stepAgent}>{narrative.agent}</span>
+        </div>
+        <span class={stepAgent}>
+          {formatLatency(stepLatencyMs(step.started_at, step.ended_at))}
+        </span>
+      </div>
+      <p class={stepDescription}>{narrative.describe(meta)}</p>
+      {extras}
+    </div>
+  )
+}
+
+function JudgeLoop({ results }: { results: ModelsWfResult[] }) {
+  return (
+    <div class={judgeLoop}>
+      {results.map((res, idx) => {
+        const approved = isApprovedOutcome(res.outcome)
+        const rejected = isRejectedOutcome(res.outcome)
+        const cardClass = approved
+          ? `${judgeCard} ${judgeCardApproved}`
+          : rejected
+            ? `${judgeCard} ${judgeCardRejected}`
+            : judgeCard
+        const verdictClass = approved
+          ? `${verdictBanner} ${verdictBannerApproved}`
+          : rejected
+            ? `${verdictBanner} ${verdictBannerRejected}`
+            : verdictBanner
+        return (
+          <div class={cardClass} key={res.id || idx}>
+            <div class={judgeHeader}>
+              <div class={judgeHeaderLeft}>
+                <ShieldCheck size={14} />
+                <span class={judgeName}>{res.judge}</span>
+              </div>
+              <span class={attemptPill}>Attempt {res.attempt ?? 1}</span>
+            </div>
+            <div class={verdictClass}>
+              {approved ? <CheckCircle2 size={13} /> : rejected ? <XCircle size={13} /> : null}
+              <span>{res.outcome}</span>
+            </div>
+            {res.rationale && <p class={judgeRationale}>{res.rationale}</p>}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+export function RunInspector({ runId, onClose, onSelectRun }: RunInspectorProps) {
   const navigate = useNavigate()
-  const [activeTab, setActiveTab] = useState<TabType>('steps')
   const [copied, setCopied] = useState(false)
+  const [showRaw, setShowRaw] = useState(false)
+  const [selectedStepId, setSelectedStepId] = useState<string | null>(null)
+  const [maximized, setMaximized] = useState(false)
 
   const { data: run, isLoading } = useQuery({
     ...runDetailQueryOptions(runId ?? ''),
     enabled: Boolean(runId),
   })
+
+  const steps = run?.steps ?? []
+
+  useEffect(() => {
+    setSelectedStepId(null)
+    setMaximized(false)
+  }, [runId])
 
   if (!runId) {
     return (
@@ -308,8 +363,8 @@ export function RunInspector({ runId, onClose }: RunInspectorProps) {
           <Bot size={36} />
           <div class={emptyTitle}>Select an Agent Workflow Run</div>
           <div class={emptyText}>
-            Click any execution trace on the left to inspect step latency spans, ClickHouse MCP
-            queries, and policy verification scorecards.
+            Pick a run on the left to see the agent flow — what triggered it, what each agent did,
+            and how the policy judge ruled.
           </div>
         </div>
       </aside>
@@ -336,9 +391,11 @@ export function RunInspector({ runId, onClose }: RunInspectorProps) {
         ? run.title_slug
         : run.id
 
-  const totalRunMs = calculateStepLatencyMs(run.started_at, run.ended_at)
-  const steps = run.steps ?? []
+  const totalRunMs = stepLatencyMs(run.started_at, run.ended_at)
   const results = run.results ?? []
+
+  const activeStepId = selectedStepId ?? steps[0]?.id ?? null
+  const activeStep = steps.find((s) => (s.id ?? '') === activeStepId) ?? steps[0]
 
   const handleCopyId = () => {
     if (run.id) {
@@ -358,7 +415,7 @@ export function RunInspector({ runId, onClose }: RunInspectorProps) {
             <div class={runIdRow}>
               <span class={runIdText}>{run.id}</span>
               <button type="button" class={copyBtn} onClick={handleCopyId} aria-label="Copy run ID">
-                {copied ? <Check size={11} /> : <Copy size={11} />}
+                {copied ? <CheckIcon size={11} /> : <Copy size={11} />}
                 <span>{copied ? 'Copied' : 'Copy'}</span>
               </button>
             </div>
@@ -379,172 +436,58 @@ export function RunInspector({ runId, onClose }: RunInspectorProps) {
 
         <div class={statBar}>
           <div class={statCard}>
-            <span class={statLabel}>Duration</span>
-            <span class={statValue}>{formatLatency(totalRunMs)}</span>
-          </div>
-          <div class={statCard}>
             <span class={statLabel}>Trigger</span>
             <span class={statValue}>{run.trigger.toUpperCase()}</span>
           </div>
           <div class={statCard}>
-            <span class={statLabel}>Steps</span>
-            <span class={statValue}>{steps.length} total</span>
+            <span class={statLabel}>Stages</span>
+            <span class={statValue}>{steps.length}</span>
           </div>
           <div class={statCard}>
-            <span class={statLabel}>Model</span>
-            <span class={statValue}>gemini-2.5</span>
+            <span class={statLabel}>Duration</span>
+            <span class={statValue}>{formatLatency(totalRunMs)}</span>
           </div>
         </div>
       </header>
 
-      <nav class={tabsNav} aria-label="Inspector tabs">
-        <button
-          type="button"
-          class={activeTab === 'steps' ? `${tabBtn} ${tabBtnActive}` : tabBtn}
-          onClick={() => setActiveTab('steps')}
-        >
-          <Workflow size={13} />
-          <span>Waterfall &amp; Steps</span>
-          <span class={tabCountBadge}>{steps.length}</span>
-        </button>
-
-        <button
-          type="button"
-          class={activeTab === 'policy' ? `${tabBtn} ${tabBtnActive}` : tabBtn}
-          onClick={() => setActiveTab('policy')}
-        >
-          <ShieldCheck size={13} />
-          <span>Policy Judges</span>
-          <span class={tabCountBadge}>{results.length}</span>
-        </button>
-
-        <button
-          type="button"
-          class={activeTab === 'telemetry' ? `${tabBtn} ${tabBtnActive}` : tabBtn}
-          onClick={() => setActiveTab('telemetry')}
-        >
-          <Terminal size={13} />
-          <span>Context &amp; Telemetry</span>
-        </button>
-      </nav>
-
       <div class={scrollArea}>
-        {activeTab === 'steps' && (
-          <div class={section}>
+        <p class={summaryLede}>
+          <span class={summaryStrong}>{run.trigger.toUpperCase()}. </span>
+          {triggerHeadline(run.trigger, titleName)}
+        </p>
+
+        {steps.length > 0 && (
+          <div>
             <div class={sectionHeading}>
-              <Workflow size={12} /> Execution Latency Waterfall ({steps.length} spans)
+              <Workflow size={12} /> Agent flow — tap a stage
             </div>
-            <div class={waterfallList}>
-              {steps.map((step, idx) => (
-                <StepRow
-                  key={step.id || idx}
-                  step={step}
-                  index={idx}
-                  totalRunMs={totalRunMs}
-                  isInitiallyOpen={idx === 0 || idx === steps.length - 1}
-                />
-              ))}
-            </div>
+            <RunFlow
+              steps={steps}
+              selectedStepId={activeStepId}
+              onSelectStep={setSelectedStepId}
+              onMaximize={() => setMaximized(true)}
+            />
           </div>
         )}
 
-        {activeTab === 'policy' && (
-          <div class={section}>
+        {activeStep && <StepDetail step={activeStep} />}
+
+        {results.length > 0 && (
+          <div>
             <div class={sectionHeading}>
-              <Scale size={12} /> Policy Verification Scorecards ({results.length} evaluations)
+              <ShieldCheck size={12} /> Policy verification
             </div>
-
-            {results.length === 0 ? (
-              <div class={emptyState}>
-                <ShieldCheck size={28} />
-                <div class={emptyTitle}>No Policy Evaluations Recorded</div>
-                <div class={emptyText}>
-                  This workflow execution did not trigger bounded policy loop verification.
-                </div>
-              </div>
-            ) : (
-              <div class={decisionList}>
-                {results.map((res: ModelsWfResult, idx: number) => {
-                  const outcomeVariant = mapOutcomeVariant(res.outcome)
-                  return (
-                    <div key={res.id || idx} class={decisionCard}>
-                      <div class={decisionHeader}>
-                        <div class={judgeTitle}>
-                          <ShieldCheck size={14} />
-                          <span>{res.judge}</span>
-                        </div>
-                        <span class={attemptPill}>Attempt {res.attempt ?? 1} of 3</span>
-                      </div>
-
-                      <div class={outcomeRow}>
-                        <span class={outcomeLabel}>Policy Verdict:</span>
-                        <Badge variant={outcomeVariant}>{res.outcome}</Badge>
-                      </div>
-
-                      <div class={rationaleCard}>
-                        <p class={rationaleText}>{res.rationale}</p>
-                      </div>
-
-                      <div class={decisionMeta}>
-                        <span>Target: {run.title_slug}</span>
-                        <span>•</span>
-                        <span>Evaluation Model: gemini-2.5-pro</span>
-                        <span>•</span>
-                        <span>Temp: 0.1</span>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
+            <JudgeLoop results={results} />
           </div>
         )}
 
-        {activeTab === 'telemetry' && (
-          <div class={section}>
-            <div class={sectionHeading}>
-              <Terminal size={12} /> Workflow Context &amp; Metadata
-            </div>
-
-            <div class={contextCard}>
-              <div class={keyValGrid}>
-                <span class={kvKey}>Target Title:</span>
-                <span class={kvVal}>
-                  {titleName} ({run.title_slug})
-                </span>
-
-                <span class={kvKey}>Trigger Reason:</span>
-                <span class={kvVal}>{run.trigger.toUpperCase()}</span>
-
-                <span class={kvKey}>Started At:</span>
-                <span class={kvVal}>{run.started_at ? formatDateTime(run.started_at) : '—'}</span>
-
-                <span class={kvKey}>Completed At:</span>
-                <span class={kvVal}>
-                  {run.ended_at ? formatDateTime(run.ended_at) : 'In progress'}
-                </span>
-
-                {Object.entries(meta).map(([k, v]) => {
-                  if (k === 'title_name') return null
-                  const formattedKey = k.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
-                  return (
-                    <Fragment key={`meta-${k}`}>
-                      <span class={kvKey}>{formattedKey}:</span>
-                      <span class={kvVal}>
-                        {typeof v === 'object' ? JSON.stringify(v) : String(v)}
-                      </span>
-                    </Fragment>
-                  )
-                })}
-              </div>
-            </div>
-
-            <div class={rawJsonHeading}>
-              <Terminal size={12} /> Raw JSON Payload
-            </div>
-            <pre class={rawJsonPre}>{JSON.stringify(run, null, 2)}</pre>
-          </div>
-        )}
+        <div>
+          <button type="button" class={rawToggle} onClick={() => setShowRaw(!showRaw)}>
+            {showRaw ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+            <Braces size={12} /> Raw JSON payload
+          </button>
+          {showRaw && <pre class={rawJsonPre}>{JSON.stringify(run, null, 2)}</pre>}
+        </div>
       </div>
 
       <footer class={footer}>
@@ -552,11 +495,22 @@ export function RunInspector({ runId, onClose }: RunInspectorProps) {
           <Film size={13} />
           <span>View Titles</span>
         </Button>
-        <Button variant="primary" size="sm" onClick={() => navigate({ to: '/' })}>
-          <Bot size={13} />
-          <span>Ask Assistant</span>
-        </Button>
       </footer>
+
+      {maximized && (
+        <FlowFullscreen
+          run={run}
+          titleName={titleName}
+          steps={steps}
+          selectedStepId={activeStepId}
+          onSelectStep={setSelectedStepId}
+          onSelectRun={(id) => {
+            onSelectRun?.(id)
+            setSelectedStepId(null)
+          }}
+          onClose={() => setMaximized(false)}
+        />
+      )}
     </aside>
   )
 }
