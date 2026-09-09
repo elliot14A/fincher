@@ -2,6 +2,22 @@
 
 import * as v from 'valibot';
 
+export const vChatTaggedObjectRef = v.object({
+    display_name: v.optional(v.string()),
+    identifier: v.optional(v.string()),
+    kind: v.optional(v.string())
+});
+
+export const vChatSendMessageRequest = v.object({
+    message: v.optional(v.string()),
+    session_id: v.optional(v.string()),
+    tagged_objects: v.optional(v.array(vChatTaggedObjectRef))
+});
+
+export const vChatUpdateSessionRequest = v.object({
+    title: v.optional(v.string())
+});
+
 export const vErrorsErrorCode = v.picklist([
     'NOT_FOUND',
     'ALREADY_EXISTS',
@@ -24,6 +40,51 @@ export const vErrorsErrorResponse = v.object({
     code: v.optional(v.string()),
     message: v.optional(v.string()),
     op: v.optional(v.string())
+});
+
+export const vModelsChatCitation = v.object({
+    label: v.optional(v.string()),
+    source: v.optional(v.string()),
+    tool: v.optional(v.string())
+});
+
+export const vModelsChatMessageRole = v.picklist(['user', 'assistant']);
+
+export const vModelsChatSource = v.object({
+    display_name: v.optional(v.string()),
+    id: v.optional(v.string()),
+    identifier: v.optional(v.string()),
+    image_url: v.optional(v.string()),
+    kind: v.optional(v.string()),
+    status: v.optional(v.string()),
+    subtitle: v.optional(v.string())
+});
+
+export const vModelsChatMessage = v.object({
+    citations: v.optional(v.array(vModelsChatCitation)),
+    content: v.optional(v.string()),
+    created_at: v.optional(v.string()),
+    id: v.string(),
+    metadata: v.optional(v.record(v.string(), v.unknown())),
+    role: v.optional(vModelsChatMessageRole),
+    seq: v.optional(v.pipe(v.number(), v.integer())),
+    session_id: v.optional(v.string()),
+    sources: v.optional(v.array(vModelsChatSource)),
+    updated_at: v.optional(v.string())
+});
+
+export const vChatSendMessageResponse = v.object({
+    message: v.optional(vModelsChatMessage),
+    session_id: v.optional(v.string())
+});
+
+export const vModelsChatSession = v.object({
+    created_at: v.optional(v.string()),
+    id: v.string(),
+    messages: v.optional(v.array(vModelsChatMessage)),
+    metadata: v.optional(v.record(v.string(), v.unknown())),
+    title: v.optional(v.string()),
+    updated_at: v.optional(v.string())
 });
 
 export const vModelsComponentType = v.picklist([
@@ -205,6 +266,21 @@ export const vModelsRunStatus = v.picklist([
     'FAILED',
     'ESCALATED'
 ]);
+
+export const vModelsSearchResultKind = v.picklist([
+    'title',
+    'vendor',
+    'delivery'
+]);
+
+export const vModelsSearchResult = v.object({
+    display_name: v.optional(v.string()),
+    id: v.optional(v.string()),
+    identifier: v.optional(v.string()),
+    image_url: v.optional(v.string()),
+    kind: v.optional(vModelsSearchResultKind),
+    subtitle: v.optional(v.string())
+});
 
 export const vModelsStepStatus = v.picklist([
     'PENDING',
@@ -412,6 +488,48 @@ export const vModelsRunPaginationResult = v.object({
     total_items: v.optional(v.pipe(v.number(), v.integer())),
     total_pages: v.optional(v.pipe(v.number(), v.integer()))
 });
+
+/**
+ * OK
+ */
+export const vGetChatResponse = v.array(vModelsChatSession);
+
+/**
+ * Chat message
+ */
+export const vPostChatBody = vChatSendMessageRequest;
+
+/**
+ * OK
+ */
+export const vPostChatResponse = vChatSendMessageResponse;
+
+export const vDeleteChatByIdPath = v.object({
+    id: v.string()
+});
+
+export const vGetChatByIdPath = v.object({
+    id: v.string()
+});
+
+/**
+ * OK
+ */
+export const vGetChatByIdResponse = vModelsChatSession;
+
+/**
+ * New title
+ */
+export const vPatchChatByIdBody = vChatUpdateSessionRequest;
+
+export const vPatchChatByIdPath = v.object({
+    id: v.string()
+});
+
+/**
+ * OK
+ */
+export const vPatchChatByIdResponse = vModelsChatSession;
 
 export const vGetDeliveriesQuery = v.object({
     title_id: v.optional(v.string()),
@@ -633,6 +751,16 @@ export const vGetRunsByIdStreamPath = v.object({
  * Stream of events: event: update\ndata: {...}\n\n
  */
 export const vGetRunsByIdStreamResponse = v.string();
+
+export const vGetSearchQuery = v.object({
+    q: v.string(),
+    limit: v.optional(v.pipe(v.number(), v.integer()))
+});
+
+/**
+ * OK
+ */
+export const vGetSearchResponse = v.array(vModelsSearchResult);
 
 export const vGetTitlesQuery = v.object({
     status: v.optional(v.string()),

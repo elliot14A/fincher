@@ -1,6 +1,7 @@
-import { Link } from '@tanstack/react-router'
+import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
 import { FileText, LayoutGrid, MessageSquare, Play, Plus, Search, Users } from 'lucide-preact'
 import { Logo } from '#/components/ui/logo'
+import { ChatHistory } from '#/features/chat/components'
 import {
   brandRow,
   brandSubtitle,
@@ -23,6 +24,15 @@ const NAV_LINKS = [
 ] as const
 
 export function NavigationSidebar() {
+  const navigate = useNavigate()
+  const routerState = useRouterState({
+    select: (s) => ({
+      pathname: s.location.pathname,
+      session: (s.location.search as { session?: string }).session,
+    }),
+  })
+  const onChat = routerState.pathname === '/chat'
+
   return (
     <aside class={sidebarContainer}>
       <div class={brandRow}>
@@ -32,10 +42,14 @@ export function NavigationSidebar() {
         </div>
       </div>
 
-      <Link to="/chat" className={composeButton}>
+      <button
+        type="button"
+        class={composeButton}
+        onClick={() => navigate({ to: '/chat', search: {} })}
+      >
         <Plus size={14} />
         <span>New chat</span>
-      </Link>
+      </button>
 
       <div class={searchRow}>
         <Search size={14} />
@@ -54,6 +68,8 @@ export function NavigationSidebar() {
           <span class={navItemLabel}>{label}</span>
         </Link>
       ))}
+
+      {onChat ? <ChatHistory activeSessionId={routerState.session} /> : null}
     </aside>
   )
 }

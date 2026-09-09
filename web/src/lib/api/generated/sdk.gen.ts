@@ -2,7 +2,7 @@
 
 import { type Client, type ClientMeta, formDataBodySerializer, type Options as Options2, type RequestResult, type ServerSentEventsResult, type TDataShape } from './client';
 import { client } from './client.gen';
-import type { DeleteDeliveriesByIdData, DeleteDeliveriesByIdErrors, DeleteDeliveriesByIdResponses, DeleteDependenciesByIdData, DeleteDependenciesByIdErrors, DeleteDependenciesByIdResponses, DeleteMastersByIdData, DeleteMastersByIdErrors, DeleteMastersByIdResponses, DeletePackagesByIdData, DeletePackagesByIdErrors, DeletePackagesByIdResponses, DeleteTitlesByIdData, DeleteTitlesByIdErrors, DeleteTitlesByIdResponses, DeleteUploadsByIdData, DeleteUploadsByIdErrors, DeleteUploadsByIdResponses, DeleteVendorsByIdData, DeleteVendorsByIdErrors, DeleteVendorsByIdResponses, GetDeliveriesByIdData, GetDeliveriesByIdErrors, GetDeliveriesByIdResponses, GetDeliveriesData, GetDeliveriesErrors, GetDeliveriesResponses, GetDependenciesData, GetDependenciesErrors, GetDependenciesGraphByTitleIdData, GetDependenciesGraphByTitleIdErrors, GetDependenciesGraphByTitleIdResponses, GetDependenciesResponses, GetMastersByIdData, GetMastersByIdErrors, GetMastersByIdResponses, GetMastersData, GetMastersErrors, GetMastersResponses, GetPackagesByIdData, GetPackagesByIdErrors, GetPackagesByIdResponses, GetPackagesData, GetPackagesErrors, GetPackagesResponses, GetRunsByIdData, GetRunsByIdErrors, GetRunsByIdResponses, GetRunsByIdStreamData, GetRunsByIdStreamErrors, GetRunsByIdStreamResponse, GetRunsByIdStreamResponses, GetRunsData, GetRunsErrors, GetRunsResponses, GetTitlesByIdData, GetTitlesByIdErrors, GetTitlesByIdResponses, GetTitlesData, GetTitlesErrors, GetTitlesResponses, GetUploadsByIdData, GetUploadsByIdErrors, GetUploadsByIdResponses, GetVendorsByIdData, GetVendorsByIdErrors, GetVendorsByIdResponses, GetVendorsData, GetVendorsErrors, GetVendorsResponses, PatchDeliveriesByIdData, PatchDeliveriesByIdErrors, PatchDeliveriesByIdResponses, PatchPackagesByIdData, PatchPackagesByIdErrors, PatchPackagesByIdResponses, PatchTitlesByIdData, PatchTitlesByIdErrors, PatchTitlesByIdResponses, PatchVendorsByIdData, PatchVendorsByIdErrors, PatchVendorsByIdResponses, PostDeliveriesData, PostDeliveriesErrors, PostDeliveriesResponses, PostDependenciesData, PostDependenciesErrors, PostDependenciesResponses, PostEventsData, PostEventsErrors, PostEventsResponses, PostMastersData, PostMastersErrors, PostMastersResponses, PostPackagesData, PostPackagesErrors, PostPackagesResponses, PostTitlesByIdQcData, PostTitlesByIdQcErrors, PostTitlesByIdQcResponses, PostTitlesData, PostTitlesErrors, PostTitlesResponses, PostUploadsData, PostUploadsErrors, PostUploadsResponses, PostVendorsData, PostVendorsErrors, PostVendorsResponses } from './types.gen';
+import type { DeleteChatByIdData, DeleteChatByIdErrors, DeleteChatByIdResponses, DeleteDeliveriesByIdData, DeleteDeliveriesByIdErrors, DeleteDeliveriesByIdResponses, DeleteDependenciesByIdData, DeleteDependenciesByIdErrors, DeleteDependenciesByIdResponses, DeleteMastersByIdData, DeleteMastersByIdErrors, DeleteMastersByIdResponses, DeletePackagesByIdData, DeletePackagesByIdErrors, DeletePackagesByIdResponses, DeleteTitlesByIdData, DeleteTitlesByIdErrors, DeleteTitlesByIdResponses, DeleteUploadsByIdData, DeleteUploadsByIdErrors, DeleteUploadsByIdResponses, DeleteVendorsByIdData, DeleteVendorsByIdErrors, DeleteVendorsByIdResponses, GetChatByIdData, GetChatByIdErrors, GetChatByIdResponses, GetChatData, GetChatErrors, GetChatResponses, GetDeliveriesByIdData, GetDeliveriesByIdErrors, GetDeliveriesByIdResponses, GetDeliveriesData, GetDeliveriesErrors, GetDeliveriesResponses, GetDependenciesData, GetDependenciesErrors, GetDependenciesGraphByTitleIdData, GetDependenciesGraphByTitleIdErrors, GetDependenciesGraphByTitleIdResponses, GetDependenciesResponses, GetMastersByIdData, GetMastersByIdErrors, GetMastersByIdResponses, GetMastersData, GetMastersErrors, GetMastersResponses, GetPackagesByIdData, GetPackagesByIdErrors, GetPackagesByIdResponses, GetPackagesData, GetPackagesErrors, GetPackagesResponses, GetRunsByIdData, GetRunsByIdErrors, GetRunsByIdResponses, GetRunsByIdStreamData, GetRunsByIdStreamErrors, GetRunsByIdStreamResponse, GetRunsByIdStreamResponses, GetRunsData, GetRunsErrors, GetRunsResponses, GetSearchData, GetSearchErrors, GetSearchResponses, GetTitlesByIdData, GetTitlesByIdErrors, GetTitlesByIdResponses, GetTitlesData, GetTitlesErrors, GetTitlesResponses, GetUploadsByIdData, GetUploadsByIdErrors, GetUploadsByIdResponses, GetVendorsByIdData, GetVendorsByIdErrors, GetVendorsByIdResponses, GetVendorsData, GetVendorsErrors, GetVendorsResponses, PatchChatByIdData, PatchChatByIdErrors, PatchChatByIdResponses, PatchDeliveriesByIdData, PatchDeliveriesByIdErrors, PatchDeliveriesByIdResponses, PatchPackagesByIdData, PatchPackagesByIdErrors, PatchPackagesByIdResponses, PatchTitlesByIdData, PatchTitlesByIdErrors, PatchTitlesByIdResponses, PatchVendorsByIdData, PatchVendorsByIdErrors, PatchVendorsByIdResponses, PostChatData, PostChatErrors, PostChatResponses, PostDeliveriesData, PostDeliveriesErrors, PostDeliveriesResponses, PostDependenciesData, PostDependenciesErrors, PostDependenciesResponses, PostEventsData, PostEventsErrors, PostEventsResponses, PostMastersData, PostMastersErrors, PostMastersResponses, PostPackagesData, PostPackagesErrors, PostPackagesResponses, PostTitlesByIdQcData, PostTitlesByIdQcErrors, PostTitlesByIdQcResponses, PostTitlesData, PostTitlesErrors, PostTitlesResponses, PostUploadsData, PostUploadsErrors, PostUploadsResponses, PostVendorsData, PostVendorsErrors, PostVendorsResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -17,6 +17,55 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
      */
     meta?: keyof ClientMeta extends never ? Record<string, unknown> : ClientMeta;
 };
+
+/**
+ * List chat sessions
+ *
+ * Returns all persisted chat sessions newest-first (without messages).
+ */
+export const getChat = <ThrowOnError extends boolean = false>(options?: Options<GetChatData, ThrowOnError>): RequestResult<GetChatResponses, GetChatErrors, ThrowOnError> => (options?.client ?? client).get<GetChatResponses, GetChatErrors, ThrowOnError>({ url: '/chat', ...options });
+
+/**
+ * Send a message to the chat assistant
+ *
+ * Sends an operator message to the read-only chat assistant, persists the turn, and returns the grounded assistant answer with SQL citations. Creates a new session when session_id is omitted.
+ */
+export const postChat = <ThrowOnError extends boolean = false>(options: Options<PostChatData, ThrowOnError>): RequestResult<PostChatResponses, PostChatErrors, ThrowOnError> => (options.client ?? client).post<PostChatResponses, PostChatErrors, ThrowOnError>({
+    url: '/chat',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Delete a chat session
+ *
+ * Deletes a chat session and all of its messages.
+ */
+export const deleteChatById = <ThrowOnError extends boolean = false>(options: Options<DeleteChatByIdData, ThrowOnError>): RequestResult<DeleteChatByIdResponses, DeleteChatByIdErrors, ThrowOnError> => (options.client ?? client).delete<DeleteChatByIdResponses, DeleteChatByIdErrors, ThrowOnError>({ url: '/chat/{id}', ...options });
+
+/**
+ * Get a chat session with messages
+ *
+ * Fetches a single chat session and its full message history (the audit log of what the assistant did, including SQL citations).
+ */
+export const getChatById = <ThrowOnError extends boolean = false>(options: Options<GetChatByIdData, ThrowOnError>): RequestResult<GetChatByIdResponses, GetChatByIdErrors, ThrowOnError> => (options.client ?? client).get<GetChatByIdResponses, GetChatByIdErrors, ThrowOnError>({ url: '/chat/{id}', ...options });
+
+/**
+ * Rename a chat session
+ *
+ * Updates the title of a chat session.
+ */
+export const patchChatById = <ThrowOnError extends boolean = false>(options: Options<PatchChatByIdData, ThrowOnError>): RequestResult<PatchChatByIdResponses, PatchChatByIdErrors, ThrowOnError> => (options.client ?? client).patch<PatchChatByIdResponses, PatchChatByIdErrors, ThrowOnError>({
+    url: '/chat/{id}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
 
 /**
  * List all territory deliveries
@@ -220,6 +269,13 @@ export const getRunsById = <ThrowOnError extends boolean = false>(options: Optio
  * Establishes a Server-Sent Events (SSE) connection streaming real-time step progressions and status transitions for a run.
  */
 export const getRunsByIdStream = <ThrowOnError extends boolean = false>(options: Options<GetRunsByIdStreamData, ThrowOnError, GetRunsByIdStreamResponse>): Promise<ServerSentEventsResult<GetRunsByIdStreamResponses>> => (options.client ?? client).sse.get<GetRunsByIdStreamResponses, GetRunsByIdStreamErrors, ThrowOnError>({ url: '/runs/{id}/stream', ...options });
+
+/**
+ * Search taggable objects
+ *
+ * Case-insensitive search across titles, vendors, and deliveries for @-mention tagging and reference resolution.
+ */
+export const getSearch = <ThrowOnError extends boolean = false>(options: Options<GetSearchData, ThrowOnError>): RequestResult<GetSearchResponses, GetSearchErrors, ThrowOnError> => (options.client ?? client).get<GetSearchResponses, GetSearchErrors, ThrowOnError>({ url: '/search', ...options });
 
 /**
  * List all media titles

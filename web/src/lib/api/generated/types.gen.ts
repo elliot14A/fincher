@@ -4,6 +4,27 @@ export type ClientOptions = {
     baseUrl: `${string}://${string}/api` | (string & {});
 };
 
+export type ChatSendMessageRequest = {
+    message?: string;
+    session_id?: string;
+    tagged_objects?: Array<ChatTaggedObjectRef>;
+};
+
+export type ChatSendMessageResponse = {
+    message?: ModelsChatMessage;
+    session_id?: string;
+};
+
+export type ChatTaggedObjectRef = {
+    display_name?: string;
+    identifier?: string;
+    kind?: string;
+};
+
+export type ChatUpdateSessionRequest = {
+    title?: string;
+};
+
 export type ErrorsDomainError = {
     code?: ErrorsErrorCode;
     message?: string;
@@ -16,6 +37,50 @@ export type ErrorsErrorResponse = {
     code?: string;
     message?: string;
     op?: string;
+};
+
+export type ModelsChatCitation = {
+    label?: string;
+    source?: string;
+    tool?: string;
+};
+
+export type ModelsChatMessage = {
+    citations?: Array<ModelsChatCitation>;
+    content?: string;
+    created_at?: string;
+    id: string;
+    metadata?: {
+        [key: string]: unknown;
+    };
+    role?: ModelsChatMessageRole;
+    seq?: number;
+    session_id?: string;
+    sources?: Array<ModelsChatSource>;
+    updated_at?: string;
+};
+
+export type ModelsChatMessageRole = 'user' | 'assistant';
+
+export type ModelsChatSession = {
+    created_at?: string;
+    id: string;
+    messages?: Array<ModelsChatMessage>;
+    metadata?: {
+        [key: string]: unknown;
+    };
+    title?: string;
+    updated_at?: string;
+};
+
+export type ModelsChatSource = {
+    display_name?: string;
+    id?: string;
+    identifier?: string;
+    image_url?: string;
+    kind?: string;
+    status?: string;
+    subtitle?: string;
 };
 
 export type ModelsComponentType = 'VIDEO' | 'AUDIO' | 'SUBTITLE' | 'METADATA';
@@ -178,6 +243,17 @@ export type ModelsRunPaginationResult = {
 
 export type ModelsRunStatus = 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED' | 'ESCALATED';
 
+export type ModelsSearchResult = {
+    display_name?: string;
+    id?: string;
+    identifier?: string;
+    image_url?: string;
+    kind?: ModelsSearchResultKind;
+    subtitle?: string;
+};
+
+export type ModelsSearchResultKind = 'title' | 'vendor' | 'delivery';
+
 export type ModelsStep = {
     created_at?: string;
     ended_at?: string;
@@ -319,6 +395,158 @@ export type ModelsWfResult = {
     step_id?: string;
     updated_at?: string;
 };
+
+export type GetChatData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/chat';
+};
+
+export type GetChatErrors = {
+    /**
+     * Internal Server Error
+     */
+    500: ErrorsErrorResponse;
+};
+
+export type GetChatError = GetChatErrors[keyof GetChatErrors];
+
+export type GetChatResponses = {
+    /**
+     * OK
+     */
+    200: Array<ModelsChatSession>;
+};
+
+export type GetChatResponse = GetChatResponses[keyof GetChatResponses];
+
+export type PostChatData = {
+    /**
+     * Chat message
+     */
+    body: ChatSendMessageRequest;
+    path?: never;
+    query?: never;
+    url: '/chat';
+};
+
+export type PostChatErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorsErrorResponse;
+    /**
+     * Service Unavailable
+     */
+    503: ErrorsErrorResponse;
+};
+
+export type PostChatError = PostChatErrors[keyof PostChatErrors];
+
+export type PostChatResponses = {
+    /**
+     * OK
+     */
+    200: ChatSendMessageResponse;
+};
+
+export type PostChatResponse = PostChatResponses[keyof PostChatResponses];
+
+export type DeleteChatByIdData = {
+    body?: never;
+    path: {
+        /**
+         * Session ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/chat/{id}';
+};
+
+export type DeleteChatByIdErrors = {
+    /**
+     * Not Found
+     */
+    404: ErrorsErrorResponse;
+};
+
+export type DeleteChatByIdError = DeleteChatByIdErrors[keyof DeleteChatByIdErrors];
+
+export type DeleteChatByIdResponses = {
+    /**
+     * No Content
+     */
+    204: unknown;
+};
+
+export type GetChatByIdData = {
+    body?: never;
+    path: {
+        /**
+         * Session ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/chat/{id}';
+};
+
+export type GetChatByIdErrors = {
+    /**
+     * Not Found
+     */
+    404: ErrorsErrorResponse;
+};
+
+export type GetChatByIdError = GetChatByIdErrors[keyof GetChatByIdErrors];
+
+export type GetChatByIdResponses = {
+    /**
+     * OK
+     */
+    200: ModelsChatSession;
+};
+
+export type GetChatByIdResponse = GetChatByIdResponses[keyof GetChatByIdResponses];
+
+export type PatchChatByIdData = {
+    /**
+     * New title
+     */
+    body: ChatUpdateSessionRequest;
+    path: {
+        /**
+         * Session ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/chat/{id}';
+};
+
+export type PatchChatByIdErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorsErrorResponse;
+    /**
+     * Not Found
+     */
+    404: ErrorsErrorResponse;
+};
+
+export type PatchChatByIdError = PatchChatByIdErrors[keyof PatchChatByIdErrors];
+
+export type PatchChatByIdResponses = {
+    /**
+     * OK
+     */
+    200: ModelsChatSession;
+};
+
+export type PatchChatByIdResponse = PatchChatByIdResponses[keyof PatchChatByIdResponses];
 
 export type GetDeliveriesData = {
     body?: never;
@@ -1103,6 +1331,40 @@ export type GetRunsByIdStreamResponses = {
 };
 
 export type GetRunsByIdStreamResponse = GetRunsByIdStreamResponses[keyof GetRunsByIdStreamResponses];
+
+export type GetSearchData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * Search query
+         */
+        q: string;
+        /**
+         * Max results per kind
+         */
+        limit?: number;
+    };
+    url: '/search';
+};
+
+export type GetSearchErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorsErrorResponse;
+};
+
+export type GetSearchError = GetSearchErrors[keyof GetSearchErrors];
+
+export type GetSearchResponses = {
+    /**
+     * OK
+     */
+    200: Array<ModelsSearchResult>;
+};
+
+export type GetSearchResponse = GetSearchResponses[keyof GetSearchResponses];
 
 export type GetTitlesData = {
     body?: never;

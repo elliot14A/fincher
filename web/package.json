@@ -33,6 +33,8 @@
     "@xyflow/react": "^12.11.3",
     "lucide-preact": "^1.33.0",
     "preact": "^10.29.8",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1",
     "sonner": "^2.0.8",
     "valibot": "^1.4.2"
   },

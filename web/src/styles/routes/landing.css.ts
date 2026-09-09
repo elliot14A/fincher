@@ -129,6 +129,17 @@ export const heroGlow = style({
   animation: `${floatGlow} 9s ease-in-out infinite`,
 })
 
+export const heroGridTexture = style({
+  position: 'absolute',
+  inset: 0,
+  backgroundImage: `linear-gradient(${vars.color.borderSubtle} 1px, transparent 1px), linear-gradient(90deg, ${vars.color.borderSubtle} 1px, transparent 1px)`,
+  backgroundSize: '48px 48px',
+  maskImage: 'radial-gradient(ellipse 70% 55% at 50% 0%, black 0%, transparent 80%)',
+  WebkitMaskImage: 'radial-gradient(ellipse 70% 55% at 50% 0%, black 0%, transparent 80%)',
+  pointerEvents: 'none',
+  zIndex: 0,
+})
+
 export const heroContainer = style({
   maxWidth: '1080px',
   width: '100%',
@@ -139,6 +150,83 @@ export const heroContainer = style({
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
+})
+
+// Hero "how it works" 3-step clarity strip
+export const heroSteps = style({
+  display: 'flex',
+  flexWrap: 'wrap',
+  alignItems: 'stretch',
+  justifyContent: 'center',
+  gap: vars.space.sm,
+  marginBottom: vars.space['3xl'],
+  width: '100%',
+  maxWidth: '820px',
+})
+
+export const heroStepItem = style({
+  display: 'flex',
+  alignItems: 'center',
+  gap: vars.space.md,
+  flex: '1 1 220px',
+  padding: `${vars.space.md} ${vars.space.lg}`,
+  backgroundColor: vars.color.surface,
+  border: `1px solid ${vars.color.border}`,
+  borderRadius: vars.radii.sm,
+  textAlign: 'left',
+})
+
+export const heroStepIcon = style({
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  width: '34px',
+  height: '34px',
+  flexShrink: 0,
+  borderRadius: vars.radii.xs,
+  backgroundColor: vars.color.primaryMuted,
+  border: `1px solid ${vars.color.primaryBorder}`,
+  color: vars.color.primary,
+})
+
+export const heroStepBody = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '2px',
+  minWidth: 0,
+})
+
+export const heroStepLabel = style({
+  fontSize: vars.fontSize.sm,
+  fontWeight: 600,
+  color: vars.color.textPrimary,
+  lineHeight: '1.2',
+})
+
+export const heroStepText = style({
+  fontSize: vars.fontSize['2xs'],
+  color: vars.color.textTertiary,
+  lineHeight: '1.35',
+})
+
+export const heroStepArrow = style({
+  display: 'none',
+  alignItems: 'center',
+  color: vars.color.textTertiary,
+  flexShrink: 0,
+  '@media': {
+    '(min-width: 900px)': {
+      display: 'flex',
+    },
+  },
+})
+
+export const heroEyebrow = style({
+  fontSize: vars.fontSize.sm,
+  fontFamily: fonts.mono,
+  color: vars.color.primary,
+  letterSpacing: '0.02em',
+  marginBottom: vars.space.md,
 })
 
 export const heroBadge = style({

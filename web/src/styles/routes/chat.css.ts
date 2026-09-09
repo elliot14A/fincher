@@ -52,15 +52,37 @@ export const subtitle = style({
   maxWidth: '480px',
 })
 
+export const composerShell = style({
+  position: 'relative',
+  width: '100%',
+})
+
 export const composer = style({
   backgroundColor: vars.color.surface,
   border: `1px solid ${vars.color.border}`,
   borderRadius: vars.radii.sm,
   padding: `${vars.space.md} ${vars.space.lg}`,
   display: 'flex',
-  alignItems: 'center',
+  alignItems: 'flex-end',
   gap: vars.space.sm,
   width: '100%',
+})
+
+export const composerTextarea = style({
+  backgroundColor: 'transparent',
+  border: 'none',
+  color: vars.color.textPrimary,
+  fontSize: vars.fontSize.sm,
+  fontFamily: fonts.sans,
+  lineHeight: vars.lineHeight.normal,
+  outline: 'none',
+  flex: 1,
+  resize: 'none',
+  maxHeight: '160px',
+  minHeight: '20px',
+  '::placeholder': {
+    color: vars.color.textTertiary,
+  },
 })
 
 export const composerPrompt = style({
@@ -68,15 +90,6 @@ export const composerPrompt = style({
   color: vars.color.textTertiary,
   fontSize: vars.fontSize.base,
   flexShrink: 0,
-})
-
-export const composerInput = style({
-  backgroundColor: 'transparent',
-  border: 'none',
-  color: vars.color.textPrimary,
-  fontSize: vars.fontSize.sm,
-  outline: 'none',
-  flex: 1,
 })
 
 export const sendButton = style({
@@ -148,4 +161,80 @@ export const queryTag = style({
   fontSize: vars.fontSize['3xs'],
   color: vars.color.textTertiary,
   flexShrink: 0,
+})
+
+export const conversationArea = style({
+  display: 'flex',
+  flexDirection: 'column',
+  flex: 1,
+  overflowY: 'auto',
+  padding: `${vars.space.xl} ${vars.space['2xl']}`,
+})
+
+export const conversationColumn = style({
+  display: 'flex',
+  flexDirection: 'column',
+  maxWidth: '760px',
+  width: '100%',
+  margin: '0 auto',
+})
+
+export const conversationHeader = style({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: vars.space.md,
+  width: '100%',
+  padding: `${vars.space.md} ${vars.space['2xl']}`,
+  borderBottom: `1px solid ${vars.color.borderSubtle}`,
+  flexShrink: 0,
+})
+
+export const conversationTitle = style({
+  fontSize: vars.fontSize.sm,
+  fontWeight: 600,
+  color: vars.color.textPrimary,
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
+})
+
+export const newChatButton = style({
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: vars.space.xs,
+  fontFamily: fonts.mono,
+  fontSize: vars.fontSize.xs,
+  color: vars.color.textSecondary,
+  backgroundColor: 'transparent',
+  border: `1px solid ${vars.color.border}`,
+  borderRadius: vars.radii.xs,
+  padding: `${vars.space['2xs']} ${vars.space.sm}`,
+  cursor: 'pointer',
+  flexShrink: 0,
+  transition: 'background-color 0.12s ease, color 0.12s ease',
+  ':hover': {
+    backgroundColor: vars.color.surfaceHover,
+    color: vars.color.textPrimary,
+  },
+})
+
+export const composerDock = style({
+  padding: `${vars.space.md} ${vars.space['2xl']} ${vars.space.xl}`,
+  borderTop: `1px solid ${vars.color.borderSubtle}`,
+})
+
+export const composerDockColumn = style({
+  maxWidth: '760px',
+  width: '100%',
+  margin: '0 auto',
+})
+
+export const sendButtonDisabled = style({
+  backgroundColor: vars.color.surfaceActive,
+  color: vars.color.textTertiary,
+  cursor: 'not-allowed',
+  ':hover': {
+    backgroundColor: vars.color.surfaceActive,
+  },
 })

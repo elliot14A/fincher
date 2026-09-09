@@ -115,8 +115,17 @@ import {
   heroBadgeDot,
   heroBadgePulse,
   heroContainer,
+  heroEyebrow,
   heroGlow,
+  heroGridTexture,
   heroSection,
+  heroStepArrow,
+  heroStepBody,
+  heroStepIcon,
+  heroStepItem,
+  heroStepLabel,
+  heroSteps,
+  heroStepText,
   heroSubtitle,
   heroTitle,
   heroTitleGradient,
@@ -352,6 +361,7 @@ function LandingPage() {
 
       {/* Hero Section */}
       <section class={heroSection}>
+        <div class={heroGridTexture} />
         <div class={heroGlow} />
 
         <div class={heroContainer}>
@@ -362,15 +372,18 @@ function LandingPage() {
             <span>Autonomous Media Supply Chain Engine</span>
           </div>
 
+          <p class={heroEyebrow}>An AI operations engineer for global film &amp; TV delivery</p>
+
           <h1 class={heroTitle}>
-            Never Miss a Global <br />
-            <span class={heroTitleGradient}>Release Date.</span>
+            Ship every localized title <br />
+            <span class={heroTitleGradient}>on time, with zero defects.</span>
           </h1>
 
           <p class={heroSubtitle}>
-            Fincher continuously monitors incoming audio, video, and subtitle packages. When QC
-            drift or corrupted assets strike, Fincher autonomously halts affected deliveries,
-            reassigns certified facilities, and restores titles to release readiness.
+            Fincher watches every audio, video, and subtitle package as it moves toward premiere.
+            The moment QC drift or a bad master appears, its AI agents diagnose the blast radius,
+            re-assign the best vendor, and heal the release &mdash; without halting the catalog or
+            waiting on a human.
           </p>
 
           <div class={heroActions}>
@@ -382,6 +395,49 @@ function LandingPage() {
               <Play size={14} />
               <span>Watch Execution Runs</span>
             </Link>
+          </div>
+
+          {/* How it works, at a glance */}
+          <div class={heroSteps}>
+            <div class={heroStepItem}>
+              <span class={heroStepIcon}>
+                <Activity size={16} />
+              </span>
+              <span class={heroStepBody}>
+                <span class={heroStepLabel}>1 · Detect</span>
+                <span class={heroStepText}>
+                  Ingests live QC events &amp; spots defects the instant they land
+                </span>
+              </span>
+            </div>
+            <span class={heroStepArrow}>
+              <ArrowRight size={16} />
+            </span>
+            <div class={heroStepItem}>
+              <span class={heroStepIcon}>
+                <Bot size={16} />
+              </span>
+              <span class={heroStepBody}>
+                <span class={heroStepLabel}>2 · Reason</span>
+                <span class={heroStepText}>
+                  ADK agents query ClickHouse history &amp; propose a verified fix
+                </span>
+              </span>
+            </div>
+            <span class={heroStepArrow}>
+              <ArrowRight size={16} />
+            </span>
+            <div class={heroStepItem}>
+              <span class={heroStepIcon}>
+                <RefreshCw size={16} />
+              </span>
+              <span class={heroStepBody}>
+                <span class={heroStepLabel}>3 · Self-heal</span>
+                <span class={heroStepText}>
+                  Executes safely, then re-checks itself until the title ships
+                </span>
+              </span>
+            </div>
           </div>
 
           {/* Architecture Visual Graphic */}
