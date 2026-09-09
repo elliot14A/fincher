@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"os/signal"
@@ -44,7 +45,11 @@ func main() {
 		kctx.FatalIfErrorf(fmt.Errorf("configuration validation failed: %w", err))
 	}
 
-	logger.Init(cfg.Environment, os.Stdout)
+	logWriter := io.Writer(os.Stdout)
+	if logFile, ferr := os.OpenFile("/tmp/opencode/fincher.log", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o644); ferr == nil {
+		logWriter = io.MultiWriter(os.Stdout, logFile)
+	}
+	logger.Init(cfg.Environment, logWriter)
 	logger.Info("starting fincher service", "environment", cfg.Environment, "port", cfg.Port)
 
 	dbClient, dbSQL, err := turso.Open(cfg.TursoURL, cfg.TursoToken)
