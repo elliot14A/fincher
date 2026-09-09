@@ -1,5 +1,7 @@
 # Fincher
 
+**Live Deployment**: [https://fincher.elliot14a.work](https://fincher.elliot14a.work)
+
 Autonomous operations engine for media post-production release pipelines.
 
 Fincher catches supply chain defects (audio sync drift, revised cuts, SLA breaches, invalid QC packages), queries historical logs in ClickHouse via MCP, drafts recovery plans with Gemini 2.5, validates every action through a deterministic Go policy engine, and executes state changes in a closed loop.
